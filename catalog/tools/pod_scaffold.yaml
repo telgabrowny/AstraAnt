@@ -1,0 +1,38 @@
+id: pod_scaffold
+name: "Cargo Pod Shell (Ferrocement)"
+type: cargo_pod_component
+description: >
+  3D-printed PETG lattice scaffold that gets filled with bioreactor
+  waste paste to form a ferrocement cargo pod shell. The PETG lattice
+  provides tensile strength (like rebar), the waste paste sets into
+  a hard ceramic fill (like concrete). The result is a durable pod
+  shell made almost entirely from mining waste.
+
+physical:
+  total_mass_g: 150                 # 50g scaffold + 100g paste fill
+  scaffold:
+    material: PETG
+    mass_g: 50
+    print_time_hours: 0.5
+    structure: "open lattice with 5mm cell size"
+  paste_fill:
+    material: "bioreactor waste slurry"
+    mass_g: 100
+    setting_time_hours: 4
+    source: "mining waste -- zero cost"
+  dimensions:
+    length_mm: 120
+    width_mm: 80
+    height_mm: 60
+    wall_thickness_mm: 8             # Lattice + fill combined
+  internal_volume_ml: 400            # Holds ~2 kg of dense metal concentrate
+
+printable:
+  stl_available: true
+  openscad_parametric: true
+  print_material: "PETG (scaffold only -- fill with waste paste after printing)"
+  supports_needed: false
+  orientation: "print open-side up"
+
+cost_usd: 0.50                      # Just PETG filament. Paste fill is free.
+added_date: "2026-03-27"

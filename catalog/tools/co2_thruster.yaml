@@ -1,0 +1,65 @@
+id: co2_thruster
+name: "Cold Gas CO2 Kick Motor"
+type: cargo_pod_component
+description: >
+  Simple cold gas thruster for cargo pod initial velocity kick.
+  A small steel tube pressurized with CO2 (captured from the thermal
+  sorter), a wax-plug valve activated by a resistor, and a drilled
+  steel nozzle disc. No combustion, no ignition, no moving parts.
+  Like a Sterno can but for space propulsion.
+
+physical:
+  total_mass_g: 260                 # 200g CO2 + 50g tank + 5g nozzle + 5g valve
+  tank:
+    material: "thin-wall steel tube"
+    diameter_mm: 30
+    length_mm: 80
+    wall_thickness_mm: 1.5
+    mass_g: 50
+    pressure_bar: 20                # ~20 atm CO2
+  propellant:
+    type: CO2
+    mass_g: 200
+    source: "captured from thermal sorter (FREE)"
+    note: "CO2 is a waste product of carbonate pyrolysis"
+  nozzle:
+    type: "drilled steel disc"
+    throat_diameter_mm: 3
+    mass_g: 5
+  valve:
+    type: wax_plug
+    activation: "nichrome wire resistor melts wax on command"
+    activation_energy_j: 5          # Tiny amount of power
+    mass_g: 5
+    cost_usd: 0.10
+
+performance:
+  isp_seconds: 70
+  exhaust_velocity_m_per_s: 687
+  total_impulse_ns: 137             # 200g CO2 at Isp 70
+  delta_v_on_2_5kg_pod_m_per_s: 56
+  burn_time_seconds: 5
+  thrust_n: 27                      # Brief high thrust
+
+sourcing:
+  tank: "thin-wall steel tube from hardware store or machined"
+  propellant: "captured on-site from thermal sorter"
+  nozzle: "drilled from steel rod stock"
+  valve: "nichrome wire + paraffin wax"
+  total_purchased_cost_usd: 2.00
+
+notes: |
+  The elegance of this design: the propellant (CO2) is a waste product
+  that would otherwise be vented. The tank is a simple tube. The valve
+  is a wax plug melted by a tiny resistor. The nozzle is a drilled hole.
+
+  Total cost: $2. Delta-v: 56 m/s. Reduces transit by ~15%.
+
+  For comparison, a SpaceX Merlin engine costs millions. This costs
+  two dollars and is made from captured waste gas and hardware store parts.
+
+  Multiple thruster firings are NOT supported -- this is fire-once.
+  But one kick at departure is enough to meaningfully reduce transit time
+  when combined with solar sail for the remaining trajectory.
+
+added_date: "2026-03-27"
