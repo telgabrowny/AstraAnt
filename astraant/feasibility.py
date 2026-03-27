@@ -136,14 +136,37 @@ class MassBudget:
         return self.total_wet_kg * (1 + self.margin_pct)
 
 
+# Bulk discount factors (10K+ units)
+BULK_DISCOUNT = {
+    "worker": 0.42,         # $33 -> ~$14 (servos and MCU drop dramatically)
+    "taskmaster": 0.55,     # $75 -> ~$41 (sensors hold value better)
+    "surface_ant": 0.65,    # $1242 -> ~$807 (Maxon volume pricing)
+    "tool_heads": 0.50,     # Average tool head at volume
+    "mothership_per_kg": 0.70,  # Space hardware volume discount
+}
+
+
 @dataclass
 class CostEstimate:
-    """Mission cost breakdown."""
+    """Mission cost breakdown with prototype and production pricing."""
+    # Prototype pricing (single unit / hobby quantities)
     swarm_hardware_usd: float = 0.0
     mothership_hardware_usd: float = 0.0
     launch_cost_usd: float = 0.0
     consumables_per_cycle_usd: float = 0.0
     total_first_cycle_usd: float = 0.0
+
+    # Production pricing (10K+ units)
+    swarm_hardware_production_usd: float = 0.0
+    mothership_hardware_production_usd: float = 0.0
+    total_first_cycle_production_usd: float = 0.0
+
+    @property
+    def savings_at_production(self) -> float:
+        """How much cheaper production pricing is vs prototype."""
+        if self.total_first_cycle_usd <= 0:
+            return 0.0
+        return 1.0 - (self.total_first_cycle_production_usd / self.total_first_cycle_usd)
 
 
 @dataclass
@@ -155,6 +178,7 @@ class FeasibilityReport:
     power_budget: dict[str, Any] = field(default_factory=dict)
     revenue_per_cycle_usd: float = 0.0
     break_even_cycles: int = 0
+    break_even_cycles_production: int = 0
     notes: list[str] = field(default_factory=list)
 
 
@@ -295,6 +319,25 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
         cost.consumables_per_cycle_usd
     )
 
+    # --- Production Pricing (10K+ volume) ---
+    for caste, count in caste_counts.items():
+        if caste in ant_configs and count > 0:
+            proto_cost = compute_ant_cost(ant_configs[caste]) * count
+            discount = BULK_DISCOUNT.get(caste, 0.5)
+            cost.swarm_hardware_production_usd += proto_cost * discount
+    cost.swarm_hardware_production_usd += (
+        tool_head_count * tool_head_avg_cost * BULK_DISCOUNT["tool_heads"]
+    )
+    cost.mothership_hardware_production_usd = (
+        cost.mothership_hardware_usd * BULK_DISCOUNT["mothership_per_kg"]
+    )
+    cost.total_first_cycle_production_usd = (
+        cost.swarm_hardware_production_usd +
+        cost.mothership_hardware_production_usd +
+        cost.launch_cost_usd +  # Launch cost doesn't change with volume
+        cost.consumables_per_cycle_usd
+    )
+
     # --- Power Budget ---
     power = {}
     for caste, cfg in ant_configs.items():
@@ -352,12 +395,15 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     else:
         report.revenue_per_cycle_usd = kg_per_cycle * revenue_per_kg
 
-    # Break-even
+    # Break-even (both pricing models)
     if report.revenue_per_cycle_usd > cost.consumables_per_cycle_usd:
         net_per_cycle = report.revenue_per_cycle_usd - cost.consumables_per_cycle_usd
         report.break_even_cycles = max(1, int(cost.total_first_cycle_usd / net_per_cycle) + 1)
+        report.break_even_cycles_production = max(
+            1, int(cost.total_first_cycle_production_usd / net_per_cycle) + 1)
     else:
         report.break_even_cycles = -1
+        report.break_even_cycles_production = -1
         report.notes.append("WARNING: Revenue per cycle does not cover consumables. Not viable at this scale.")
 
     return report
@@ -407,13 +453,23 @@ def format_report(report: FeasibilityReport) -> str:
     lines.append(f"  Total wet:       {mb.total_wet_kg:.1f} kg")
     lines.append(f"  With 15% margin: {mb.total_with_margin_kg:.1f} kg")
 
-    lines.append(f"\n--- COST ESTIMATE ---")
+    lines.append(f"\n--- COST ESTIMATE (Prototype / single-unit pricing) ---")
     lines.append(f"  Swarm hardware:  ${ce.swarm_hardware_usd:,.0f}")
     lines.append(f"  Mothership:      ${ce.mothership_hardware_usd:,.0f}")
     lines.append(f"  Launch cost:     ${ce.launch_cost_usd:,.0f}")
     lines.append(f"  Consumables/cyc: ${ce.consumables_per_cycle_usd:,.0f}")
     lines.append(f"  -------------------------")
     lines.append(f"  TOTAL 1st cycle: ${ce.total_first_cycle_usd:,.0f}")
+
+    lines.append(f"\n--- COST ESTIMATE (Production / 10K+ volume pricing) ---")
+    lines.append(f"  Swarm hardware:  ${ce.swarm_hardware_production_usd:,.0f}"
+                 f"  (was ${ce.swarm_hardware_usd:,.0f})")
+    lines.append(f"  Mothership:      ${ce.mothership_hardware_production_usd:,.0f}"
+                 f"  (was ${ce.mothership_hardware_usd:,.0f})")
+    lines.append(f"  Launch cost:     ${ce.launch_cost_usd:,.0f}  (unchanged)")
+    lines.append(f"  -------------------------")
+    lines.append(f"  TOTAL 1st cycle: ${ce.total_first_cycle_production_usd:,.0f}"
+                 f"  ({ce.savings_at_production * 100:.0f}% savings)")
 
     lines.append(f"\n--- POWER BUDGET (per ant) ---")
     for caste, pw in report.power_budget.items():
@@ -422,10 +478,12 @@ def format_report(report: FeasibilityReport) -> str:
 
     lines.append(f"\n--- ECONOMICS ---")
     lines.append(f"  Revenue/cycle:   ${report.revenue_per_cycle_usd:,.0f}")
-    if report.break_even_cycles > 0:
-        lines.append(f"  Break-even:      {report.break_even_cycles} cycles")
-    else:
-        lines.append(f"  Break-even:      NEVER (not viable at this scale)")
+
+    def _fmt_be(cycles: int) -> str:
+        return f"{cycles} cycles" if cycles > 0 else "NEVER"
+
+    lines.append(f"  Break-even (prototype):   {_fmt_be(report.break_even_cycles)}")
+    lines.append(f"  Break-even (production):  {_fmt_be(report.break_even_cycles_production)}")
 
     if report.notes:
         lines.append(f"\n--- NOTES ---")
