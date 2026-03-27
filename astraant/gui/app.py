@@ -227,10 +227,10 @@ class AstraAntApp:
         )
 
         commands = [
+            ("Build 10 Ants", {"type": "build_ants", "count": 10}),
+            ("Build 50 Pods", {"type": "build_pods", "count": 50}),
             ("Retarget Mining", {"type": "retarget", "area": "sector_b"}),
             ("Emergency Stop", {"type": "emergency_stop"}),
-            ("Launch Cargo", {"type": "launch_return_vehicle"}),
-            ("Status Request", {"type": "status_request"}),
         ]
 
         self.gc_buttons = []
@@ -292,6 +292,20 @@ class AstraAntApp:
 
         # Tick simulation
         events = self.engine.tick(dt)
+
+        # Spawn visual entities for any new agents (from manufacturing)
+        for agent in self.engine.agents:
+            if agent.id not in self.ant_entities:
+                entity = create_ant_entity(caste=agent.caste)
+                pos = self._sim_to_surface(agent.position)
+                entity.position = pos
+                self.ant_entities[agent.id] = entity
+                indicator = Entity(
+                    parent=entity, model="sphere",
+                    color=STATE_COLORS.get(agent.state, color.gray),
+                    scale=0.08, position=Vec3(0, 0.3, 0), unlit=True,
+                )
+                self.state_indicators[agent.id] = indicator
 
         # Sync visual entities to sim agents
         for agent in self.engine.agents:
@@ -374,6 +388,16 @@ class AstraAntApp:
         metals = s.get('metals_extracted_kg', 0)
         biomass = s.get('biomass_g_per_l', 0)
         bio_line = f"\n  Metals:   {metals:.3f} kg\n  Biomass:  {biomass:.2f} g/L" if metals > 0 else ""
+
+        m = status.get("manufacturing", {})
+        mfg_line = ""
+        if m.get("enabled"):
+            mfg_line = (f"\n\nManufacturing:\n"
+                        f"  Iron: {m['iron_stockpile_kg']:.1f}kg\n"
+                        f"  Queue: {m['ants_queued']}  Build: {m['ants_in_progress']}\n"
+                        f"  Built: {m['ants_completed']} ants\n"
+                        f"  Pods:  {m['pods_completed']}")
+
         self.stats_text.text = (
             f"Production:\n"
             f"  Material: {s['material_kg']:.1f} kg\n"
@@ -381,7 +405,8 @@ class AstraAntApp:
             f"  Sealed:   {s['sealed_m2']:.1f} m2\n"
             f"  Tunnel:   {t['total_length_m']:.1f} m{bio_line}\n"
             f"  Failures: {s['failures']}\n"
-            f"  Anomalies:{s['anomalies']}"
+            f"  Ants:     {status['total_ants']}"
+            f"{mfg_line}"
         )
 
         # Comms delay

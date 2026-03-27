@@ -29,6 +29,31 @@ except ImportError:
 
 
 @dataclass
+class ManufacturingState:
+    """State of the in-situ manufacturing bay."""
+    enabled: bool = False
+    iron_stockpile_kg: float = 0.0
+    copper_stockpile_kg: float = 0.0
+    # Build queue
+    ants_queued: int = 0             # Player-ordered ants to build
+    ants_in_progress: int = 0        # Currently being assembled
+    ants_completed: int = 0          # Finished and deployed
+    pods_queued: int = 0
+    pods_completed: int = 0
+    # Pipeline tracking
+    parts_sintering: int = 0         # Parts in the furnace right now
+    parts_ready: int = 0             # Sintered, waiting for assembly
+    parts_per_ant: int = 20          # Parts needed for one ant
+    sinter_time_hours: float = 2.0   # Hours per part
+    assembly_time_hours: float = 1.0
+    # Timers
+    current_sinter_timer: float = 0.0
+    current_assembly_timer: float = 0.0
+    # Workers assigned to manufacturing
+    workers_assigned: int = 0
+
+
+@dataclass
 class SimStats:
     """Running statistics for the simulation."""
     total_material_extracted_kg: float = 0.0
@@ -63,6 +88,7 @@ class SimEngine:
         self.tunnel = TunnelNetwork()
         self.comms = CommsDelay(asteroid_distance_au)
         self.stats = SimStats()
+        self.manufacturing = ManufacturingState()
         self.agents: list[AntAgent] = []
         self.event_log: list[dict[str, Any]] = []
 
@@ -268,9 +294,23 @@ class SimEngine:
                     "time": self.clock.sim_time,
                 })
 
+        # Feed extracted material into manufacturing stockpile
+        # A fraction of mined material becomes iron/copper powder after bioleaching
+        mfg = self.manufacturing
+        if mfg.enabled:
+            # Iron is ~20% of regolith on Bennu, extraction efficiency ~85%
+            iron_this_tick = self.stats.total_dump_cycles * 0.001  # Rough: small increment per dump
+            mfg.iron_stockpile_kg = max(0, self.stats.total_material_extracted_kg * 0.003)  # ~0.3% yield as usable iron powder
+            mfg.copper_stockpile_kg = max(0, self.stats.total_material_extracted_kg * 0.00001)  # Very little copper
+
+        # Process manufacturing queue
+        if mfg.enabled and (mfg.ants_queued > 0 or mfg.pods_queued > 0):
+            events.extend(self._tick_manufacturing(sim_dt))
+
         # Process communication queues
         arrived_commands, arrived_telemetry = self.comms.tick(self.clock.sim_time)
         for cmd in arrived_commands:
+            self._handle_command(cmd.content, events)
             events.append({
                 "type": "command_received",
                 "time": self.clock.sim_time,
@@ -319,6 +359,111 @@ class SimEngine:
         }
         self.comms.send_telemetry(telemetry, self.clock.sim_time)
 
+    def _tick_manufacturing(self, sim_dt: float) -> list[dict[str, Any]]:
+        """Process the manufacturing pipeline each tick."""
+        events = []
+        mfg = self.manufacturing
+        dt_hours = sim_dt / 3600.0
+
+        # SINTERING: convert iron stockpile into parts
+        if mfg.ants_queued > 0 and mfg.iron_stockpile_kg >= 0.025:
+            mfg.current_sinter_timer += dt_hours
+            if mfg.current_sinter_timer >= mfg.sinter_time_hours:
+                mfg.current_sinter_timer = 0.0
+                mfg.parts_ready += 1
+                mfg.iron_stockpile_kg -= 0.025  # ~25g iron per part
+                mfg.parts_sintering = min(mfg.ants_queued * mfg.parts_per_ant - mfg.parts_ready, 1)
+
+        # ASSEMBLY: when enough parts ready, start assembling an ant
+        if (mfg.parts_ready >= mfg.parts_per_ant and
+                mfg.ants_queued > 0 and mfg.ants_in_progress < 3):  # 3 jigs max
+            mfg.parts_ready -= mfg.parts_per_ant
+            mfg.ants_in_progress += 1
+            mfg.ants_queued -= 1
+            mfg.current_assembly_timer = 0.0
+            events.append({
+                "type": "manufacturing",
+                "time": self.clock.sim_time,
+                "message": f"Assembly started: ant #{mfg.ants_completed + mfg.ants_in_progress}",
+            })
+
+        # ASSEMBLY PROGRESS: tick assembly timers
+        if mfg.ants_in_progress > 0:
+            mfg.current_assembly_timer += dt_hours
+            if mfg.current_assembly_timer >= mfg.assembly_time_hours:
+                mfg.current_assembly_timer = 0.0
+                mfg.ants_in_progress -= 1
+                mfg.ants_completed += 1
+                # SPAWN THE NEW ANT
+                new_ant = self._spawn_new_ant()
+                events.append({
+                    "type": "ant_built",
+                    "time": self.clock.sim_time,
+                    "message": f"NEW ANT ONLINE: {new_ant.caste} #{new_ant.id}",
+                    "ant_id": new_ant.id,
+                })
+
+        # PODS: simpler — just need waste paste, no sintering
+        if mfg.pods_queued > 0:
+            # One pod every 5 sim-hours from ferrocement
+            mfg.pods_queued -= 1
+            mfg.pods_completed += 1
+
+        return events
+
+    def _spawn_new_ant(self) -> AntAgent:
+        """Create a new worker ant from manufacturing and add to the swarm."""
+        agent_id = max((a.id for a in self.agents), default=0) + 1
+
+        # Assign a role (same distribution as initial setup)
+        role = random.choice(["worker"] * 6 + ["sorter"] + ["plasterer"] * 2 + ["tender"] * 2)
+
+        agent = AntAgent(
+            id=agent_id,
+            caste=role,
+            position=Position(
+                random.uniform(-1, 1),
+                random.uniform(-1, 1),
+                random.uniform(2, 4),  # Near the manufacturing bay
+            ),
+            max_cargo_g=200,
+            speed=random.uniform(0.25, 0.4),
+            mtbf_hours=8000,
+        )
+        agent._assigned_segment_id = self.tunnel.active_work_face_id
+        agent._target = Position(random.uniform(-3, 3), random.uniform(-3, 3), 0)
+        self.agents.append(agent)
+        return agent
+
+    def _handle_command(self, command: dict[str, Any], events: list) -> None:
+        """Process a command that arrived from ground control."""
+        cmd_type = command.get("type", "")
+
+        if cmd_type == "build_ants":
+            count = command.get("count", 10)
+            self.manufacturing.enabled = True
+            self.manufacturing.ants_queued += count
+            events.append({
+                "type": "manufacturing",
+                "time": self.clock.sim_time,
+                "message": f"BUILD ORDER: {count} new ants queued for manufacturing",
+            })
+
+        elif cmd_type == "build_pods":
+            count = command.get("count", 50)
+            self.manufacturing.enabled = True
+            self.manufacturing.pods_queued += count
+
+        elif cmd_type == "emergency_stop":
+            # Stop all workers
+            for agent in self.agents:
+                if agent.caste not in ("taskmaster", "surface_ant"):
+                    agent.state = AntState.IDLE
+
+        elif cmd_type == "retarget":
+            # Just log it — actual retargeting would change tunnel segment assignments
+            pass
+
     def send_player_command(self, command: dict[str, Any]) -> None:
         """Player (Earth ground control) sends a command."""
         self.comms.send_command(command, self.clock.sim_time)
@@ -357,5 +502,14 @@ class SimEngine:
                 "delay_minutes": round(self.comms.one_way_delay_minutes, 1),
                 "pending_commands": len(self.comms.pending_outbound()),
                 "pending_telemetry": len(self.comms.pending_inbound()),
+            },
+            "manufacturing": {
+                "enabled": self.manufacturing.enabled,
+                "iron_stockpile_kg": round(self.manufacturing.iron_stockpile_kg, 2),
+                "ants_queued": self.manufacturing.ants_queued,
+                "ants_in_progress": self.manufacturing.ants_in_progress,
+                "ants_completed": self.manufacturing.ants_completed,
+                "parts_ready": self.manufacturing.parts_ready,
+                "pods_completed": self.manufacturing.pods_completed,
             },
         }
