@@ -386,5 +386,25 @@ def readiness(track: str):
     click.echo(format_readiness_report(report))
 
 
+# -- GUI command ----------------------------------------------------------------
+
+@main.command()
+@click.option("--asteroid", default="bennu", help="Target asteroid ID")
+@click.option("--workers", "-w", default=20, help="Number of worker ants")
+@click.option("--taskmasters", "-t", default=1, help="Number of taskmasters")
+@click.option("--couriers", "-c", default=1, help="Number of couriers")
+@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
+def gui(asteroid: str, workers: int, taskmasters: int, couriers: int, track: str):
+    """Launch the 3D interactive simulation."""
+    try:
+        from .gui import launch
+    except ImportError as e:
+        click.echo(f"GUI dependencies not installed. Run: pip install astraant[gui]")
+        click.echo(f"Error: {e}")
+        return
+    launch(asteroid=asteroid, workers=workers, taskmasters=taskmasters,
+           couriers=couriers, track=track)
+
+
 if __name__ == "__main__":
     main()

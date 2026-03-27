@@ -20,6 +20,10 @@ sim = [
     "numpy>=1.24",
     "mesa>=2.0",
 ]
+gui = [
+    "ursina>=7.0",
+    "noise>=1.2",
+]
 viz = [
     "plotly>=5.0",
     "dash>=2.0",
