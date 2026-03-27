@@ -1,4 +1,8 @@
-"""Main Ursina application for AstraAnt 3D simulation."""
+"""Main Ursina application for AstraAnt 3D simulation.
+
+The GUI is a pure observer of the headless SimEngine.
+Each frame: engine.tick() -> sync visual entities to agent positions.
+"""
 
 from __future__ import annotations
 
@@ -7,273 +11,363 @@ import random
 from typing import Any
 
 from ursina import (
-    Ursina, Entity, Vec3, Vec2, camera, color, window, application,
-    held_keys, time, Text, Button, Slider, EditorCamera,
-    PointLight, AmbientLight, DirectionalLight,
+    Ursina, Entity, Vec3, Vec2, camera, color, window,
+    held_keys, time, Text, Button, EditorCamera,
+    AmbientLight, DirectionalLight, input_handler,
 )
 
 from ..catalog import Catalog
 from .models.asteroid_model import create_asteroid_entity
 from .models.ant_model import create_ant_entity, animate_walk, CASTE_COLORS
+from .simulation.sim_engine import SimEngine
+from .simulation.ant_agent import AntState
+
+
+# Map sim states to status indicator colors
+STATE_COLORS = {
+    AntState.IDLE: color.gray,
+    AntState.MOVING: color.yellow,
+    AntState.DIGGING: color.red,
+    AntState.LOADING: color.orange,
+    AntState.HAULING: color.rgb(200, 150, 50),
+    AntState.DUMPING: color.green,
+    AntState.RETURNING: color.cyan,
+    AntState.SORTING: color.rgb(200, 100, 100),
+    AntState.PLASTERING: color.rgb(180, 180, 130),
+    AntState.TENDING: color.rgb(140, 100, 200),
+    AntState.PATROLLING: color.rgb(60, 160, 200),
+    AntState.SURFACE_OPS: color.rgb(160, 200, 160),
+    AntState.FAILED: color.rgb(80, 0, 0),
+}
 
 
 class AstraAntApp:
-    """The main 3D simulation application."""
+    """The main 3D simulation application backed by SimEngine."""
 
     def __init__(self, asteroid_id: str = "bennu", workers: int = 20,
-                 taskmasters: int = 1, couriers: int = 1, track: str = "a"):
+                 taskmasters: int = 1, couriers: int = 1,
+                 sorters: int = 1, plasterers: int = 1, tenders: int = 1,
+                 track: str = "a"):
         self.asteroid_id = asteroid_id
-        self.num_workers = workers
-        self.num_taskmasters = taskmasters
-        self.num_couriers = couriers
         self.track = track
 
         self.catalog = Catalog()
         self.asteroid_data = self.catalog.get_asteroid(asteroid_id)
-
-        self.ants: list[dict[str, Any]] = []
-        self.asteroid_entity: Entity = None
         self.asteroid_radius = 10.0
-        self.sim_speed = 1.0
-        self.paused = False
+
+        # Headless simulation engine
+        distance_au = 1.0
+        if self.asteroid_data:
+            distance_au = (self.asteroid_data
+                           .get("orbit", {})
+                           .get("semi_major_axis_au", 1.0))
+        self.engine = SimEngine(
+            workers=workers, taskmasters=taskmasters, couriers=couriers,
+            sorters=sorters, plasterers=plasterers, tenders=tenders,
+            track=track, asteroid_distance_au=distance_au,
+        )
+
+        # Visual entity map: agent.id -> Ursina Entity
+        self.ant_entities: dict[int, Entity] = {}
+        self.state_indicators: dict[int, Entity] = {}
+
+        self.asteroid_entity: Entity = None
+        self._space_cooldown = 0.0  # Debounce for space key
 
     def setup_scene(self):
-        """Create the 3D scene: asteroid, mothership, ants, lighting."""
-        # Determine asteroid shape from data
+        """Create the 3D scene."""
+        # Asteroid shape
         shape = "rubble_pile"
         if self.asteroid_data:
-            spec_class = self.asteroid_data.get("physical", {}).get("spectral_class", "")
             name = self.asteroid_data.get("name", "")
             if "bennu" in name.lower():
                 shape = "spinning_top"
             elif "itokawa" in name.lower():
                 shape = "elongated"
 
-        # Create asteroid
         self.asteroid_entity = create_asteroid_entity(
-            radius=self.asteroid_radius,
-            subdivisions=4,
-            shape=shape,
+            radius=self.asteroid_radius, subdivisions=4, shape=shape,
         )
 
         # Lighting
-        sun = DirectionalLight(
-            direction=Vec3(1, -1, -0.5).normalized(),
-            color=color.rgb(255, 250, 240),
-        )
-        sun.look_at(Vec3(0, 0, 0))
+        DirectionalLight(direction=Vec3(1, -1, -0.5).normalized(),
+                         color=color.rgb(255, 250, 240))
+        AmbientLight(color=color.rgb(20, 20, 30))
 
-        ambient = AmbientLight(color=color.rgb(20, 20, 30))
-
-        # Mothership on surface (simplified for Phase 1)
-        # Place at "north pole" of asteroid
+        # Mothership at north pole
         ms_pos = Vec3(0, self.asteroid_radius * 1.05, 0)
         self.mothership = Entity(
-            model="cube",
-            color=color.rgb(180, 180, 180),
-            scale=Vec3(0.8, 0.4, 0.6),
-            position=ms_pos,
+            model="cube", color=color.rgb(180, 180, 180),
+            scale=Vec3(0.8, 0.4, 0.6), position=ms_pos,
         )
-        # Solar panels
         for side in (-1, 1):
-            Entity(
-                parent=self.mothership,
-                model="quad",
-                color=color.rgb(30, 30, 130),
-                scale=Vec3(2.0, 0.05, 1.0),
-                position=Vec3(side * 1.5, 0.3, 0),
-                double_sided=True,
-            )
-        # Antenna
-        Entity(
-            parent=self.mothership,
-            model="cylinder",
-            color=color.rgb(200, 200, 200),
-            scale=Vec3(0.05, 0.8, 0.05),
-            position=Vec3(0, 0.5, 0),
-        )
+            Entity(parent=self.mothership, model="quad",
+                   color=color.rgb(30, 30, 130),
+                   scale=Vec3(2.0, 0.05, 1.0),
+                   position=Vec3(side * 1.5, 0.3, 0), double_sided=True)
+        Entity(parent=self.mothership, model="cylinder",
+               color=color.rgb(200, 200, 200),
+               scale=Vec3(0.05, 0.8, 0.05), position=Vec3(0, 0.5, 0))
 
-        # Spawn ants on the asteroid surface
-        self._spawn_ants()
+        # Tunnel entrance marker (dark circle below mothership)
+        Entity(model="cylinder", color=color.rgb(30, 20, 15),
+               scale=Vec3(0.4, 0.02, 0.4),
+               position=Vec3(0, self.asteroid_radius * 1.01, 0))
 
-        # Starfield background (simple: scattered small dots)
+        # Initialize simulation and spawn visual entities
+        self.engine.setup()
+        self._create_ant_visuals()
+
+        # Starfield
         for _ in range(200):
-            star_dist = random.uniform(80, 150)
-            theta = random.uniform(0, math.pi * 2)
-            phi = random.uniform(0, math.pi)
-            Entity(
-                model="sphere",
-                color=color.white,
-                scale=random.uniform(0.02, 0.08),
-                position=Vec3(
-                    star_dist * math.sin(phi) * math.cos(theta),
-                    star_dist * math.cos(phi),
-                    star_dist * math.sin(phi) * math.sin(theta),
-                ),
-                unlit=True,
+            d = random.uniform(80, 150)
+            t = random.uniform(0, math.pi * 2)
+            p = random.uniform(0, math.pi)
+            Entity(model="sphere", color=color.white,
+                   scale=random.uniform(0.02, 0.08),
+                   position=Vec3(d * math.sin(p) * math.cos(t),
+                                 d * math.cos(p),
+                                 d * math.sin(p) * math.sin(t)),
+                   unlit=True)
+
+    def _create_ant_visuals(self):
+        """Create a visual Entity for each agent in the SimEngine."""
+        for agent in self.engine.agents:
+            entity = create_ant_entity(caste=agent.caste)
+            # Place on asteroid surface
+            pos = self._sim_to_surface(agent.position)
+            entity.position = pos
+            self.ant_entities[agent.id] = entity
+
+            # State indicator (small sphere above ant)
+            indicator = Entity(
+                parent=entity, model="sphere",
+                color=STATE_COLORS.get(agent.state, color.gray),
+                scale=0.08, position=Vec3(0, 0.3, 0), unlit=True,
             )
+            self.state_indicators[agent.id] = indicator
 
-    def _spawn_ants(self):
-        """Spawn ant entities on the asteroid surface."""
-        def random_surface_point() -> tuple[Vec3, Vec3]:
-            """Get a random point on the asteroid surface and its normal."""
-            theta = random.uniform(0, math.pi * 2)
-            phi = random.uniform(0.2, math.pi - 0.2)  # Avoid exact poles
-            normal = Vec3(
-                math.sin(phi) * math.cos(theta),
-                math.cos(phi),
-                math.sin(phi) * math.sin(theta),
-            )
-            pos = normal * (self.asteroid_radius * 1.02)  # Slightly above surface
-            return pos, normal
+    def _sim_to_surface(self, sim_pos) -> Vec3:
+        """Map a simulation position to the asteroid surface.
 
-        ant_configs = [
-            ("worker", self.num_workers),
-            ("taskmaster", self.num_taskmasters),
-            ("courier", self.num_couriers),
-        ]
+        Sim positions are in a small coordinate space. We project them
+        onto the asteroid sphere surface for visual display.
+        """
+        # Use sim position as a direction vector from center
+        x, y, z = sim_pos.x, sim_pos.y, sim_pos.z
+        length = math.sqrt(x*x + y*y + z*z)
+        if length < 0.01:
+            # Default to near mothership
+            return Vec3(0, self.asteroid_radius * 1.02, 0)
 
-        for caste, count in ant_configs:
-            for _ in range(count):
-                pos, normal = random_surface_point()
-                ant_entity = create_ant_entity(caste=caste)
-                ant_entity.position = pos
-                # Orient ant to stand on surface (y-up aligned with surface normal)
-                ant_entity.look_at(pos + Vec3(random.uniform(-1, 1), random.uniform(-1, 1),
-                                              random.uniform(-1, 1)).normalized())
-
-                # Random walk target (another point on the surface)
-                target_pos, _ = random_surface_point()
-
-                self.ants.append({
-                    "entity": ant_entity,
-                    "caste": caste,
-                    "position": pos,
-                    "target": target_pos,
-                    "speed": random.uniform(0.3, 0.6),
-                    "state": "moving",
-                    "state_timer": 0.0,
-                })
+        # Normalize and project to surface
+        scale = self.asteroid_radius * 1.02 / length
+        return Vec3(x * scale, y * scale, z * scale)
 
     def setup_ui(self):
         """Create the UI overlay."""
-        # Title
+        # Title bar
         self.title_text = Text(
             text=f"AstraAnt -- {self.asteroid_id.upper()} -- Track {self.track.upper()}",
-            position=Vec2(-0.85, 0.48),
-            scale=1.2,
-            color=color.white,
+            position=Vec2(-0.85, 0.48), scale=1.2, color=color.white,
         )
 
-        # Ant count display
-        self.status_text = Text(
-            text="",
-            position=Vec2(-0.85, 0.43),
-            scale=0.9,
+        # Left panel: swarm status
+        self.swarm_text = Text(
+            text="", position=Vec2(-0.85, 0.42), scale=0.8,
             color=color.light_gray,
         )
-        self._update_status_text()
 
-        # Speed controls
-        self.speed_text = Text(
-            text="Speed: 1x",
-            position=Vec2(0.55, 0.48),
-            scale=1.0,
+        # Right panel: production stats
+        self.stats_text = Text(
+            text="", position=Vec2(0.35, 0.42), scale=0.8,
+            color=color.light_gray,
+        )
+
+        # Bottom left: mission clock and speed
+        self.clock_text = Text(
+            text="", position=Vec2(-0.85, -0.40), scale=1.0,
             color=color.white,
         )
 
-        # Instructions
-        Text(
-            text="[Mouse] Orbit  [Scroll] Zoom  [1-5] Speed  [Space] Pause",
-            position=Vec2(-0.85, -0.47),
-            scale=0.8,
-            color=color.gray,
+        # Bottom center: comms delay
+        self.comms_text = Text(
+            text="", position=Vec2(-0.2, -0.40), scale=0.8,
+            color=color.rgb(100, 200, 100),
         )
 
-    def _update_status_text(self):
-        workers = sum(1 for a in self.ants if a["caste"] == "worker")
-        taskmasters = sum(1 for a in self.ants if a["caste"] == "taskmaster")
-        couriers = sum(1 for a in self.ants if a["caste"] == "courier")
-        self.status_text.text = (
-            f"Workers: {workers}  Taskmasters: {taskmasters}  Couriers: {couriers}  "
-            f"Total: {len(self.ants)}"
+        # Ground control command buttons
+        self._setup_ground_control()
+
+        # Controls help
+        Text(text="[Mouse] Orbit  [Scroll] Zoom  [1-5] Speed  [Space] Pause  [G] Send Command",
+             position=Vec2(-0.85, -0.47), scale=0.7, color=color.gray)
+
+    def _setup_ground_control(self):
+        """Create ground control command buttons."""
+        self.gc_label = Text(
+            text="-- GROUND CONTROL --",
+            position=Vec2(0.35, -0.15), scale=0.9,
+            color=color.rgb(100, 200, 100),
+        )
+
+        commands = [
+            ("Retarget Mining", {"type": "retarget", "area": "sector_b"}),
+            ("Emergency Stop", {"type": "emergency_stop"}),
+            ("Launch Cargo", {"type": "launch_return_vehicle"}),
+            ("Status Request", {"type": "status_request"}),
+        ]
+
+        self.gc_buttons = []
+        for i, (label, cmd) in enumerate(commands):
+            btn = Button(
+                text=label, scale=(0.18, 0.03),
+                position=Vec2(0.45, -0.20 - i * 0.04),
+                color=color.rgb(30, 60, 30),
+                highlight_color=color.rgb(50, 100, 50),
+            )
+            btn._command_data = cmd
+            btn.on_click = lambda b=btn: self._send_command(b._command_data)
+            self.gc_buttons.append(btn)
+
+        self.gc_status = Text(
+            text="", position=Vec2(0.35, -0.38), scale=0.7,
+            color=color.rgb(100, 200, 100),
+        )
+
+    def _send_command(self, command: dict):
+        """Send a ground control command (enters delay queue)."""
+        self.engine.send_player_command(command)
+        delay = self.engine.comms.one_way_delay_minutes
+        self.gc_status.text = (
+            f"TRANSMITTING: {command['type']}  "
+            f"(arrives in {delay:.1f} min)"
         )
 
     def update(self):
         """Called every frame by Ursina."""
         dt = time.dt
 
-        # Speed controls (keyboard)
+        # Speed controls
         if held_keys["1"]:
-            self.sim_speed = 1.0
+            self.engine.clock.speed = 1.0
         elif held_keys["2"]:
-            self.sim_speed = 10.0
+            self.engine.clock.speed = 10.0
         elif held_keys["3"]:
-            self.sim_speed = 100.0
+            self.engine.clock.speed = 100.0
         elif held_keys["4"]:
-            self.sim_speed = 1000.0
+            self.engine.clock.speed = 1000.0
         elif held_keys["5"]:
-            self.sim_speed = 0.1
-        if held_keys["space"]:
-            self.paused = not self.paused
+            self.engine.clock.speed = 0.1
 
-        self.speed_text.text = f"Speed: {self.sim_speed}x" + (" [PAUSED]" if self.paused else "")
+        # Pause toggle with debounce
+        self._space_cooldown -= dt
+        if held_keys["space"] and self._space_cooldown <= 0:
+            self.engine.clock.toggle_pause()
+            self._space_cooldown = 0.3
 
-        if self.paused:
-            return
+        # Tick simulation
+        events = self.engine.tick(dt)
 
-        sim_dt = dt * self.sim_speed
+        # Sync visual entities to sim agents
+        for agent in self.engine.agents:
+            entity = self.ant_entities.get(agent.id)
+            if entity is None:
+                continue
 
-        # Update ant positions — simple wander behavior for Phase 1
-        for ant in self.ants:
-            entity = ant["entity"]
+            if agent.state == AntState.FAILED:
+                # Grey out failed ants and stop animation
+                entity.color = color.rgb(60, 60, 60)
+                indicator = self.state_indicators.get(agent.id)
+                if indicator:
+                    indicator.color = STATE_COLORS[AntState.FAILED]
+                continue
 
-            if ant["state"] == "moving":
-                # Move toward target
-                direction = (ant["target"] - entity.position).normalized()
-                move = direction * ant["speed"] * sim_dt
-                new_pos = entity.position + move
+            # Map sim position to asteroid surface
+            new_pos = self._sim_to_surface(agent.position)
+            old_pos = entity.position
 
-                # Keep on asteroid surface (project back to radius)
-                dist = new_pos.length()
-                if dist > 0:
-                    new_pos = new_pos.normalized() * (self.asteroid_radius * 1.02)
+            # Move visual toward target (smoothed)
+            entity.position = Vec3(
+                old_pos.x + (new_pos.x - old_pos.x) * min(1.0, dt * 5),
+                old_pos.y + (new_pos.y - old_pos.y) * min(1.0, dt * 5),
+                old_pos.z + (new_pos.z - old_pos.z) * min(1.0, dt * 5),
+            )
 
-                entity.position = new_pos
+            # Face movement direction
+            move_dir = entity.position - old_pos
+            if move_dir.length() > 0.001:
+                entity.look_at(entity.position + move_dir)
 
-                # Face movement direction, aligned to surface
-                if move.length() > 0.001:
-                    entity.look_at(entity.position + direction)
+            # Animate legs when moving
+            moving_states = {AntState.MOVING, AntState.HAULING, AntState.RETURNING,
+                             AntState.PATROLLING, AntState.SURFACE_OPS}
+            if agent.state in moving_states:
+                animate_walk(entity, dt, speed=agent.speed)
 
-                # Animate legs
-                animate_walk(entity, dt, speed=ant["speed"])
+            # Update state indicator color
+            indicator = self.state_indicators.get(agent.id)
+            if indicator:
+                indicator.color = STATE_COLORS.get(agent.state, color.gray)
 
-                # Check if reached target
-                if (entity.position - ant["target"]).length() < 0.5:
-                    ant["state"] = "idle"
-                    ant["state_timer"] = random.uniform(1.0, 3.0)
+        # Rotate asteroid
+        if self.asteroid_entity and not self.engine.clock.paused:
+            self.asteroid_entity.rotation_y += 0.5 * (dt * self.engine.clock.speed)
 
-            elif ant["state"] == "idle":
-                ant["state_timer"] -= sim_dt
-                if ant["state_timer"] <= 0:
-                    # Pick new target
-                    theta = random.uniform(0, math.pi * 2)
-                    phi = random.uniform(0.2, math.pi - 0.2)
-                    normal = Vec3(
-                        math.sin(phi) * math.cos(theta),
-                        math.cos(phi),
-                        math.sin(phi) * math.sin(theta),
-                    )
-                    ant["target"] = normal * (self.asteroid_radius * 1.02)
-                    ant["state"] = "moving"
+        # Update UI text
+        self._update_ui()
 
-        # Slowly rotate asteroid (visual effect showing rotation period)
-        if self.asteroid_entity:
-            self.asteroid_entity.rotation_y += 0.5 * sim_dt
+    def _update_ui(self):
+        """Refresh all UI text from simulation state."""
+        status = self.engine.status()
+
+        # Clock and speed
+        paused = " [PAUSED]" if status["paused"] else ""
+        self.clock_text.text = (
+            f"Mission: {status['clock']}  "
+            f"Speed: {status['speed']}x{paused}"
+        )
+
+        # Swarm status
+        lines = []
+        for caste, counts in status["ants_by_caste"].items():
+            failed_str = f" ({counts['failed']} failed)" if counts["failed"] > 0 else ""
+            lines.append(f"  {caste:12s} {counts['active']}{failed_str}")
+        self.swarm_text.text = "Swarm:\n" + "\n".join(lines)
+
+        # Production stats
+        s = status["stats"]
+        t = status["tunnel"]
+        self.stats_text.text = (
+            f"Production:\n"
+            f"  Material: {s['material_kg']:.1f} kg\n"
+            f"  Water:    {s['water_kg']:.1f} kg\n"
+            f"  Sealed:   {s['sealed_m2']:.1f} m2\n"
+            f"  Tunnel:   {t['total_length_m']:.1f} m\n"
+            f"  Failures: {s['failures']}\n"
+            f"  Anomalies:{s['anomalies']}"
+        )
+
+        # Comms delay
+        c = status["comms"]
+        pending = ""
+        if c["pending_commands"] > 0:
+            pending = f"  [{c['pending_commands']} cmd in transit]"
+        self.comms_text.text = (
+            f"Earth delay: {c['delay_minutes']:.1f} min one-way{pending}"
+        )
+
+        # Check for arrived commands in recent events
+        for event in self.engine.event_log[-5:]:
+            if event.get("type") == "command_received":
+                self.gc_status.text = (
+                    f"CMD RECEIVED: {event['command'].get('type', '?')}"
+                )
 
 
 def run_app(asteroid: str = "bennu", workers: int = 20, taskmasters: int = 1,
-            couriers: int = 1, track: str = "a"):
+            couriers: int = 1, sorters: int = 1, plasterers: int = 1,
+            tenders: int = 1, track: str = "a"):
     """Launch the Ursina application."""
     app_instance = Ursina(
         title="AstraAnt -- Asteroid Mining Simulator",
@@ -286,6 +380,9 @@ def run_app(asteroid: str = "bennu", workers: int = 20, taskmasters: int = 1,
         workers=workers,
         taskmasters=taskmasters,
         couriers=couriers,
+        sorters=sorters,
+        plasterers=plasterers,
+        tenders=tenders,
         track=track,
     )
 
@@ -293,15 +390,13 @@ def run_app(asteroid: str = "bennu", workers: int = 20, taskmasters: int = 1,
     sim.setup_ui()
 
     # Camera
-    editor_cam = EditorCamera(rotation_smoothing=4, zoom_speed=2)
+    EditorCamera(rotation_smoothing=4, zoom_speed=2)
     camera.position = Vec3(0, 15, -25)
     camera.look_at(Vec3(0, 0, 0))
 
-    # Wire up update
     def update():
         sim.update()
 
-    # Ursina needs update in module scope
     import sys
     sys.modules[__name__].update = update
 

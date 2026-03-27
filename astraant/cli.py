@@ -457,8 +457,12 @@ def simulate(workers: int, taskmasters: int, couriers: int, sorters: int,
 @click.option("--workers", "-w", default=20, help="Number of worker ants")
 @click.option("--taskmasters", "-t", default=1, help="Number of taskmasters")
 @click.option("--couriers", "-c", default=1, help="Number of couriers")
+@click.option("--sorters", default=1, help="Number of sorters")
+@click.option("--plasterers", default=1, help="Number of plasterers")
+@click.option("--tenders", default=1, help="Number of tenders")
 @click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
-def gui(asteroid: str, workers: int, taskmasters: int, couriers: int, track: str):
+def gui(asteroid: str, workers: int, taskmasters: int, couriers: int,
+        sorters: int, plasterers: int, tenders: int, track: str):
     """Launch the 3D interactive simulation."""
     try:
         from .gui import launch
@@ -467,7 +471,8 @@ def gui(asteroid: str, workers: int, taskmasters: int, couriers: int, track: str
         click.echo(f"Error: {e}")
         return
     launch(asteroid=asteroid, workers=workers, taskmasters=taskmasters,
-           couriers=couriers, track=track)
+           couriers=couriers, sorters=sorters, plasterers=plasterers,
+           tenders=tenders, track=track)
 
 
 if __name__ == "__main__":

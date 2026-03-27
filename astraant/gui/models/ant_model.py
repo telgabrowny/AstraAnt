@@ -12,12 +12,18 @@ CASTE_COLORS = {
     "worker": color.rgb(220, 160, 50),       # Orange/amber
     "taskmaster": color.rgb(60, 160, 200),    # Blue/teal
     "courier": color.rgb(160, 200, 160),      # Silver/green
+    "sorter": color.rgb(200, 100, 100),       # Rust red
+    "plasterer": color.rgb(180, 180, 130),    # Khaki/clay
+    "tender": color.rgb(140, 100, 200),       # Purple
 }
 
 CASTE_SCALES = {
     "worker": 1.0,
     "taskmaster": 1.3,
     "courier": 1.5,
+    "sorter": 1.0,
+    "plasterer": 1.0,
+    "tender": 1.0,
 }
 
 
