@@ -101,6 +101,11 @@ class CommsDelay:
     @property
     def recent_telemetry(self) -> list[Message]:
         """Last 20 telemetry messages received on Earth."""
+        # Cap delivered lists to prevent unbounded growth
+        if len(self._delivered_to_earth) > 100:
+            self._delivered_to_earth = self._delivered_to_earth[-50:]
+        if len(self._delivered_to_asteroid) > 100:
+            self._delivered_to_asteroid = self._delivered_to_asteroid[-50:]
         return self._delivered_to_earth[-20:]
 
     def update_distance(self, distance_au: float) -> None:

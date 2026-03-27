@@ -577,7 +577,7 @@ class SimEngine:
         if len(self.tunnel.segments) > 0:
             # Branch every ~50m of tunnel growth
             if self.tunnel.total_length_m > (len(self.tunnel.segments) * 5):
-                if random.random() < 0.01:  # Small chance each tick
+                if random.random() < 0.0005:  # Very rare per tick (~every 30s real time)
                     self.tunnel.branch_tunnel(self.tunnel.active_work_face_id)
 
             # If digging toward common chamber, contribute material

@@ -244,6 +244,9 @@ class AnomalyDetector:
                 )
                 self._next_id += 1
                 self.anomalies.append(event)
+                # Cap anomaly list to prevent unbounded memory growth
+                if len(self.anomalies) > 200:
+                    self.anomalies = self.anomalies[-100:]
                 return event
 
         return None
