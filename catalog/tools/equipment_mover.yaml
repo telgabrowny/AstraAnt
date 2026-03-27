@@ -1,0 +1,109 @@
+id: equipment_mover
+name: "Heavy Equipment Mover Kit"
+type: infrastructure_tool
+description: >
+  Rail + winch system for moving heavy equipment (5-300 kg) through
+  tunnels and positioning in chambers. In microgravity, mass has zero
+  weight but full inertia. A 30 kg crusher has zero weight but pushing
+  it is like pushing a 30 kg object on a frictionless surface -- once
+  moving, it KEEPS moving until you stop it.
+
+  This kit solves the inertia problem with controlled, guided movement.
+
+components:
+  guide_rail:
+    description: "T-slot aluminum rail bolted to tunnel wall"
+    length_per_section_m: 2
+    mass_per_section_kg: 1
+    mounting: "bolted to wall every 0.5m"
+    note: "Equipment slides along the rail on bearings. Rail absorbs lateral forces."
+
+  winch:
+    description: "Small electric winch with cable spool"
+    pull_force_n: 50                   # Plenty for moving any equipment in 0g
+    cable_length_m: 20
+    cable_diameter_mm: 3               # Steel cable
+    motor_power_w: 20
+    mass_kg: 2
+    speed_m_per_min: 1                 # Slow and controlled
+    note: "Attaches to far end of rail. Cable hooks to equipment. Slow pull."
+
+  cable_clamps:
+    count: 10
+    mass_each_g: 50
+    description: "Attach cable to equipment hard points"
+
+  screw_jack_positioners:
+    count: 4
+    description: "For precision final positioning after rail transport"
+    travel_mm: 100
+    mass_each_g: 200
+    force_n: 200
+    operated_by: "worker with hex_torque_driver tool head"
+
+  foam_bumpers:
+    description: "Absorb residual momentum if equipment drifts off-rail"
+    mass_kg: 0.5
+    note: "Better to bump into foam than into the bioreactor"
+
+installation_procedure:
+  tunnel_transport:
+    description: "Moving equipment through a tunnel (mothership to work location)"
+    steps:
+      - "Install guide rail sections along the tunnel wall route"
+      - "Attach winch at the destination end"
+      - "Workers remove equipment launch restraints (bolts, straps)"
+      - "Workers slide equipment onto guide rail bearings"
+      - "Attach cable clamp to equipment hard point"
+      - "Winch pulls at 1 m/min. Workers walk alongside, monitoring."
+      - "At destination: winch stops. Workers use screw jacks for final positioning."
+      - "Bolt equipment to wall/floor mounting points."
+    time_minutes_per_item: 30
+    workers_needed: 4                  # 2 to guide, 1 on winch control, 1 monitoring
+    note: "The winch does the heavy lifting. Workers just guide and align."
+
+  chamber_installation:
+    description: "Installing Phase 2 equipment in the excavated chamber"
+    steps:
+      - "Surface ant lowers cargo container through tunnel entrance"
+      - "Cargo container slides along main tunnel guide rail to chamber"
+      - "In the chamber: humanoid robot(s) unpack the container"
+      - "Humanoid attaches equipment to chamber-mounted guide rails"
+      - "Winch + humanoid positions equipment at final location"
+      - "Humanoid bolts equipment to chamber wall (any surface -- no 'floor' in 0g)"
+      - "Humanoid connects power (XT60), fluid (quick-disconnect), data (CAN bus)"
+      - "Power on. Self-test. Commissioning."
+    time_hours_per_item: 2
+    humanoids_needed: 2
+
+  multi_worker_push:
+    description: "Moving lighter items without the rail (under 10 kg)"
+    method: >
+      For items under 10 kg, a team of 4-6 workers can grip and push
+      directly using cargo_gripper mandibles. The taskmaster coordinates
+      push timing so all workers push/stop simultaneously.
+
+      Key: ALL workers must stop pushing at the SAME time or the item
+      rotates (some pushing, some not = torque). The taskmaster sends
+      a synchronized radio command: PUSH_START and PUSH_STOP.
+
+      For stopping: workers on the opposite side push back. This requires
+      workers positioned on BOTH sides of the item before movement starts.
+    max_mass_kg: 10
+    workers_needed: 6                  # 3 pushers + 3 stoppers
+    risk: "If coordination fails, item drifts. Foam bumpers catch it."
+
+physical:
+  total_mass_kg: 5                     # Rail sections + winch + accessories
+  total_length_mm: 500                 # Kit stowed
+  total_width_mm: 200
+  total_height_mm: 200
+
+cost_usd: 200                          # Rail + winch + cable + jacks + bumpers
+
+printable:
+  stl_available: false                 # Too many parts -- buy commercial
+  note: "Guide rail is commercial T-slot extrusion. Winch is off-the-shelf."
+
+added_date: "2026-03-27"
+last_updated: "2026-03-27"

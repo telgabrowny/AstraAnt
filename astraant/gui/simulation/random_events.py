@@ -162,6 +162,33 @@ MINING_EVENTS = [
         auto_resolve_time_hours=0,
     ),
     RandomEvent(
+        id="fan_failure",
+        name="Tunnel Fan Failure -- Thermal Buildup",
+        severity="moderate",
+        description=(
+            "Fan #3 in sector 5 has stopped spinning. No natural convection "
+            "in microgravity -- temperature rising 2C/minute in that section. "
+            "Sintering furnace surface temp climbing. Algae bioreactor at risk "
+            "if ambient exceeds 40C. Worker needed to swap the fan unit."
+        ),
+        effects={"sector_temp_rise_c_per_min": 2, "sector": 5},
+        player_choices=[
+            {"label": "Dispatch worker with replacement fan",
+             "effect": "fan_replaced", "cost": 0,
+             "note": "Worker swaps the fan unit from spares. 15 min fix. "
+                     "Adjacent fans increase speed to compensate until fixed."},
+            {"label": "Shut down heat sources in that sector",
+             "effect": "heat_sources_off", "cost": 0,
+             "note": "Stops the temperature rise but halts sintering/sorting in sector 5."},
+            {"label": "Ignore (hope adjacent fans compensate)",
+             "effect": "hope_for_best", "cost": 0,
+             "note": "RISKY: if ambient hits 50C, auto-shutdown triggers. "
+                     "If it hits 40C, algae culture starts dying."},
+        ],
+        auto_resolve=True,
+        auto_resolve_time_hours=0.5,
+    ),
+    RandomEvent(
         id="servo_batch_defect",
         name="Servo Batch Defect -- Accelerated Wear",
         severity="severe",

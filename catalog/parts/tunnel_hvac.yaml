@@ -1,0 +1,124 @@
+id: tunnel_hvac
+name: "Tunnel HVAC System (Fans + Ducting)"
+category: infrastructure
+description: >
+  Forced air circulation system for the pressurized tunnel network.
+  CRITICAL: In microgravity there is NO natural convection. Without fans,
+  hot spots form around equipment and NEVER dissipate. CO2 pockets
+  accumulate (relevant if crew present). Dust doesn't settle.
+
+  The fans are the ONLY mechanism for moving heat away from equipment
+  and distributing fresh atmosphere throughout the tunnel network.
+
+  Failure mode: if fans stop, bioreactor vats overheat within hours,
+  sintering furnace surface temperature rises, algae die from heat
+  buildup. This is a critical infrastructure system.
+
+specs:
+  fan_units:
+    type: axial_fan
+    count_per_100m_tunnel: 5           # One fan every 20m
+    diameter_mm: 100                   # Fits in the 400mm tunnel without blocking traffic
+    mounting: "wall-mounted in recessed alcove (doesn't protrude into walkway)"
+    flow_rate_liters_per_second: 50    # Per fan
+    pressure_pa: 20                    # Just enough to move air through tunnel
+    power_per_fan_w: 5                 # Very low power (5 kPa atmosphere is thin)
+    mass_per_fan_g: 200
+    noise_db: 30                       # Quiet (thin atmosphere = less noise)
+    mtbf_hours: 50000                  # Brushless motor, very reliable
+    redundancy: "every other fan can carry the load if one fails"
+
+  ducting:
+    type: flexible_mylar_tube
+    diameter_mm: 80
+    mass_per_meter_g: 30
+    purpose: "direct airflow to specific equipment (sintering furnace exhaust, bioreactor cooling)"
+    installation: "workers press ducting into wall paste clips"
+
+  filters:
+    type: electrostatic_precipitator
+    count_per_100m: 2
+    purpose: "remove regolith dust from circulating air"
+    power_per_filter_w: 2
+    mass_per_filter_g: 100
+    replacement_interval_days: 90
+    note: "In microgravity, dust doesn't settle. It stays airborne forever. Filters are mandatory."
+
+  temperature_monitoring:
+    sensors_per_100m: 10               # One DS18B20 every 10m
+    alerts:
+      warning_c: 40                    # Ambient above 40C = warning
+      critical_c: 50                   # Ambient above 50C = emergency shutdown of heat sources
+
+thermal_analysis:
+  at_5kpa:
+    air_density_kg_per_m3: 0.06        # Very thin (5% of Earth sea level)
+    specific_heat_j_per_kg_k: 1005     # Same as Earth air
+    thermal_capacity_note: >
+      At 5 kPa, the air mass in a 100m tunnel is only ~0.75 kg.
+      This has very low thermal capacity. A 200W heat source raises
+      the local air temperature by several degrees per minute if
+      the fans aren't running. Fans must always be running.
+  fan_effectiveness: >
+    At 50 L/s per fan, the full tunnel air volume is exchanged every
+    ~80 seconds. This is enough to keep temperature uniform within ±5C
+    even with the sintering furnace running. But a fan failure creates
+    a hot spot within minutes.
+
+  conduction_to_rock:
+    note: >
+      The rock wall is at ~20C (deep asteroid temperature). Equipment
+      mounted to the wall conducts heat through the mounting bolts.
+      For the sintering furnace (1200C internal, 80C surface):
+      ~50W conducted through 4x M8 bolts into the rock wall.
+      This is the primary passive cooling mechanism.
+    bolt_thermal_conductance_w_per_bolt: 12  # M8 steel bolt, 5mm wall thickness
+
+power_per_100m_tunnel:
+  fans: 25                             # 5 fans × 5W
+  filters: 4                           # 2 filters × 2W
+  total_w: 29
+
+mass_per_100m_tunnel:
+  fans_g: 1000                         # 5 × 200g
+  ducting_g: 3000                      # 100m × 30g/m (not every tunnel gets full ducting)
+  filters_g: 200                       # 2 × 100g
+  total_kg: 4.2
+
+sourcing:
+  suppliers:
+    - name: "Noctua (fans)"
+      url: "https://noctua.at"
+      price_usd: 15
+      date_checked: "2026-03-27"
+      note: "Noctua NF-A10 axial fans. Silent, reliable, brushless."
+  price_history:
+    - date: "2026-03-27"
+      price_usd: 15
+      source: "Noctua"
+
+environmental:
+  vacuum_compatible: false             # Standard fans, pressurized tunnel only
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "low"           # COTS electronics. OK underground.
+
+notes: |
+  CRITICAL INFRASTRUCTURE. Fans must run at all times.
+
+  In microgravity:
+  - NO natural convection (heat doesn't rise)
+  - NO dust settling (particles stay airborne forever)
+  - NO CO2 sinking (relevant if humans present)
+
+  Fans solve ALL of these by providing forced circulation.
+
+  If a fan fails: the tender ant detects the temperature rise
+  on its patrol (DS18B20 sensors every 10m). The taskmaster
+  sends a worker to replace the fan unit (swap from spare).
+
+  Fan failure is a RANDOM EVENT in the game simulation:
+  "Tunnel Fan #3 Failed -- Thermal Buildup in Sector 5"
+  Player must dispatch a worker to fix it before equipment overheats.
+
+added_date: "2026-03-27"
+last_updated: "2026-03-27"
