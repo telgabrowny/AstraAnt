@@ -427,6 +427,23 @@ def economics(workers, taskmasters, surface_ants, track, asteroid,
         click.echo(reality_check(econ))
 
 
+# -- Launch planner command -----------------------------------------------------
+
+@main.command("launch-plan")
+@click.option("--workers", "-w", default=100)
+@click.option("--local-ants", default=500, help="Electronics for building this many locally")
+@click.option("--no-phase2", is_flag=True, help="Exclude Phase 2 facilities")
+@click.option("--extra-solar-kw", default=15.0, help="Additional solar panels (kW)")
+def launch_plan(workers, local_ants, no_phase2, extra_solar_kw):
+    """Plan a single-launch manifest for full self-sustainability."""
+    from .launch_planner import plan_single_launch, format_manifest
+    manifest = plan_single_launch(
+        workers=workers, local_ant_capacity=local_ants,
+        include_phase2=not no_phase2, extra_solar_kw=extra_solar_kw,
+    )
+    click.echo(format_manifest(manifest))
+
+
 # -- Phase 2 command ------------------------------------------------------------
 
 @main.command("phase2")
