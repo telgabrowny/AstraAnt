@@ -76,10 +76,15 @@ storage_hopper:
 power:
   source: tethered
   tether_connector_mass_g: 3
-  backup_battery:
-    capacity_mah: 500
-    mass_g: 15
-    cost_usd: 3
+  backup_power:
+    type: supercapacitor               # Replaced LiPo — infinite cycle life
+    part_id: supercapacitor_backup
+    capacitance_f: 10
+    energy_wh: 0.04                    # 30 seconds of untethered operation
+    charge_time_seconds: 5
+    mass_g: 8                          # Was 15g for LiPo — 7g savings
+    cost_usd: 2.50                     # Was $3 for LiPo — $0.50 savings
+    cycle_life: 1000000                # Was 500 for LiPo — failure eliminated
 
 physical_dimensions:
   body_length_mm: 120           # Thorax + abdomen

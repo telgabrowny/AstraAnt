@@ -1,0 +1,74 @@
+id: supercapacitor_backup
+name: "Supercapacitor Module (replaces LiPo backup battery)"
+category: energy_storage
+description: >
+  Replaces the LiPo backup battery in worker ants. The ants are tethered
+  99% of the time — the "battery" is only for 30-second walks to the
+  tool dock or crossing gaps in the tether network. A supercapacitor
+  handles this perfectly with effectively infinite cycle life.
+
+specs:
+  capacitance_f: 10                  # 10 Farad
+  voltage_v: 5.5                     # Matches tether bus after buck converter
+  energy_wh: 0.04                    # Enough for ~30 seconds at full power
+  charge_time_seconds: 5             # Charges in 5 seconds from tether
+  discharge_time_seconds: 30         # ~30 sec at 1.5W average draw
+  mass_g: 8                          # Lighter than LiPo
+  cycle_life: 1000000                # Effectively infinite (1M+ cycles)
+  operating_temp_c: [-40, 65]
+  self_discharge_pct_per_day: 5      # Loses charge if sitting idle (not an issue — recharged constantly)
+
+comparison_to_lipo:
+  lipo_cycle_life: 500               # LiPo degrades after 500 cycles
+  supercap_cycle_life: 1000000       # 2000x longer
+  lipo_mass_g: 15                    # LiPo is heavier
+  supercap_mass_g: 8                 # Supercap is lighter
+  lipo_energy_wh: 1.85               # LiPo stores much more energy
+  supercap_energy_wh: 0.04           # Supercap stores very little
+  conclusion: >
+    LiPo stores 46x more energy but the ant only NEEDS 30 seconds
+    of untethered power. The supercap provides exactly enough with
+    infinite lifetime. Battery degradation is eliminated as a failure mode.
+
+environmental:
+  temp_min_c: -40
+  temp_max_c: 65
+  vacuum_compatible: true            # Solid state, no liquid electrolyte
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "moderate"    # Better than LiPo (no chemical degradation)
+  mtbf_hours_sealed: 500000          # Effectively doesn't fail
+
+sourcing:
+  suppliers:
+    - name: "Maxwell/UCAP (now part of Tesla)"
+      url: "https://www.maxwell.com"
+      part_number: "BCAP0010"
+      price_usd: 3.00
+      date_checked: "2026-03-27"
+    - name: "Eaton"
+      url: "https://www.eaton.com/supercapacitors"
+      price_usd: 2.50
+      date_checked: "2026-03-27"
+  price_history:
+    - date: "2026-03-27"
+      price_usd: 2.50
+      source: "Eaton"
+
+notes: |
+  This is the correct choice for tethered robots with short untethered needs.
+  The LiPo was the #1 failure mode (500 cycle degradation at ~104 days).
+  Switching to supercapacitor ELIMINATES this failure mode entirely.
+
+  The ant's power profile:
+  - 99% of time: tethered to 48V bus (buck converter to 5V)
+  - 1% of time: untethered walk to tool dock (~30 seconds)
+  - Supercap charges in 5 seconds from tether, lasts 30 seconds
+  - If supercap runs out mid-walk, ant just stops and waits for rescue
+    (annoying but not destructive — unlike LiPo thermal runaway)
+
+  Cost savings: $2.50 supercap vs $3 LiPo = $0.50 cheaper per ant.
+  Weight savings: 8g vs 15g = 7g lighter per ant.
+  Reliability: infinite vs 500 cycles = battery failure eliminated.
+
+added_date: "2026-03-27"
+last_updated: "2026-03-27"

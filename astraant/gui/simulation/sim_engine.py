@@ -29,6 +29,7 @@ except ImportError:
 
 from .asteroid_grid import AsteroidGrid
 from .material_ledger import MaterialLedger
+from .game_economy import GameEconomy
 
 try:
     from ...endgame import HabitatGoal
@@ -114,6 +115,7 @@ class SimEngine:
         self.manufacturing = ManufacturingState()
         self.mining = MiningPriority()
         self.ledger = MaterialLedger()   # Unified material tracking
+        self.economy = GameEconomy()     # Budget, revenue, cash flow
         self.agents: list[AntAgent] = []
         self.event_log: list[dict[str, Any]] = []
 
@@ -409,6 +411,15 @@ class SimEngine:
                     )
                     self.mining.total_revenue_usd += batch_revenue
 
+                    # Launch cargo pods (revenue enters transit delay)
+                    # Approximately 1 pod per 8 hours of mining (3/day)
+                    if random.random() < 0.003 and batch_revenue > 100:
+                        self.economy.launch_pod(
+                            batch_revenue * 100,  # Scaled up (represents accumulated value)
+                            self.clock.sim_time / 3600,
+                            transit_years=2.5,
+                        )
+
                     # Check profitability
                     if not self.mining.profitable and self.mining.total_revenue_usd > self.mining.mission_cost_usd:
                         self.mining.profitable = True
@@ -481,6 +492,15 @@ class SimEngine:
             if self._has_bioreactor:
                 self.ledger.feed_bioreactor(dt_days * self._fleet_multiplier)
                 self._regolith_buffer_kg = self.ledger.crushed_buffer_kg
+
+        # Process game economy (revenue arrivals from cargo pod transit)
+        econ_events = self.economy.tick(self.clock.sim_time / 3600)
+        for ee in econ_events:
+            events.append({
+                "type": ee.get("type", "economy"),
+                "time": self.clock.sim_time,
+                "message": ee.get("message", ""),
+            })
 
         # Feed excavation into endgame habitat goal (scaled by fleet)
         if self.habitat_goal and self.stats.total_dump_cycles > 0:
@@ -690,15 +710,26 @@ class SimEngine:
 
         elif cmd_type == "add_motherships":
             count = command.get("count", 4)
-            cost = count * 8_250_000
-            self.mothership_count += count
-            self._fleet_multiplier = self.mothership_count
-            events.append({
-                "type": "fleet_expanded",
-                "time": self.clock.sim_time,
-                "message": f"FLEET EXPANDED: +{count} motherships (total: {self.mothership_count}). "
-                           f"Excavation rate x{self._fleet_multiplier:.0f}. Cost: ${cost:,.0f}",
-            })
+            cost = 20_000_000  # Starship resupply launch cost
+            result = self.economy.send_resupply()
+            if result:
+                self.mothership_count += count
+                self._fleet_multiplier = self.mothership_count
+                events.append({
+                    "type": "fleet_expanded",
+                    "time": self.clock.sim_time,
+                    "message": f"FLEET EXPANDED: +{count} motherships (total: {self.mothership_count}). "
+                               f"x{self._fleet_multiplier:.0f} excavation. "
+                               f"Cash: ${self.economy.cash_on_hand_usd/1e6:.0f}M remaining.",
+                })
+            else:
+                events.append({
+                    "type": "insufficient_funds",
+                    "time": self.clock.sim_time,
+                    "message": f"CANNOT AFFORD resupply (${20e6/1e6:.0f}M needed, "
+                               f"${self.economy.cash_on_hand_usd/1e6:.1f}M available). "
+                               f"Wait for cargo pod revenue.",
+                })
 
         elif cmd_type == "set_endgame_target":
             radius = command.get("radius_m", 224)
@@ -837,6 +868,7 @@ class SimEngine:
                     key=lambda x: -x[1]
                 )[:3] if self.mining.revenue_by_material else [],
             },
+            "economy": self.economy.summary(),
             "ledger": self.ledger.summary(),
             "fleet": {
                 "motherships": self.mothership_count,
