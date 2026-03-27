@@ -193,39 +193,59 @@ class MaterialLedger:
         self.metal_shipped_kg += shipped
         return shipped
 
-    def recycle_dead_ant(self, ant_mass_g: float, salvage_success_rate: float = 0.3) -> dict:
-        """Process a dead ant: salvage working parts, recycle the rest.
+    def recycle_dead_ant(self, ant_mass_g: float,
+                         component_health: Any = None) -> dict:
+        """Process a dead ant: TEST each part individually, salvage what works.
+
+        If component_health is provided (from failure_model.ComponentHealth),
+        uses actual per-component degradation to determine salvage.
+        Otherwise uses statistical estimates.
 
         Returns what was recovered.
         """
-        import random
         self.dead_ants_recovered += 1
+        recovered = {"servos": 0, "mcus": 0, "sensors": 0, "batteries": 0,
+                      "radios": 0, "metal_kg": 0, "plastic_kg": 0,
+                      "test_results": []}
 
-        recovered = {"servos": 0, "mcus": 0, "metal_kg": 0, "plastic_kg": 0}
+        if component_health is not None:
+            # Per-component testing (realistic)
+            salvage = component_health.get_salvageable_parts()
+            recovered["servos"] = salvage["working_leg_servos"] + salvage["working_mandible_servos"]
+            recovered["mcus"] = 1 if salvage["mcu_ok"] else 0
+            recovered["sensors"] = 1 if salvage["sensor_ok"] else 0
+            recovered["batteries"] = 1 if salvage["battery_usable"] else 0
+            recovered["radios"] = 1 if salvage["radio_ok"] else 0
+            recovered["metal_kg"] = salvage["recyclable_metal_g"] / 1000
+            recovered["plastic_kg"] = salvage["chassis_plastic_g"] / 1000
 
-        # 30% chance each servo still works (6 leg + 2 mandible = 8)
-        for _ in range(8):
-            if random.random() < salvage_success_rate:
-                recovered["servos"] += 1
-                self.salvaged_servos += 1
+            # Generate test report
+            recovered["test_results"] = [
+                f"Leg servos: {salvage['working_leg_servos']}/6 passed movement test",
+                f"Mandible servos: {salvage['working_mandible_servos']}/2 passed",
+                f"MCU: {'PASS (heartbeat OK)' if salvage['mcu_ok'] else 'FAIL (no response)'}",
+                f"Radio: {'PASS (handshake OK)' if salvage['radio_ok'] else 'FAIL'}",
+                f"Sensor: {'PASS (reading valid)' if salvage['sensor_ok'] else 'FAIL (no reading)'}",
+                f"Battery: {'PASS (holds charge)' if salvage['battery_usable'] else 'FAIL (depleted)'}",
+            ]
+        else:
+            # Statistical fallback (old behavior)
+            import random
+            for _ in range(8):
+                if random.random() < 0.7:  # 70% of servos typically fine
+                    recovered["servos"] += 1
+            recovered["mcus"] = 1 if random.random() < 0.9 else 0
+            recovered["sensors"] = 1 if random.random() < 0.8 else 0
+            recovered["radios"] = 1 if random.random() < 0.95 else 0
+            recovered["batteries"] = 1 if random.random() < 0.3 else 0  # Often the thing that failed
+            recovered["metal_kg"] = ant_mass_g * 0.4 / 1000
+            recovered["plastic_kg"] = ant_mass_g * 0.3 / 1000
 
-        # 50% chance MCU still works
-        if random.random() < 0.5:
-            recovered["mcus"] += 1
-            self.salvaged_mcus += 1
-
-        # Chassis metal goes to furnace
-        metal_fraction = 0.4  # ~40% of ant mass is metal (servos, screws, etc)
-        plastic_fraction = 0.3  # ~30% is PETG/PHB
-        metal_kg = ant_mass_g * metal_fraction / 1000
-        plastic_kg = ant_mass_g * plastic_fraction / 1000
-
-        self.recycled_metal_kg += metal_kg
-        self.iron_stockpile_kg += metal_kg  # Goes back into the iron pool
-        self.recycled_plastic_kg += plastic_kg
-
-        recovered["metal_kg"] = metal_kg
-        recovered["plastic_kg"] = plastic_kg
+        self.salvaged_servos += recovered["servos"]
+        self.salvaged_mcus += recovered["mcus"]
+        self.recycled_metal_kg += recovered["metal_kg"]
+        self.iron_stockpile_kg += recovered["metal_kg"]
+        self.recycled_plastic_kg += recovered["plastic_kg"]
 
         return recovered
 
