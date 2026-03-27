@@ -77,6 +77,12 @@ class AstraAntApp:
         self._space_cooldown = 0.0
         self._c_cooldown = 0.0
 
+        # Camera modes: "orbit", "taskmaster", "mothership", "follow_ant"
+        self.camera_mode = "orbit"
+        self.followed_agent_id: int | None = None
+        self._tab_cooldown = 0.0
+        self._m_cooldown = 0.0
+
     def setup_scene(self):
         """Create the 3D scene."""
         # Asteroid shape
@@ -225,7 +231,13 @@ class AstraAntApp:
         self._setup_ground_control()
 
         # Controls help
-        Text(text="[Mouse] Orbit  [Scroll] Zoom  [1-5] Speed  [Space] Pause  [C] Cutaway",
+        # Camera mode indicator
+        self.camera_mode_text = Text(
+            text="View: ORBIT", position=Vec2(-0.3, 0.48), scale=1.0,
+            color=color.rgb(200, 200, 255),
+        )
+
+        Text(text="[1-5] Speed  [Space] Pause  [C] Cutaway  [Tab] Taskmaster  [M] Mothership  [Esc] Orbit",
              position=Vec2(-0.85, -0.47), scale=0.7, color=color.gray)
 
     def _setup_ground_control(self):
@@ -292,6 +304,18 @@ class AstraAntApp:
         if held_keys["space"] and self._space_cooldown <= 0:
             self.engine.clock.toggle_pause()
             self._space_cooldown = 0.3
+
+        # Camera mode switching
+        self._tab_cooldown -= dt
+        self._m_cooldown -= dt
+        if held_keys["tab"] and self._tab_cooldown <= 0:
+            self._switch_to_taskmaster_view()
+            self._tab_cooldown = 0.5
+        if held_keys["m"] and self._m_cooldown <= 0:
+            self._switch_to_mothership_view()
+            self._m_cooldown = 0.5
+        if held_keys["escape"]:
+            self._switch_to_orbit_view()
 
         # Cutaway toggle
         self._c_cooldown -= dt
@@ -370,11 +394,78 @@ class AstraAntApp:
 
         # Update tunnel visual length from sim state
         if self.tunnel_visual and self.cutaway_mode:
-            tunnel_len = max(1.0, self.engine.tunnel.total_length_m / 10.0)  # Scale factor
+            tunnel_len = max(1.0, self.engine.tunnel.total_length_m / 10.0)
             self.tunnel_visual.scale_y = tunnel_len / 2
+
+        # Camera follow mode
+        if self.camera_mode in ("taskmaster", "follow_ant") and self.followed_agent_id is not None:
+            entity = self.ant_entities.get(self.followed_agent_id)
+            if entity:
+                # Position camera behind and above the followed ant
+                offset = Vec3(-2, 2, -2) if self.camera_mode == "taskmaster" else Vec3(-1, 1, -1)
+                camera.position = entity.position + offset
+                camera.look_at(entity.position)
+
+        # Update camera mode indicator
+        mode_labels = {
+            "orbit": "ORBIT (free camera)",
+            "taskmaster": "TASKMASTER VIEW",
+            "mothership": "MOTHERSHIP OVERVIEW",
+            "follow_ant": "FOLLOWING ANT",
+        }
+        agent_info = ""
+        if self.followed_agent_id is not None:
+            for a in self.engine.agents:
+                if a.id == self.followed_agent_id:
+                    agent_info = f" -- {a.caste} #{a.id}"
+                    break
+        self.camera_mode_text.text = f"View: {mode_labels.get(self.camera_mode, '?')}{agent_info}"
 
         # Update UI text
         self._update_ui()
+
+    def _switch_to_taskmaster_view(self):
+        """Hop into a taskmaster's viewpoint. Tab cycles through taskmasters."""
+        taskmasters = [a for a in self.engine.agents if a.caste == "taskmaster" and a.state != AntState.FAILED]
+        if not taskmasters:
+            return
+
+        # Cycle to next taskmaster
+        current_idx = -1
+        if self.followed_agent_id is not None:
+            for i, tm in enumerate(taskmasters):
+                if tm.id == self.followed_agent_id:
+                    current_idx = i
+                    break
+        next_idx = (current_idx + 1) % len(taskmasters)
+        self.followed_agent_id = taskmasters[next_idx].id
+        self.camera_mode = "taskmaster"
+
+        # Highlight this taskmaster's workers (all workers are in its "squad")
+        # For now, highlight all workers since we don't track squad assignment yet
+        for agent in self.engine.agents:
+            indicator = self.state_indicators.get(agent.id)
+            if indicator:
+                indicator.scale = 0.12 if agent.caste in ("worker", "sorter", "plasterer", "tender") else 0.08
+
+    def _switch_to_mothership_view(self):
+        """High-level overview from above the mothership."""
+        self.camera_mode = "mothership"
+        self.followed_agent_id = None
+        camera.position = Vec3(0, self.asteroid_radius * 2.5, -self.asteroid_radius * 0.5)
+        camera.look_at(Vec3(0, 0, 0))
+        # Reset indicator sizes
+        for indicator in self.state_indicators.values():
+            indicator.scale = 0.08
+
+    def _switch_to_orbit_view(self):
+        """Return to free orbit camera."""
+        self.camera_mode = "orbit"
+        self.followed_agent_id = None
+        camera.position = Vec3(0, 15, -25)
+        camera.look_at(Vec3(0, 0, 0))
+        for indicator in self.state_indicators.values():
+            indicator.scale = 0.08
 
     def _update_ui(self):
         """Refresh all UI text from simulation state."""
