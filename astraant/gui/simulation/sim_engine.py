@@ -29,6 +29,21 @@ except ImportError:
 
 
 @dataclass
+class MiningPriority:
+    """Player-set mining priority — what materials to focus on."""
+    target_metal: str = ""           # "" = no priority (mine everything)
+    preferred_zone: str = ""         # Zone type to dig toward
+    discovered_zones: list = field(default_factory=list)  # Zones found by taskmasters
+
+    # Revenue tracking for gamification
+    total_revenue_usd: float = 0.0
+    revenue_by_material: dict = field(default_factory=dict)
+    profitable: bool = False         # Have we broken even yet?
+    time_to_profit_hours: float = 0.0
+    mission_cost_usd: float = 3_000_000.0  # From feasibility model
+
+
+@dataclass
 class ManufacturingState:
     """State of the in-situ manufacturing bay."""
     enabled: bool = False
@@ -89,6 +104,7 @@ class SimEngine:
         self.comms = CommsDelay(asteroid_distance_au)
         self.stats = SimStats()
         self.manufacturing = ManufacturingState()
+        self.mining = MiningPriority()
         self.agents: list[AntAgent] = []
         self.event_log: list[dict[str, Any]] = []
 
@@ -249,14 +265,79 @@ class SimEngine:
                 kg = agent_events["material_dumped_g"] / 1000.0
                 self.stats.total_material_extracted_kg += kg
                 self.stats.total_dump_cycles += 1
+
                 # Sample composition variability for this batch
                 if self._comp_zones and sample_regolith and self._bulk_metals:
+                    # If mining priority targets a specific zone, bias toward it
+                    zones = self._comp_zones
                     sample = sample_regolith(
                         self._bulk_metals, self._bulk_water_pct,
-                        kg, self._comp_zones,
+                        kg, zones,
                         depth_m=self.tunnel.total_length_m,
                     )
                     self._zone_hits[sample.zone] = self._zone_hits.get(sample.zone, 0) + 1
+
+                    # Assign zone to current tunnel segment
+                    active_seg = None
+                    for seg in self.tunnel.segments:
+                        if seg.id == self.tunnel.active_work_face_id:
+                            active_seg = seg
+                            break
+                    if active_seg and not active_seg.zone_type:
+                        active_seg.zone_type = sample.zone
+
+                    # Taskmaster "discovers" valuable zones
+                    if sample.zone in ("sulfide_pocket", "metal_grain"):
+                        if sample.zone not in [d["zone"] for d in self.mining.discovered_zones]:
+                            self.mining.discovered_zones.append({
+                                "zone": sample.zone,
+                                "segment_id": self.tunnel.active_work_face_id,
+                                "depth_m": self.tunnel.total_length_m,
+                                "time": self.clock.sim_time,
+                            })
+                            events.append({
+                                "type": "zone_discovered",
+                                "time": self.clock.sim_time,
+                                "message": f"ZONE FOUND: {sample.zone} at {self.tunnel.total_length_m:.0f}m depth!",
+                                "zone": sample.zone,
+                            })
+
+                    # Track revenue from this batch at lunar orbit prices
+                    # (simplified: use the sample's metal content)
+                    lunar_prices = {
+                        "iron": 2000, "nickel": 5000, "copper": 8000,
+                        "cobalt": 12000, "platinum": 35000, "palladium": 45000,
+                        "iridium": 55000, "rare_earths_total": 25000,
+                    }
+                    batch_revenue = 0.0
+                    for metal, ppm in sample.metals_ppm.items():
+                        metal_kg = kg * ppm / 1_000_000 * 0.85  # extraction efficiency
+                        price = lunar_prices.get(metal, 1000)
+                        rev = metal_kg * price
+                        batch_revenue += rev
+                        self.mining.revenue_by_material[metal] = (
+                            self.mining.revenue_by_material.get(metal, 0) + rev
+                        )
+                    # Water revenue
+                    water_kg = kg * sample.water_pct / 100 * 0.90
+                    water_rev = water_kg * 50000  # $50K/kg at lunar orbit
+                    batch_revenue += water_rev
+                    self.mining.revenue_by_material["water"] = (
+                        self.mining.revenue_by_material.get("water", 0) + water_rev
+                    )
+                    self.mining.total_revenue_usd += batch_revenue
+
+                    # Check profitability
+                    if not self.mining.profitable and self.mining.total_revenue_usd > self.mining.mission_cost_usd:
+                        self.mining.profitable = True
+                        self.mining.time_to_profit_hours = self.clock.sim_time / 3600
+                        events.append({
+                            "type": "profitable",
+                            "time": self.clock.sim_time,
+                            "message": f"PROFITABLE! Revenue ${self.mining.total_revenue_usd:,.0f} exceeds "
+                                       f"cost ${self.mining.mission_cost_usd:,.0f} at "
+                                       f"{self.clock.format_elapsed()}",
+                        })
 
             if "water_recovered_g" in agent_events:
                 kg = agent_events["water_recovered_g"] / 1000.0
@@ -454,6 +535,15 @@ class SimEngine:
             self.manufacturing.enabled = True
             self.manufacturing.pods_queued += count
 
+        elif cmd_type == "prioritize":
+            metal = command.get("metal", "")
+            self.mining.target_metal = metal
+            events.append({
+                "type": "priority_set",
+                "time": self.clock.sim_time,
+                "message": f"MINING PRIORITY: {metal if metal else 'none (balanced)'}",
+            })
+
         elif cmd_type == "emergency_stop":
             # Stop all workers
             for agent in self.agents:
@@ -502,6 +592,17 @@ class SimEngine:
                 "delay_minutes": round(self.comms.one_way_delay_minutes, 1),
                 "pending_commands": len(self.comms.pending_outbound()),
                 "pending_telemetry": len(self.comms.pending_inbound()),
+            },
+            "mining": {
+                "priority": self.mining.target_metal or "balanced",
+                "revenue_usd": round(self.mining.total_revenue_usd, 0),
+                "profitable": self.mining.profitable,
+                "time_to_profit": self.mining.time_to_profit_hours,
+                "zones_discovered": len(self.mining.discovered_zones),
+                "top_revenue": sorted(
+                    self.mining.revenue_by_material.items(),
+                    key=lambda x: -x[1]
+                )[:3] if self.mining.revenue_by_material else [],
             },
             "manufacturing": {
                 "enabled": self.manufacturing.enabled,

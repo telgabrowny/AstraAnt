@@ -17,6 +17,9 @@ class TunnelSegment:
     pressure_kpa: float = 0.0
     material_extracted_kg: float = 0.0
     depth_from_surface_m: float = 0.0
+    # Composition zone — persists while mining in this segment
+    zone_type: str = ""             # e.g. "sulfide_pocket", "metal_grain"
+    zone_richness: float = 1.0     # Multiplier vs bulk average for this zone
 
     @property
     def volume_m3(self) -> float:

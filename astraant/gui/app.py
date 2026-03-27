@@ -199,6 +199,16 @@ class AstraAntApp:
             color=color.light_gray,
         )
 
+        # Revenue counter (the big gamification number)
+        self.revenue_text = Text(
+            text="Revenue: $0", position=Vec2(-0.85, 0.35), scale=1.0,
+            color=color.rgb(50, 255, 50),
+        )
+        self.profit_text = Text(
+            text="", position=Vec2(-0.85, 0.31), scale=0.8,
+            color=color.rgb(200, 200, 50),
+        )
+
         # Bottom left: mission clock and speed
         self.clock_text = Text(
             text="", position=Vec2(-0.85, -0.40), scale=1.0,
@@ -227,9 +237,11 @@ class AstraAntApp:
         )
 
         commands = [
+            ("Prioritize Water", {"type": "prioritize", "metal": "water"}),
+            ("Prioritize Copper", {"type": "prioritize", "metal": "copper"}),
+            ("Prioritize PGMs", {"type": "prioritize", "metal": "platinum"}),
+            ("Balanced Mining", {"type": "prioritize", "metal": ""}),
             ("Build 10 Ants", {"type": "build_ants", "count": 10}),
-            ("Build 50 Pods", {"type": "build_pods", "count": 50}),
-            ("Retarget Mining", {"type": "retarget", "area": "sector_b"}),
             ("Emergency Stop", {"type": "emergency_stop"}),
         ]
 
@@ -409,6 +421,26 @@ class AstraAntApp:
             f"{mfg_line}"
         )
 
+        # Revenue and profit (gamification)
+        mi = status.get("mining", {})
+        rev = mi.get("revenue_usd", 0)
+        if rev >= 1_000_000:
+            self.revenue_text.text = f"Revenue: ${rev/1_000_000:.2f}M"
+        elif rev >= 1_000:
+            self.revenue_text.text = f"Revenue: ${rev/1_000:.0f}K"
+        else:
+            self.revenue_text.text = f"Revenue: ${rev:.0f}"
+
+        if mi.get("profitable"):
+            hrs = mi.get("time_to_profit", 0)
+            days = hrs / 24
+            self.profit_text.text = f"PROFITABLE at day {days:.0f}!"
+            self.profit_text.color = color.rgb(50, 255, 50)
+        else:
+            cost = 3_000_000
+            pct = min(100, rev / cost * 100) if cost > 0 else 0
+            self.profit_text.text = f"Break-even: {pct:.1f}%  Priority: {mi.get('priority', 'balanced')}"
+
         # Comms delay
         c = status["comms"]
         pending = ""
@@ -418,12 +450,21 @@ class AstraAntApp:
             f"Earth delay: {c['delay_minutes']:.1f} min one-way{pending}"
         )
 
-        # Check for arrived commands in recent events
-        for event in self.engine.event_log[-5:]:
-            if event.get("type") == "command_received":
-                self.gc_status.text = (
-                    f"CMD RECEIVED: {event['command'].get('type', '?')}"
-                )
+        # Show important events in ground control status
+        for event in self.engine.event_log[-10:]:
+            etype = event.get("type", "")
+            if etype == "command_received":
+                self.gc_status.text = f"CMD RECEIVED: {event['command'].get('type', '?')}"
+            elif etype == "zone_discovered":
+                self.gc_status.text = event["message"]
+                self.gc_status.color = color.rgb(255, 200, 50)
+            elif etype == "profitable":
+                self.gc_status.text = "*** MISSION PROFITABLE ***"
+                self.gc_status.color = color.rgb(50, 255, 50)
+            elif etype == "ant_built":
+                self.gc_status.text = event["message"]
+            elif etype == "priority_set":
+                self.gc_status.text = event["message"]
 
 
 def run_app(asteroid: str = "bennu", workers: int = 20, taskmasters: int = 1,
