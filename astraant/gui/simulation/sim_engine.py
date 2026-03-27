@@ -375,6 +375,19 @@ class SimEngine:
                     "time": self.clock.sim_time,
                 })
 
+        # Auto-branch tunnels periodically and contribute to chamber
+        if len(self.tunnel.segments) > 0:
+            # Branch every ~50m of tunnel growth
+            if self.tunnel.total_length_m > (len(self.tunnel.segments) * 5):
+                if random.random() < 0.01:  # Small chance each tick
+                    self.tunnel.branch_tunnel(self.tunnel.active_work_face_id)
+
+            # If digging toward common chamber, contribute material
+            if self.tunnel.common_chamber and self.tunnel.deepest_point_m > 25:
+                # Once deep enough, material goes toward chamber excavation
+                chamber_contribution = sim_dt * 0.001  # Slow chamber growth
+                self.tunnel.contribute_to_chamber(chamber_contribution)
+
         # Feed extracted material into manufacturing stockpile
         # A fraction of mined material becomes iron/copper powder after bioleaching
         mfg = self.manufacturing
@@ -553,6 +566,42 @@ class SimEngine:
         elif cmd_type == "retarget":
             # Just log it — actual retargeting would change tunnel segment assignments
             pass
+
+        elif cmd_type == "dig_toward":
+            # Player directs dig toward specific coordinates
+            from .tunnel_state import Vec3 as TV3
+            x = command.get("x", 0)
+            y = command.get("y", -50)
+            z = command.get("z", 0)
+            self.tunnel.set_dig_target(TV3(x, y, z))
+            events.append({
+                "type": "dig_redirect",
+                "time": self.clock.sim_time,
+                "message": f"DIG TARGET SET: ({x}, {y}, {z})",
+            })
+
+        elif cmd_type == "branch_tunnel":
+            self.tunnel.branch_tunnel(self.tunnel.active_work_face_id)
+            events.append({
+                "type": "branch",
+                "time": self.clock.sim_time,
+                "message": f"New tunnel branch started from segment {self.tunnel.active_work_face_id}",
+            })
+
+        elif cmd_type == "set_chamber_goal":
+            from .tunnel_state import Vec3 as TV3, CommonChamber
+            radius = command.get("radius_m", 8)
+            purpose = command.get("purpose", "common operations hub")
+            self.tunnel.common_chamber = CommonChamber(
+                center=TV3(0, -30, 0),  # Deep inside asteroid
+                target_radius_m=radius,
+                purpose=purpose,
+            )
+            events.append({
+                "type": "chamber_goal",
+                "time": self.clock.sim_time,
+                "message": f"CHAMBER GOAL: {radius}m radius sphere at 30m depth -- {purpose}",
+            })
 
     def send_player_command(self, command: dict[str, Any]) -> None:
         """Player (Earth ground control) sends a command."""

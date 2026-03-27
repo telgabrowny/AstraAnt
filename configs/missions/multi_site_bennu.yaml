@@ -1,0 +1,100 @@
+# Multi-Site Mission Configuration: 16 Motherships on Bennu
+# All sites dig toward a common central chamber at 30m depth.
+# After mining phase, the chamber becomes a pressurized habitat.
+
+mission: multi_site_bennu
+name: "Bennu Colony -- 16-Site Operation"
+asteroid: bennu
+
+sites:
+  count: 16
+  distribution: "equatorial_ring"   # Spaced around Bennu's equator
+  spacing_degrees: 22.5             # 360/16 = 22.5 degrees apart
+  per_site:
+    workers: 100
+    taskmasters: 5
+    surface_ants: 3
+    track: b
+  total_ants: 1728                  # 16 × 108 ants per site
+
+common_chamber:
+  location: "center_of_asteroid"
+  depth_m: 30                       # Below equatorial surface
+  target_radius_m: 8.5              # ~2,572 m3 (16 sites × ~161 m3 each)
+  target_volume_m3: 2572
+  purpose: >
+    Shared pressurized habitat and operations hub.
+    All 16 tunnel networks connect here, creating an internal
+    transportation network. After mining phase, the chamber
+    can house equipment, serve as a staging area for expansion,
+    or become the core of a permanent asteroid station.
+  post_mining_uses:
+    - "Central operations hub (all tunnels connect here)"
+    - "Equipment storage and manufacturing center"
+    - "Habitat module (pressurized, radiation-shielded)"
+    - "Bioreactor farm (centralized, shared between sites)"
+    - "Cargo staging (pods assembled and stored here)"
+    - "Communication hub (all backbone networks merge)"
+    - "Future: spin-gravity habitat (rotate the chamber)"
+
+phases:
+  phase_1:
+    name: "Initial Mining (Years 1-2)"
+    description: >
+      Each site mines independently, digging inward from its surface position.
+      Taskmasters explore composition, find valuable zones.
+      Revenue accumulates from water and metals.
+    dig_strategy: "radial_inward"
+    target: "profitability per site"
+
+  phase_2:
+    name: "Convergence (Years 2-4)"
+    description: >
+      Sites dig toward the common center point.
+      When two tunnels meet, they connect.
+      Internal transportation network begins forming.
+    dig_strategy: "converge_on_center"
+    target: "all 16 sites connected"
+
+  phase_3:
+    name: "Chamber Excavation (Years 4-5)"
+    description: >
+      All sites contribute workers to excavating the common chamber.
+      Material flows outward through tunnel network for processing.
+      Chamber walls sealed and pressurized.
+    dig_strategy: "excavate_chamber"
+    target: "8.5m radius pressurized chamber"
+
+  phase_4:
+    name: "Habitat Conversion (Year 5+)"
+    description: >
+      Chamber equipped for permanent habitation or expanded operations.
+      Mining continues in radial tunnels.
+      Self-sustaining colony with centralized infrastructure.
+    purpose: "permanent_station"
+
+economics:
+  total_mission_cost_usd: 48000000  # 16 × $3M per site
+  expected_revenue_5yr_usd: 11200000000  # 16 × $709M per site
+  expected_roi_pct: 23000
+  notes:
+    - "Each site is independently profitable at ~Day 100"
+    - "16 sites share nothing initially -- independent operations"
+    - "Common chamber is a bonus output, not required for profitability"
+    - "The chamber is infrastructure for future missions"
+
+scaling_notes: |
+  16 sites on a 492m diameter asteroid:
+  - Each site processes ~177 tonnes over 5 years
+  - Total: 2,832 tonnes of regolith
+  - Excavated volume: ~2,380 m3 (0.004% of Bennu)
+  - Common chamber: 2,572 m3 (8.5m radius sphere)
+  - Total tunnel network: ~19 km across all sites
+
+  Bennu barely notices. The entire mining operation and the
+  common chamber together remove less than 0.01% of the asteroid.
+
+  The chamber at 30m depth is surrounded by 30m of regolith
+  on all sides -- excellent radiation shielding (~99% GCR reduction).
+  Pressurized to 10 kPa, it could comfortably house equipment
+  or serve as a shirt-sleeve environment for future human visitors.

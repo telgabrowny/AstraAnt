@@ -58,7 +58,8 @@ def test_tunnel_network():
 
 def test_tunnel_sealing():
     tunnel = TunnelNetwork()
-    seg = tunnel.add_segment(length_m=2.0)
+    # Branch creates a new segment
+    seg = tunnel.branch_tunnel(tunnel.active_work_face_id)
     tunnel.seal_segment(seg.id, quality=0.5)
     assert seg.sealed is True
     assert seg.seal_quality == 0.5

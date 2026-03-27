@@ -252,7 +252,9 @@ class AstraAntApp:
             ("Prioritize Water", {"type": "prioritize", "metal": "water"}),
             ("Prioritize Copper", {"type": "prioritize", "metal": "copper"}),
             ("Prioritize PGMs", {"type": "prioritize", "metal": "platinum"}),
-            ("Balanced Mining", {"type": "prioritize", "metal": ""}),
+            ("Branch Tunnel", {"type": "branch_tunnel"}),
+            ("Dig Deep (-50m)", {"type": "dig_toward", "x": 0, "y": -50, "z": 0}),
+            ("Start Chamber", {"type": "set_chamber_goal", "radius_m": 8, "purpose": "ops hub"}),
             ("Build 10 Ants", {"type": "build_ants", "count": 10}),
             ("Emergency Stop", {"type": "emergency_stop"}),
         ]
@@ -497,19 +499,24 @@ class AstraAntApp:
         if m.get("enabled"):
             mfg_line = (f"\n\nManufacturing:\n"
                         f"  Iron: {m['iron_stockpile_kg']:.1f}kg\n"
-                        f"  Queue: {m['ants_queued']}  Build: {m['ants_in_progress']}\n"
-                        f"  Built: {m['ants_completed']} ants\n"
-                        f"  Pods:  {m['pods_completed']}")
+                        f"  Built: {m['ants_completed']} ants")
+
+        chamber_line = ""
+        ch = t.get("common_chamber")
+        if ch:
+            chamber_line = (f"\n\nChamber Goal:\n"
+                            f"  {ch['completion_pct']:.1f}% complete\n"
+                            f"  {ch['current_radius_m']:.1f}m / {ch['target_radius_m']}m")
 
         self.stats_text.text = (
+            f"Tunnels:\n"
+            f"  Length: {t['total_length_m']:.0f}m  Depth: {t.get('deepest_point_m', 0):.0f}m\n"
+            f"  Segs: {t['segments']}  Branches: {t.get('branches', 0)}\n"
             f"Production:\n"
             f"  Material: {s['material_kg']:.1f} kg\n"
-            f"  Water:    {s['water_kg']:.1f} kg\n"
-            f"  Sealed:   {s['sealed_m2']:.1f} m2\n"
-            f"  Tunnel:   {t['total_length_m']:.1f} m{bio_line}\n"
-            f"  Failures: {s['failures']}\n"
-            f"  Ants:     {status['total_ants']}"
-            f"{mfg_line}"
+            f"  Water:    {s['water_kg']:.1f} kg{bio_line}\n"
+            f"  Ants:     {status['total_ants']}  Failed: {s['failures']}"
+            f"{mfg_line}{chamber_line}"
         )
 
         # Revenue and profit (gamification)
