@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import click
+import yaml
 
 from .catalog import Catalog
 from .configs import (
@@ -105,6 +106,30 @@ def catalog_species():
         click.echo(f"{s.id:<40s} {stype:<10s} {', '.join(targets)}")
 
 
+@catalog.command("tools")
+def catalog_tools():
+    """List tool heads in the catalog."""
+    from pathlib import Path
+    import yaml
+    tools_dir = Path(__file__).parent.parent / "catalog" / "tools"
+    if not tools_dir.exists():
+        click.echo("No tools catalog found.")
+        return
+    click.echo(f"{'ID':<20s} {'Type':<18s} {'Mass(g)':<10s} {'Cost($)':<10s} {'Electrical'}")
+    click.echo("-" * 75)
+    for f in sorted(tools_dir.glob("*.yaml")):
+        with open(f) as fh:
+            t = yaml.safe_load(fh)
+        tid = t.get("id", "?")
+        ttype = t.get("type", "?")
+        mass = t.get("physical", {}).get("total_mass_g", "?")
+        cost = t.get("cost_usd", "?")
+        elec = t.get("electrical", {}).get("connector", "passive")
+        if elec == "none" or elec is None:
+            elec = "passive"
+        click.echo(f"{tid:<20s} {ttype:<18s} {str(mass):<10s} ${str(cost):<9s} {elec}")
+
+
 @catalog.command("stale")
 @click.option("--days", default=90, help="Stale threshold in days")
 def catalog_stale(days: int):
@@ -131,7 +156,7 @@ def ant():
 @ant.command("info")
 @click.argument("caste")
 def ant_info(caste: str):
-    """Show detailed info for an ant caste (worker, taskmaster, courier)."""
+    """Show detailed info for an ant caste (worker, taskmaster, surface)."""
     configs = load_all_ant_configs()
     if caste not in configs:
         click.echo(f"Unknown caste '{caste}'. Available: {', '.join(configs.keys())}")

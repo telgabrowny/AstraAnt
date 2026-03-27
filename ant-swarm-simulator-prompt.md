@@ -29,7 +29,7 @@ Sealing methods are configurable in the component catalog:
 - **Regolith sintering** — Microwave or solar concentrator fuses tunnel walls into ceramic shell (no Earth consumables)
 - **Polymer spray** — Epoxy/silicone coating brought from Earth (known mass, reliable)
 - **Regolith + ice paste** — For C-type asteroids with water ice content (mixed binder)
-- **Bioreactor waste slurry** — Depleted rock fines + water + CaO traces applied by plasterer ants (Track B/C only, zero consumable cost, 75% seal effectiveness; best as bulk filler under polymer spray topcoat)
+- **Bioreactor waste slurry** — Depleted rock fines + water + CaO traces applied by workers with paste_nozzle tool head (Track B/C only, zero consumable cost, 75% seal effectiveness; best as bulk filler under polymer spray topcoat)
 
 The mothership serves as the tunnel entrance end cap with an inflatable gasket seal.
 
@@ -189,7 +189,7 @@ ant_config:
 ```
 
 ### Surface Ant — Vacuum-Rated Exterior Specialist
-Same body plan as tunnel castes, but ALL components are vacuum-rated. Handles exterior maintenance, cargo staging at tunnel entrance, return vehicle loading, and end-of-life return vehicle guidance. Solar powered — no tether. Replaces the old "courier" caste.
+Same body plan as tunnel castes, but ALL components are vacuum-rated: aluminum chassis, Maxon brushless actuators, solar powered. Handles exterior maintenance, cargo staging at tunnel entrance, return vehicle loading, and end-of-life return vehicle guidance. No tether.
 
 ```yaml
 ant_config:
@@ -795,7 +795,7 @@ sugar_production_module:
     kiln_mass_kg: 8
     feedstock: "asteroid_carbonates"    # CaCO3 -> CaO + CO2
     co2_yield_kg_per_kg_rock: 0.44     # Stoichiometric
-    byproduct: "calcium_oxide"         # CaO -> used by plasterer ants as cement
+    byproduct: "calcium_oxide"         # CaO -> used by workers (plasterer role) as cement
 
   chemosynthetic_backup:
     organism: "cupriavidus_necator"
@@ -813,46 +813,58 @@ sugar_production_module:
     consumables_saved_kg_per_year: 25  # Previously imported from Earth
 ```
 
-**Integration with bioreactor system:** Sugar output feeds directly into the Aspergillus niger REE vat (Vat 2), which requires 10g/L sucrose per cycle. At 100-160g/day production, the photobioreactor can sustain continuous REE bioleaching without Earth resupply. The CaO byproduct from carbonate pyrolysis feeds the plasterer ant waste slurry sealant system.
+**Integration with bioreactor system:** Sugar output feeds directly into the Aspergillus niger REE vat (Vat 2), which requires 10g/L sucrose per cycle. At 100-160g/day production, the photobioreactor can sustain continuous REE bioleaching without Earth resupply. The CaO byproduct from carbonate pyrolysis feeds the worker (plasterer role) waste slurry sealant system.
 
 ### Layer 4: Ant Control Code
-- Written in **MicroPython** targeting the specified microcontroller (RP2040 for workers, ESP32-S3 for taskmasters/couriers)
+- Written in **MicroPython** targeting the specified microcontroller (RP2040 for workers, ESP32-S3 for taskmasters/surface ants)
 - Runs natively within the Python simulation framework
-- Core behaviors implemented as state machines:
+- Core behaviors implemented as state machines
+- **Dynamic role assignment**: Taskmasters assign roles to workers by directing them to swap tool heads at docking stations. A worker's active role is determined by its currently equipped tool head, not its caste.
 
-#### Worker Ant Behaviors (all tracks)
+#### Worker Ant Behaviors — Base (all roles)
 - **Idle**: Wait for taskmaster command
 - **Move**: Follow directed path along tunnel
-- **Dig**: Excavate regolith from tunnel face (Track A: rotary scraper, Track B: scoop, Track C: rotary scraper)
+- **Swap Tool**: Dock at magnetic station, release current head, pick up assigned head (~5 sec)
 - **Load**: Fill hopper with excavated/collected material
 - **Haul**: Transport loaded hopper to designated dump point
 - **Dump**: Deposit material (Track A: collection bin, Track B/C: bioreactor intake sorted by spectral class)
-- **Return**: Move back to work face for next cycle
+- **Return**: Move back to work face or docking station for next cycle
 - **Emergency Stop**: Immediate halt on taskmaster command or fault detection
+
+#### Worker Ant Behaviors — Role-Specific (determined by equipped tool head)
+- **Dig** (drill_head): Excavate regolith from tunnel face using rotary scraper
+- **Scoop** (scoop_head): Collect and transport loose regolith
+- **Plaster** (paste_nozzle): Apply bioreactor waste slurry to tunnel walls via mandible squeeze
+- **Sort** (thermal_rake): Load/unload thermal sorting drum, handle hot material with ceramic tines
+- **Tend** (sampling_probe): Monitor bioreactor pH/turbidity, trigger alerts on excursions, adjust valves
+- **Grip** (cargo_gripper): Handle cargo pods and packaged material at staging areas
 
 #### Taskmaster Ant Behaviors
 - **Survey**: Map tunnel geometry using IMU + lidar + visual odometry
 - **Classify**: Use spectral sensor to identify regolith composition at work face
-- **Assign**: Allocate workers to dig/haul/idle based on extraction priorities
+- **Assign Role**: Direct workers to swap tool heads based on current extraction priorities and workload
 - **Route**: Plan efficient paths for workers within tunnel network
 - **Monitor**: Track worker status, detect faults, report to mothership
 - **Coordinate**: Communicate with adjacent taskmasters for cross-squad logistics
+- **Rebalance**: Dynamically shift worker role allocations as conditions change (e.g., vein found — more miners; tunnel extended — more plasterers)
 
-#### Courier Ant Behaviors (surface operations)
+#### Surface Ant Behaviors (exterior operations)
 - **Navigate Surface**: Move across asteroid surface using IMU + sun sensor
 - **Anchor**: Secure to surface before working
 - **Stage Cargo**: Move processed material from tunnel entrance to return vehicle
+- **Maintain Hull**: Clean solar panels (panel_brush), inspect seals, service antennas
 - **Sail Attach**: Connect return vehicle sail for departure
 - **Guide Return**: Attach to return cargo as guidance unit for transit (end-of-life role)
 
 #### Track B/C Additional Behaviors
 - **Spectral Sort** (taskmaster): Pre-classify regolith composition, assign workers to deliver to correct vat intake
-- **Tend Bioreactor** (dedicated worker role): Monitor sensors, trigger alerts on pH/temp/ORP excursions, mechanically agitate slurry
+- **Tend Bioreactor** (worker with sampling_probe): Monitor sensors, trigger alerts on pH/temp/ORP excursions, mechanically agitate slurry
 
 #### Swarm Coordination
 - Workers follow taskmaster commands — no peer-to-peer worker coordination
+- Taskmasters dynamically assign worker roles by directing tool head swaps at docking stations
 - Taskmasters coordinate locally with adjacent taskmasters via wired backbone
-- Mothership provides high-level directives (mining priorities, vat status) via supervised autonomy
+- Mothership provides high-level directives (mining priorities, vat status, role allocation targets) via supervised autonomy
 - **No centralized control** — each taskmaster makes local decisions within mothership-set parameters
 
 ### Layer 5: Swarm Simulation
@@ -943,7 +955,7 @@ return_vehicle:
     # Mars orbit option: target Mars-Sun L1 or Mars orbit insertion
   total_mass_kg: 6.5                   # Empty (excluding cargo)
   total_cost_usd: 500-2000
-  guidance_ant: "courier_ant_eol"      # End-of-life courier ant serves as guidance unit
+  guidance_ant: "surface_ant_eol"      # End-of-life surface ant serves as guidance unit
 ```
 
 ### Layer 8: Visualization & Dashboard
@@ -977,7 +989,7 @@ The mission operates under **supervised autonomy**:
 1. Set up Python project with clear module structure matching layers above
 2. Create the component catalog system (YAML/JSON database of real parts with specs, MTBF, costs)
 3. Seed the catalog:
-   - Ant castes: worker, taskmaster, courier configs with all component options
+   - Ant castes: worker, taskmaster, surface ant configs with all component options + 7 tool heads
    - Mothership modules: drill, power, comms, sealing, cargo, bioreactor
    - Bacterial/fungal species profiles with published kinetics data
    - Reagents and consumables with mass, cost, consumption rates
@@ -1011,7 +1023,7 @@ The mission operates under **supervised autonomy**:
 24. Build Keplerian orbit propagator (2-body problem)
 25. Build solar sail thrust model
 26. Implement return vehicle trajectory planning (to lunar orbit or Mars orbit)
-27. Courier ant surface/space operations
+27. Surface ant exterior/space operations
 28. **Deliverable:** End-to-end simulation: launch → transit → arrive → mine → return cargo → revenue
 
 ### Phase 5: Scaling & Advanced Features
@@ -1088,10 +1100,10 @@ The mission operates under **supervised autonomy**:
 ## Key Simulation Questions to Answer
 
 ### Per-Track Questions
-1. What is the minimum viable ant swarm (workers + taskmasters + couriers) for each track?
+1. What is the minimum viable ant swarm (workers + taskmasters + surface ants) for each track?
 2. What is the minimum swarm size for a profitable single-cycle mission to lunar orbit?
 3. How many bootstrap cycles from a $X seed investment to self-sustaining?
-4. What is the optimal ratio of workers : taskmasters : couriers?
+4. What is the optimal ratio of workers : taskmasters : surface ants?
 5. Which asteroids with known compositions offer the best economics?
 6. At what launch cost ($/kg) does the business model work for a non-billionaire?
 7. How does parking materials at Mars orbit vs. lunar orbit change the economics?
