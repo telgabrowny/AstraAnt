@@ -332,6 +332,146 @@ def assess_subsystems() -> list[ReadinessItem]:
             estimated_cost_usd=0,
             estimated_time_weeks=2,
         ),
+
+        # -- Sugar Production --
+        ReadinessItem(
+            category="subsystem",
+            name="Sugar Production -- Algae Photobioreactor",
+            level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
+            description="200L Chlorella vulgaris photobioreactor with fiber optic solar illumination.",
+            rationale="Chlorella cultivation is proven (ISS heritage, MELiSSA). "
+                      "Fiber optic photobioreactors published since 1996. But integration "
+                      "of both systems in asteroid-analog conditions is untested. "
+                      "Sugar yield under nitrogen starvation needs validation.",
+            test_plan="1) Build 10L bench prototype with fiber optic illumination. "
+                      "2) Validate sugar yield under nitrogen starvation (target 0.5 g/L/day). "
+                      "3) Test with CO2 from carbonate pyrolysis (simulated asteroid source). "
+                      "4) Run for 60 days to assess long-term stability.",
+            estimated_cost_usd=5000,
+            estimated_time_weeks=10,
+        ),
+        ReadinessItem(
+            category="subsystem",
+            name="Sugar Production -- CO2 from Asteroid Carbonates",
+            level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
+            description="Thermal decomposition of asteroid carbonate minerals to produce CO2 for algae.",
+            rationale="CaCO3 thermal decomposition is textbook chemistry. But asteroid "
+                      "carbonates (dolomite, breunnerite) may behave differently than "
+                      "pure calcite. Need to test with CI/CM chondrite analog material.",
+            test_plan="1) Obtain CI chondrite analog material. "
+                      "2) Heat samples to 700C, measure CO2 yield. "
+                      "3) Verify CO2 purity (no toxic contaminants for algae). "
+                      "4) Calculate kg regolith needed per kg CO2.",
+            estimated_cost_usd=2000,
+            estimated_time_weeks=4,
+        ),
+        ReadinessItem(
+            category="subsystem",
+            name="Sugar Production -- Fiber Optic Light Delivery",
+            level=ReadinessLevel.PROVEN,
+            description="Solar concentrator + fiber optic bundle delivering PAR to underground photobioreactor.",
+            rationale="Fiber optic illuminated photobioreactors demonstrated by Hirata (1996), "
+                      "Ogbonna (1999). Solar concentrators are mature tech. 60% light "
+                      "transmission through 10m silica fiber is achievable.",
+            test_plan="Standard validation: measure PAR at reactor end vs. concentrator input.",
+            estimated_cost_usd=500,
+            estimated_time_weeks=1,
+        ),
+
+        # -- Thermal Sorting --
+        ReadinessItem(
+            category="subsystem",
+            name="Thermal Sorter -- Ice Recovery",
+            level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
+            description="Heated rotating drum separates water ice from regolith at 120C.",
+            rationale="Thermal separation is simple engineering. But ice sublimation "
+                      "behavior in low-pressure (5 kPa) environment with regolith matrix "
+                      "needs validation. Recovery rate (90% target) is estimated.",
+            test_plan="1) Build bench-scale heated drum (5L). "
+                      "2) Test with regolith simulant + water ice mixture at 5 kPa. "
+                      "3) Measure ice recovery rate and processing time. "
+                      "4) Verify no volatile contamination in recovered water.",
+            estimated_cost_usd=2000,
+            estimated_time_weeks=4,
+        ),
+
+        # -- Waste Slurry Sealing --
+        ReadinessItem(
+            category="subsystem",
+            name="Waste Slurry Tunnel Sealant",
+            level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
+            description="Bioreactor waste + water paste applied to tunnel walls as sealant.",
+            rationale="Concept is sound (CaO traces act as cement, fine rock particles fill "
+                      "pores). But actual seal effectiveness with depleted bioleaching waste "
+                      "is untested. The 75% pressure retention estimate needs validation.",
+            test_plan="1) Run bioleaching cycle on regolith simulant. "
+                      "2) Collect waste slurry, mix with water to paste consistency. "
+                      "3) Apply to rock surface in vacuum chamber at 5 kPa. "
+                      "4) Measure pressure retention over 72 hours. "
+                      "5) Test multiple coat layers.",
+            estimated_cost_usd=3000,
+            estimated_time_weeks=6,
+            blockers=["Requires completed bioleaching test first (waste material needed)"],
+        ),
+
+        # -- Specialized Ant Castes --
+        ReadinessItem(
+            category="subsystem",
+            name="Sorter Ant -- Thermal Drum Operation",
+            level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
+            description="Specialized worker ant that loads/unloads thermal separation drum.",
+            rationale="Same base body as worker ant. Heat-resistant scoop tool is the "
+                      "only novel element. Main risk is thermal exposure of the ant near "
+                      "the 120C drum.",
+            test_plan="1) Build worker ant prototype with ceramic-tipped scoop. "
+                      "2) Test loading/unloading at drum operating temperature. "
+                      "3) Verify ant electronics stay within thermal limits.",
+            estimated_cost_usd=200,
+            estimated_time_weeks=2,
+        ),
+        ReadinessItem(
+            category="subsystem",
+            name="Plasterer Ant -- Paste Application",
+            level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
+            description="Specialized worker ant with nozzle-and-trowel for wall sealing.",
+            rationale="Novel tool attachment. Paste extrusion in low gravity may behave "
+                      "differently than on Earth. Coating uniformity needs validation.",
+            test_plan="1) Build paste applicator tool prototype. "
+                      "2) Test paste extrusion on vertical surfaces (simulates low-g). "
+                      "3) Measure coating uniformity and thickness consistency.",
+            estimated_cost_usd=300,
+            estimated_time_weeks=3,
+        ),
+        ReadinessItem(
+            category="subsystem",
+            name="Tender Ant -- Bioreactor Monitoring",
+            level=ReadinessLevel.NEEDS_SIM_VALIDATION,
+            description="Specialized worker ant with portable pH/turbidity sensors for vat patrol.",
+            rationale="Sensor package is COTS hardware. The value proposition (mobile "
+                      "spot-checking vs. fixed sensors only) needs simulation to quantify "
+                      "how much earlier contamination is detected.",
+            test_plan="Simulate bioreactor failure scenarios with and without tender ant patrol. "
+                      "Measure detection time improvement.",
+            estimated_cost_usd=0,
+            estimated_time_weeks=2,
+        ),
+
+        # -- Exterior Maintenance --
+        ReadinessItem(
+            category="subsystem",
+            name="Mothership -- Exterior Maintenance Infrastructure",
+            level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
+            description="Grip rails, tool docking points, and ant access features on mothership hull.",
+            rationale="ISS EVA handrails are proven concept. Scaling down to ant-sized "
+                      "robots with magnetic feet is novel. Grip reliability in thermal "
+                      "cycling environment needs testing.",
+            test_plan="1) Build mock hull section with grip rails and magnetic docking points. "
+                      "2) Test courier ant prototype traversal on mock hull. "
+                      "3) Thermal cycle test: -150C to +150C, verify grip rail integrity. "
+                      "4) Test tool swap at docking points.",
+            estimated_cost_usd=1000,
+            estimated_time_weeks=4,
+        ),
     ]
 
 
