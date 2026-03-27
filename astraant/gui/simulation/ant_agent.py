@@ -68,9 +68,14 @@ class AntAgent:
     _target: Position = field(default_factory=Position)
     _assigned_segment_id: int = 0
     _cycle_count: int = 0
-    _squad_leader_id: int = -1       # Taskmaster ID this worker reports to
-    _squad_member_ids: list = field(default_factory=list)  # For taskmasters: their workers
-    _current_tool: str = ""          # Current tool head equipped
+    _squad_leader_id: int = -1
+    _squad_member_ids: list = field(default_factory=list)
+    _current_tool: str = ""
+
+    # Microgravity locomotion state
+    _surface_angle: float = 0.0      # Angle around tunnel (0=floor, 180=ceiling)
+    _tunnel_depth: float = 0.0       # Distance along tunnel from entrance
+    _grip_phase: float = 0.0         # Grip animation cycle (0-1)
 
     # Degradation
     hours_operated: float = 0.0
@@ -103,6 +108,16 @@ class AntAgent:
             events.update(self._tick_tender(dt))
         elif self.caste in ("courier", "surface_ant"):
             events.update(self._tick_courier(dt))
+
+        # Update microgravity locomotion state
+        moving_states = {AntState.MOVING, AntState.HAULING, AntState.RETURNING,
+                         AntState.PATROLLING, AntState.SURFACE_OPS}
+        if self.state in moving_states:
+            self._grip_phase = (self._grip_phase + dt * 2.0) % 1.0
+            self._tunnel_depth += self.speed * dt * 0.1  # Slow tunnel progress
+            # Occasionally switch surfaces (ants use walls + ceiling)
+            if random.random() < 0.002:
+                self._surface_angle = random.choice([0, 90, 180, 270])
 
         return events
 

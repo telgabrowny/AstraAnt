@@ -23,6 +23,7 @@ from .models.asteroid_model import (
 from .models.ant_model import create_ant_entity, animate_walk, CASTE_COLORS
 from .simulation.sim_engine import SimEngine
 from .simulation.ant_agent import AntState
+from .simulation.microgravity import get_activity_description
 
 
 # Map sim states to status indicator colors
@@ -233,13 +234,20 @@ class AstraAntApp:
         self._setup_ground_control()
 
         # Controls help
+        # Close-up narration (visible only in follow/taskmaster mode)
+        self.narration_text = Text(
+            text="", position=Vec2(-0.85, -0.30), scale=0.7,
+            color=color.rgb(200, 200, 150),
+        )
+        self._narration_timer = 0.0
+
         # Camera mode indicator
         self.camera_mode_text = Text(
             text="View: ORBIT", position=Vec2(-0.3, 0.48), scale=1.0,
             color=color.rgb(200, 200, 255),
         )
 
-        Text(text="[1-5] Speed  [Space] Pause  [C] Cutaway  [Tab] Taskmaster  [M] Mothership  [Esc] Orbit",
+        Text(text="[1-5] Speed [Space] Pause [C] Cutaway [Tab] Taskmaster [F] Follow Ant [M] Mothership [Esc] Orbit",
              position=Vec2(-0.85, -0.47), scale=0.7, color=color.gray)
 
     def _setup_ground_control(self):
@@ -321,6 +329,9 @@ class AstraAntApp:
         if held_keys["m"] and self._m_cooldown <= 0:
             self._switch_to_mothership_view()
             self._m_cooldown = 0.5
+        if held_keys["f"] and self._tab_cooldown <= 0:
+            self._switch_to_follow_ant()
+            self._tab_cooldown = 0.5
         if held_keys["escape"]:
             self._switch_to_orbit_view()
 
@@ -415,9 +426,44 @@ class AstraAntApp:
             entity = self.ant_entities.get(self.followed_agent_id)
             if entity:
                 # Position camera behind and above the followed ant
-                offset = Vec3(-2, 2, -2) if self.camera_mode == "taskmaster" else Vec3(-1, 1, -1)
+                if self.camera_mode == "follow_ant":
+                    offset = Vec3(-0.5, 0.5, -0.5)  # Very close for worker follow
+                else:
+                    offset = Vec3(-2, 2, -2)  # Farther back for taskmaster view
                 camera.position = entity.position + offset
                 camera.look_at(entity.position)
+
+            # Update narration text for close-up view
+            self._narration_timer -= dt
+            if self._narration_timer <= 0 and self.camera_mode == "follow_ant":
+                agent = None
+                for a in self.engine.agents:
+                    if a.id == self.followed_agent_id:
+                        agent = a
+                        break
+                if agent:
+                    state_map = {
+                        AntState.DIGGING: "DIGGING",
+                        AntState.LOADING: "DIGGING",
+                        AntState.HAULING: "HAULING",
+                        AntState.MOVING: "HAULING",
+                        AntState.RETURNING: "HAULING",
+                        AntState.IDLE: "IDLE",
+                        AntState.SORTING: "SORTING",
+                        AntState.PLASTERING: "PLASTERING",
+                        AntState.TENDING: "TENDING",
+                    }
+                    state_key = state_map.get(agent.state, "IDLE")
+                    desc = get_activity_description(state_key)
+                    tool = agent._current_tool or "none"
+                    self.narration_text.text = (
+                        f"[{agent.caste} #{agent.id}] Tool: {tool}\n"
+                        f"Surface: {'floor' if agent._surface_angle < 45 else 'wall' if agent._surface_angle < 135 else 'ceiling'}\n"
+                        f"{desc}"
+                    )
+                    self._narration_timer = 3.0  # Update every 3 seconds
+        else:
+            self.narration_text.text = ""  # Hide narration in other modes
 
         # Update camera mode indicator
         mode_labels = {
@@ -476,6 +522,32 @@ class AstraAntApp:
         # Reset indicator sizes
         for indicator in self.state_indicators.values():
             indicator.scale = 0.08
+
+    def _switch_to_follow_ant(self):
+        """Follow a random worker ant up close. F cycles through workers."""
+        workers = [a for a in self.engine.agents
+                   if a.caste in ("worker", "sorter", "plasterer", "tender")
+                   and a.state != AntState.FAILED]
+        if not workers:
+            return
+
+        current_idx = -1
+        if self.followed_agent_id is not None:
+            for i, w in enumerate(workers):
+                if w.id == self.followed_agent_id:
+                    current_idx = i
+                    break
+        next_idx = (current_idx + 1) % len(workers)
+        self.followed_agent_id = workers[next_idx].id
+        self.camera_mode = "follow_ant"
+
+        # Reset all indicators
+        for indicator in self.state_indicators.values():
+            indicator.scale = 0.06
+        # Enlarge the followed ant's indicator
+        ind = self.state_indicators.get(self.followed_agent_id)
+        if ind:
+            ind.scale = 0.20
 
     def _switch_to_orbit_view(self):
         """Return to free orbit camera."""
