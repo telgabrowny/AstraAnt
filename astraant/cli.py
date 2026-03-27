@@ -386,6 +386,70 @@ def readiness(track: str):
     click.echo(format_readiness_report(report))
 
 
+# -- Simulate command (headless) ------------------------------------------------
+
+@main.command()
+@click.option("--workers", "-w", default=50, help="Number of worker ants")
+@click.option("--taskmasters", "-t", default=3, help="Number of taskmasters")
+@click.option("--couriers", "-c", default=2, help="Number of couriers")
+@click.option("--sorters", default=2, help="Number of sorters")
+@click.option("--plasterers", default=2, help="Number of plasterers")
+@click.option("--tenders", default=1, help="Number of tenders")
+@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
+@click.option("--days", default=30, help="Simulated mission days to run")
+@click.option("--speed", default=10000.0, help="Simulation speed multiplier")
+def simulate(workers: int, taskmasters: int, couriers: int, sorters: int,
+             plasterers: int, tenders: int, track: str, days: int, speed: float):
+    """Run headless simulation and print results."""
+    from .gui.simulation.sim_engine import SimEngine
+
+    total_ants = workers + taskmasters + couriers + sorters + plasterers + tenders
+    click.echo(f"Running {days}-day simulation with {total_ants} ants (Track {track.upper()})...")
+
+    engine = SimEngine(
+        workers=workers, taskmasters=taskmasters, couriers=couriers,
+        sorters=sorters, plasterers=plasterers, tenders=tenders,
+        track=track,
+    )
+    engine.setup()
+    engine.clock.speed = speed
+
+    # Simulate in 0.1-second real-time steps
+    target_sim_time = days * 86400.0
+    step = 0.1
+    while engine.clock.sim_time < target_sim_time:
+        engine.tick(step)
+
+    status = engine.status()
+
+    click.echo(f"\n{'=' * 60}")
+    click.echo(f"SIMULATION RESULTS -- {days} days, Track {track.upper()}")
+    click.echo(f"{'=' * 60}")
+    click.echo(f"  Elapsed sim time:    {status['clock']}")
+    click.echo(f"  Total ants:          {status['total_ants']}")
+
+    for caste, counts in status["ants_by_caste"].items():
+        click.echo(f"    {caste:14s} active: {counts['active']}  failed: {counts['failed']}")
+
+    t = status["tunnel"]
+    click.echo(f"\n  Tunnel:")
+    click.echo(f"    Length:     {t['total_length_m']:.1f} m")
+    click.echo(f"    Volume:     {t['total_volume_m3']:.2f} m3")
+    click.echo(f"    Sealed:     {t['sealed_length_m']:.1f} m")
+
+    s = status["stats"]
+    click.echo(f"\n  Production:")
+    click.echo(f"    Material extracted: {s['material_kg']:.1f} kg")
+    click.echo(f"    Water recovered:   {s['water_kg']:.1f} kg")
+    click.echo(f"    Wall sealed:       {s['sealed_m2']:.1f} m2")
+    click.echo(f"    Dump cycles:       {s['dump_cycles']}")
+    click.echo(f"    Drum cycles:       {s['drum_cycles']}")
+    click.echo(f"    Vat checks:        {s['vat_checks']}")
+    click.echo(f"    Anomalies:         {s['anomalies']}")
+    click.echo(f"    Ant failures:      {s['failures']}")
+    click.echo(f"{'=' * 60}")
+
+
 # -- GUI command ----------------------------------------------------------------
 
 @main.command()
