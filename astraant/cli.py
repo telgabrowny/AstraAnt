@@ -398,6 +398,27 @@ def build_bom(caste: str, track: str, output: str | None):
         click.echo(text)
 
 
+# -- Sensitivity command -------------------------------------------------------
+
+@main.command()
+@click.option("--workers", "-w", default=100, help="Baseline worker count")
+@click.option("--track", type=click.Choice(["a", "b", "c"]), default="b")
+@click.option("--asteroid", default="bennu")
+@click.option("--destination", default="lunar_orbit")
+def sensitivity(workers: int, track: str, asteroid: str, destination: str):
+    """Run sensitivity analysis -- which parameters matter most."""
+    from .sensitivity import run_sensitivity, format_sensitivity
+    from .feasibility import MissionConfig, SwarmConfig
+    baseline = MissionConfig(
+        swarm=SwarmConfig(workers=workers, taskmasters=max(1, workers // 20),
+                          surface_ants=3, track=track),
+        asteroid_id=asteroid,
+        destination=destination,
+    )
+    results = run_sensitivity(baseline)
+    click.echo(format_sensitivity(results))
+
+
 @build.command("scad")
 @click.argument("tool_id", required=False, default=None)
 @click.option("--all", "gen_all", is_flag=True, help="Generate all tool models")
