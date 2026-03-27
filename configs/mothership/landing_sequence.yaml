@@ -1,0 +1,255 @@
+# Mothership Landing and Initial Bore Sequence
+# The most critical 30 minutes of the mission.
+# Everything autonomous. No human in the loop (comm delay too long).
+
+module: landing_sequence
+name: "Landing, Anchoring, and Initial Bore Sequence"
+type: operational_procedure
+
+# The fundamental problem:
+# Bennu surface gravity is 6 millionths of a m/s2.
+# The mothership doesn't "land." It DOCKS with a rotating rock.
+# And then it has to hold on, drill a hole, remove the cuttings,
+# and create the first void — all with no gravity to help.
+
+approach:
+  description: >
+    Final approach is more like spacecraft docking than airplane landing.
+    The asteroid is rotating (Bennu: 4.3 hour period). The mothership
+    matches the surface rotation rate and slowly closes the gap.
+  phases:
+    approach_orbit:
+      altitude_m: 500
+      description: "Station-keeping orbit. Survey landing site with cameras."
+      duration_hours: 24
+      actions:
+        - "Map landing site terrain at 1cm resolution"
+        - "Identify flattest area near equator (for solar panel sunlight)"
+        - "Check for boulders, slopes, loose debris in the landing zone"
+        - "Compute descent trajectory to match surface rotation"
+
+    descent:
+      start_altitude_m: 500
+      final_approach_m: 10
+      description: "Slow descent using ion thrusters or cold gas RCS"
+      propulsion: "cold gas (nitrogen from fill gas supply — dual use)"
+      approach_velocity_m_per_s: 0.01  # 1 cm/s — VERY slow
+      duration_minutes: 30
+      actions:
+        - "Continuous radar altimetry (VL53L0x on bottom, plus dedicated radar)"
+        - "Lateral correction to stay over target zone"
+        - "Match asteroid rotation rate"
+        - "Camera tracking of surface features for precision alignment"
+
+    terminal:
+      altitude_m: 0.1
+      description: "Final 10cm. Contact sensors on the base plate."
+      velocity_m_per_s: 0.005  # 5 mm/s at contact — a gentle kiss
+      actions:
+        - "Base plate contact sensors detect first touch"
+        - "Immediately fire all 4 screw anchor motors"
+        - "Gasket seal begins inflating"
+        - "Thrusters shut down (committed to surface)"
+
+anchoring:
+  description: >
+    The mothership must grip the asteroid surface IMMEDIATELY on contact.
+    In microgravity, any residual velocity will bounce it off.
+    The screw anchors are the critical system.
+  screw_anchors:
+    count: 4
+    position: "base plate perimeter, 90-degree spacing"
+    type: "helical auger screw with motor drive"
+    screw_diameter_mm: 30
+    screw_length_mm: 300               # Penetrates 30cm into regolith
+    motor: "DC gearmotor, 2W each"
+    deployment_time_seconds: 10        # Must be FAST
+    pull_out_force_n: 50               # In consolidated regolith
+    regolith_types:
+      rubble_pile: "screws grip between rock fragments — good hold"
+      consolidated: "screws thread into material — excellent hold"
+      very_loose: "screws may not grip — backup: expanding anchor bolts"
+    mass_per_anchor_kg: 0.5
+    total_mass_kg: 2
+
+  gasket_seal:
+    description: >
+      Inflatable silicone gasket ring around the base plate.
+      Conforms to irregular asteroid surface topology.
+      Creates an airtight seal for tunnel pressurization.
+    inflation_method: "stored nitrogen from fill gas supply"
+    inflation_pressure_kpa: 15         # Slightly above tunnel target (5-10 kPa)
+    seal_diameter_mm: 800              # Larger than drill bore
+    compliance_mm: 50                  # Can conform to 50mm surface irregularity
+    inflation_time_seconds: 30
+    mass_kg: 3
+
+  verification:
+    - "Pull test: briefly reverse one anchor motor, measure current (confirms grip)"
+    - "Pressure test: inflate gasket, check for rapid leak (surface seal quality)"
+    - "Accelerometer: verify mothership is stationary relative to surface"
+    - "If any check fails: release anchors, push off, try different spot"
+
+initial_bore:
+  description: >
+    With the mothership anchored, the drill extends below the base plate
+    and bores the initial shaft. This is where it gets tricky: in
+    microgravity, drill cuttings don't fall out of the hole. They must
+    be mechanically removed by the auger conveyor.
+
+  drill_operation:
+    bore_diameter_mm: 200              # Just wide enough for one ant
+    target_depth_m: 3                  # Deep enough for radiation shielding
+    penetration_rate:
+      rubble_pile_m_per_hr: 2.0        # Loose material, fast
+      consolidated_m_per_hr: 0.5       # Harder material, slow
+    estimated_time_hours: 1.5-6        # Depends on regolith type
+
+    reaction_force: >
+      On Earth, the drill pushes down with the machine's weight.
+      In microgravity, there IS no weight. The drill pushes against
+      the screw anchors. The anchors pull the mothership INTO the asteroid
+      while the drill pushes material OUT. It's "boring from an anchored
+      platform" not "drilling down."
+
+    anchor_role: >
+      The screw anchors aren't just for holding position — they're the
+      reaction mass for the drill. Drill thrust pushes against anchor grip.
+      Max drill thrust: 50N (limited by anchor pull-out force).
+      This is why the anchors must be strong.
+
+  cuttings_removal:
+    method: "auger conveyor wrapping the drill shaft"
+    description: >
+      The auger is a helical screw around the drill shaft (like a
+      wood auger bit, but the helix extends all the way up to the
+      base plate). As the drill rotates, the auger threads carry
+      cuttings UPWARD along the shaft and into the mothership.
+
+      In microgravity, the cuttings have no tendency to fall out of the
+      bore. They would pack around the drill and jam it. The auger
+      continuously clears the bore by pushing material up.
+
+      Cuttings enter the mothership through a port in the base plate
+      and drop (float, actually) into the thermal sorter intake hopper
+      on Deck 1. This is the FIRST material the colony processes —
+      the drill cuttings are the initial feedstock.
+
+    auger_specs:
+      helix_diameter_mm: 190           # Just fits inside 200mm bore
+      pitch_mm: 50                     # One rotation advances 50mm
+      material_removal_rate_kg_per_hr: 50
+      power_w: 100                     # Shared with drill motor
+
+  bore_completion:
+    description: >
+      When the bore reaches 3m depth, the drill retracts back into
+      the mothership hull. The bore is now a 200mm diameter shaft
+      from the surface to 3m underground.
+
+      But 200mm is tight — just barely wide enough for one ant.
+      The first ants down will widen the shaft by mining the walls.
+      The initial bore is a pilot hole. The ants expand it.
+
+    drill_retraction:
+      method: "linear actuator retracts drill back through base plate"
+      retracted_position: "drill head sits flush with base plate underside"
+      reusable: true                   # Can re-extend for deepening later
+
+    bore_state_after_completion:
+      diameter_mm: 200
+      depth_m: 3
+      wall_state: "rough-cut, unlined, unpressurized"
+      temperature: "ambient asteroid (~20C at 3m depth)"
+      radiation_at_bottom: "~50% GCR reduction (3m of regolith)"
+
+  power_rail_installation_in_bore:
+    description: >
+      The drill module installs a basic power rail in the bore shaft
+      as it retracts. Copper strips are bonded to the bore wall using
+      a secondary applicator behind the drill head. This means the
+      bore has a power rail before any ants enter it.
+    rail_length_m: 3
+    copper_strip_pre_loaded: true      # Carried on a spool inside the drill assembly
+
+first_ant_deployment:
+  description: >
+    With the bore complete and railed, the first ants can descend.
+    The sequence is carefully choreographed by the Pi4.
+
+  timing: "begins within 1 hour of bore completion"
+
+  wave_1:
+    composition: "1 taskmaster + 5 workers (3 with drill_head, 1 paste_nozzle, 1 cargo_gripper)"
+    tasks:
+      - "Taskmaster descends first, surveys the bore, reports to Pi4"
+      - "Workers follow, single-file (200mm bore = one ant at a time)"
+      - "At the bottom: 3 miners start widening the bore to 400mm"
+      - "1 plasterer seals the widened walls behind the miners"
+      - "1 rail layer installs rail in the widened section"
+    duration_hours: 4
+    result: "3m shaft widened to 400mm, sealed, railed, pressurized"
+
+  wave_2:
+    composition: "20 more workers"
+    timing: "after wave 1 reports shaft widened to 400mm"
+    tasks:
+      - "Begin extending tunnel beyond the initial 3m bore"
+      - "Three-worker convoy: miner + plasterer + rail layer"
+      - "Multiple convoys working in parallel (tunnel now wide enough)"
+    duration_hours: 8
+
+  wave_3:
+    composition: "all remaining workers + additional taskmasters"
+    timing: "after wave 2 has extended tunnel to ~10m"
+    notes: >
+      By this point the tunnel is long enough for multiple squads
+      to work without interfering. Full mining operations begin.
+
+  total_time_to_full_operations_hours: 24
+  note: >
+    From touchdown to full mining: approximately 24 hours.
+    - Landing + anchoring: 30 minutes
+    - Initial bore: 1.5-6 hours
+    - Wave 1 (widen bore): 4 hours
+    - Wave 2 (extend tunnel): 8 hours
+    - Wave 3 (full deployment): 4 hours
+    Total: ~18-24 hours from first surface contact.
+
+failure_modes:
+  bounce_on_contact:
+    probability: "medium (Bennu surface is very uneven)"
+    mitigation: "cold gas thrusters fire downward simultaneously with anchor deployment"
+    recovery: "mothership drifts away slowly, re-approach for second attempt"
+
+  anchor_no_grip:
+    probability: "low for rubble pile, medium for very loose regolith"
+    mitigation: "expanding bolt backup anchors (like wall anchors in drywall)"
+    recovery: "try different anchor type or move to different surface spot"
+
+  drill_jams:
+    probability: "low-medium (auger should prevent, but large rocks could jam)"
+    mitigation: "reverse drill, retract 10cm, re-advance. Repeat up to 5 times."
+    recovery: "if persistent: abort bore, retract, move to adjacent spot, restart"
+
+  gasket_doesnt_seal:
+    probability: "medium (asteroid surface is very irregular)"
+    mitigation: "gasket has 50mm compliance. If still leaking: apply polymer sealant spray around the base from outside (surface ant task)"
+    recovery: "partial seal is OK for initial operations. Perfect seal comes later when waste paste is applied around the base"
+
+notes: |
+  The initial bore is the hardest part of the entire mission.
+  After this, everything is "just" expanding the tunnel — same
+  process, repeated thousands of times by the ant swarm.
+
+  The drill cuttings are NOT wasted — they're the colony's
+  first feedstock. They go straight into the thermal sorter.
+  The first water the colony extracts comes from drill cuttings.
+
+  The bore is intentionally narrow (200mm) to minimize the material
+  the drill must remove and the time to first ant deployment.
+  The ants widen it. That's their job. The drill just makes the pilot hole.
+
+  After the first 24 hours: the mothership is permanently anchored,
+  the shaft is widened and sealed, power rails are running, and
+  100+ ants are mining. The hardest day is over.
