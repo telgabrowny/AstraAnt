@@ -427,6 +427,33 @@ def economics(workers, taskmasters, surface_ants, track, asteroid,
         click.echo(reality_check(econ))
 
 
+# -- Composition variability command -------------------------------------------
+
+@main.command("composition")
+@click.option("--asteroid", default="bennu", help="Target asteroid ID")
+@click.option("--batches", default=100, help="Number of mining batches to simulate")
+@click.option("--batch-kg", default=10.0, help="Mass per batch in kg")
+def composition(asteroid: str, batches: int, batch_kg: float):
+    """Analyze composition variability across mining batches."""
+    from .composition import simulate_mining_variability, format_variability_report
+    result = simulate_mining_variability(asteroid, n_batches=batches, batch_kg=batch_kg)
+    click.echo(format_variability_report(result))
+
+
+# -- Scaling command -----------------------------------------------------------
+
+@main.command("scaling")
+@click.option("--track", type=click.Choice(["a", "b", "c"]), default="b")
+@click.option("--baseline", default=25, help="Baseline worker count for calibration")
+@click.option("--days", default=10, help="Simulation days for calibration")
+def scaling_cmd(track: str, baseline: int, days: int):
+    """Run scaling analysis from small to large swarm sizes."""
+    from .scaling import run_scaling_analysis, format_scaling_report
+    click.echo(f"Calibrating at {baseline} workers for {days} days...")
+    report = run_scaling_analysis(track=track, sim_days=days, baseline_workers=baseline)
+    click.echo(format_scaling_report(report))
+
+
 # -- Sensitivity command -------------------------------------------------------
 
 @main.command()
