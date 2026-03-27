@@ -23,6 +23,7 @@ class RandomEvent:
     player_choices: list[dict] # Options the player can choose
     auto_resolve: bool         # Does the colony handle it without player input?
     auto_resolve_time_hours: float  # How long the colony takes to fix it alone
+    daily_probability: float = 0.005  # Probability of firing per sim-day
 
 
 # Events that can happen during mining operations
@@ -274,21 +275,8 @@ class EventSystem:
 
         new_events = []
 
-        # Each event has a daily probability
-        daily_probabilities = {
-            "solar_particle_event": 0.005,       # ~2x per year
-            "micrometeorite_impact": 0.003,       # ~1x per year
-            "bioreactor_ph_excursion": 0.01,      # ~4x per year
-            "tunnel_pressure_leak": 0.008,        # ~3x per year
-            "crusher_jam": 0.02,                  # ~7x per year
-            "rich_vein_discovered": 0.005,        # ~2x per year
-            "servo_batch_defect": 0.001,          # ~1 every 3 years
-            "comm_blackout": 0.002,               # ~1x per year (solar conjunction)
-            "water_ice_bonanza": 0.003,           # ~1x per year
-        }
-
         for event in MINING_EVENTS:
-            prob = daily_probabilities.get(event.id, 0.005)
+            prob = event.daily_probability
             if self._rng.random() < prob:
                 # Don't fire the same event if one is already active
                 if any(e.id == event.id for e in self.active_events):

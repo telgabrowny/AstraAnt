@@ -15,7 +15,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import math
+
 import yaml
+
+from functools import lru_cache
 
 
 SPEC_FILE = Path(__file__).parent.parent / "catalog" / "equipment_specs.yaml"
@@ -74,12 +78,19 @@ class PlacedEquipment:
         return self.spec.get("heat", {}).get("max_surface_temp_c", 25)
 
 
+_equipment_specs_cache: dict[str, Any] | None = None
+
+
 def load_equipment_specs() -> dict[str, Any]:
-    """Load all equipment specifications from the catalog."""
+    """Load all equipment specifications from the catalog (cached)."""
+    global _equipment_specs_cache
+    if _equipment_specs_cache is not None:
+        return _equipment_specs_cache
     if not SPEC_FILE.exists():
         return {}
-    with open(SPEC_FILE) as f:
-        return yaml.safe_load(f) or {}
+    with open(SPEC_FILE, "r", encoding="utf-8") as f:
+        _equipment_specs_cache = yaml.safe_load(f) or {}
+    return _equipment_specs_cache
 
 
 def validate_placement(placed_items: list[PlacedEquipment],
@@ -110,7 +121,6 @@ def validate_placement(placed_items: list[PlacedEquipment],
     for item in placed_items:
         phys = item.spec.get("physical", {})
         if phys.get("shape") == "cylinder":
-            import math
             r = phys.get("diameter_mm", 500) / 2000  # Convert to meters
             h = phys.get("height_mm", 500) / 1000
             vol = math.pi * r**2 * h * 1000  # Liters

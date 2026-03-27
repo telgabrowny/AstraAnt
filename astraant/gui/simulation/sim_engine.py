@@ -31,6 +31,19 @@ from .asteroid_grid import AsteroidGrid
 from .material_ledger import MaterialLedger
 from .game_economy import GameEconomy
 from .anomaly_detection import AnomalyDetector
+
+# Module-level constants (avoid rebuilding in hot loops)
+LUNAR_ORBIT_PRICES = {
+    "iron": 2000, "nickel": 5000, "copper": 8000,
+    "cobalt": 12000, "platinum": 35000, "palladium": 45000,
+    "iridium": 55000, "rare_earths_total": 25000,
+}
+
+# External fluid connection targets (shared between placement.py and placement_ui.py)
+EXTERNAL_FLUID_TARGETS = frozenset({
+    "tunnel_entrance", "waste_paste_tank", "crusher_output",
+    "co2_kiln_output", "solar_concentrator", "thermal_sorter_output", "condenser",
+})
 from .random_events import EventSystem
 from .tech_upgrades import UpgradeManager
 
@@ -122,6 +135,13 @@ class SimEngine:
         self.anomaly_detector = AnomalyDetector(fanciful_mode=False)
         self.event_system = EventSystem()
         self.upgrade_manager = UpgradeManager()
+
+        # Performance: cached status + counters
+        self._status_cache: dict[str, Any] | None = None
+        self._status_cache_tick = 0
+        self._next_agent_id = 0       # Running counter, no max() scan needed
+        self._discovered_zone_types: set[str] = set()  # O(1) membership check
+        self._last_upgrade_check_year = -1
         self.agents: list[AntAgent] = []
         self.event_log: list[dict[str, Any]] = []
 
@@ -278,6 +298,9 @@ class SimEngine:
             self.agents.append(agent)
             agent_id += 1
 
+        # Set the running agent ID counter for future spawns
+        self._next_agent_id = agent_id
+
         # Initialize composition variability model
         if get_zones_for_asteroid is not None:
             try:
@@ -379,18 +402,15 @@ class SimEngine:
                     sample.zone = voxel.zone_type
                     self._zone_hits[sample.zone] = self._zone_hits.get(sample.zone, 0) + 1
 
-                    # Assign zone to current tunnel segment
-                    active_seg = None
-                    for seg in self.tunnel.segments:
-                        if seg.id == self.tunnel.active_work_face_id:
-                            active_seg = seg
-                            break
+                    # Assign zone to current tunnel segment (O(1) — always the last)
+                    active_seg = self.tunnel.segments[-1] if self.tunnel.segments else None
                     if active_seg and not active_seg.zone_type:
                         active_seg.zone_type = sample.zone
 
-                    # Taskmaster "discovers" valuable zones
+                    # Taskmaster "discovers" valuable zones (O(1) set check)
                     if sample.zone in ("sulfide_pocket", "metal_grain"):
-                        if sample.zone not in [d["zone"] for d in self.mining.discovered_zones]:
+                        if sample.zone not in self._discovered_zone_types:
+                            self._discovered_zone_types.add(sample.zone)
                             self.mining.discovered_zones.append({
                                 "zone": sample.zone,
                                 "segment_id": self.tunnel.active_work_face_id,
@@ -405,16 +425,10 @@ class SimEngine:
                             })
 
                     # Track revenue from this batch at lunar orbit prices
-                    # (simplified: use the sample's metal content)
-                    lunar_prices = {
-                        "iron": 2000, "nickel": 5000, "copper": 8000,
-                        "cobalt": 12000, "platinum": 35000, "palladium": 45000,
-                        "iridium": 55000, "rare_earths_total": 25000,
-                    }
                     batch_revenue = 0.0
                     for metal, ppm in sample.metals_ppm.items():
                         metal_kg = kg * ppm / 1_000_000 * 0.85  # extraction efficiency
-                        price = lunar_prices.get(metal, 1000)
+                        price = LUNAR_ORBIT_PRICES.get(metal, 1000)
                         rev = metal_kg * price
                         batch_revenue += rev
                         self.mining.revenue_by_material[metal] = (
@@ -523,9 +537,13 @@ class SimEngine:
                 "choices": len(evt.player_choices),
             })
 
-        # Tech upgrade availability (new parts on the market)
+        # Tech upgrade availability (check only when year changes, not every tick)
         game_year = self.clock.sim_time / (365.25 * 86400)
-        new_upgrades = self.upgrade_manager.check_availability(game_year)
+        current_year_int = int(game_year)
+        new_upgrades = []
+        if current_year_int > self._last_upgrade_check_year:
+            self._last_upgrade_check_year = current_year_int
+            new_upgrades = self.upgrade_manager.check_availability(game_year)
         for upg in new_upgrades:
             events.append({
                 "type": "upgrade_available",
@@ -610,6 +628,9 @@ class SimEngine:
             self._last_telemetry_time = self.clock.sim_time
 
         self.event_log.extend(events)
+        # Cap event log to prevent unbounded memory growth
+        if len(self.event_log) > 1000:
+            self.event_log = self.event_log[-500:]
         return events
 
     def _broadcast_telemetry(self) -> None:
@@ -684,7 +705,7 @@ class SimEngine:
 
     def _spawn_new_ant(self) -> AntAgent:
         """Create a new worker ant from manufacturing and add to the swarm."""
-        agent_id = max((a.id for a in self.agents), default=0) + 1
+        agent_id = self._next_agent_id
 
         # Assign a role (same distribution as initial setup)
         role = random.choice(["worker"] * 6 + ["sorter"] + ["plasterer"] * 2 + ["tender"] * 2)
@@ -704,6 +725,7 @@ class SimEngine:
         agent._assigned_segment_id = self.tunnel.active_work_face_id
         agent._target = Position(random.uniform(-3, 3), random.uniform(-3, 3), 0)
         self.agents.append(agent)
+        self._next_agent_id += 1
         return agent
 
     def _handle_command(self, command: dict[str, Any], events: list) -> None:
@@ -892,7 +914,11 @@ class SimEngine:
         self.comms.send_command(command, self.clock.sim_time)
 
     def status(self) -> dict[str, Any]:
-        """Current simulation status (no comm delay — god-view for debugging)."""
+        """Current simulation status. Cached — only rebuilds every 30 calls."""
+        self._status_cache_tick += 1
+        if self._status_cache is not None and self._status_cache_tick % 30 != 0:
+            return self._status_cache
+
         by_caste: dict[str, dict[str, int]] = {}
         for agent in self.agents:
             if agent.caste not in by_caste:
@@ -902,7 +928,7 @@ class SimEngine:
             else:
                 by_caste[agent.caste]["active"] += 1
 
-        return {
+        result = {
             "clock": self.clock.format_elapsed(),
             "speed": self.clock.speed,
             "paused": self.clock.paused,
@@ -964,3 +990,5 @@ class SimEngine:
                 "pods_completed": self.manufacturing.pods_completed,
             },
         }
+        self._status_cache = result
+        return result
