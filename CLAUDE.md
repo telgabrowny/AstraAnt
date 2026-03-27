@@ -18,7 +18,9 @@ AstraAnt is an ant swarm asteroid mining simulator and feasibility tracker. It m
 ## Architecture Decisions (Locked In)
 - **Underground tunnel operations** as primary operating model
 - **Sealed tunnels** at 1-10 kPa (extends COTS component MTBF ~100x)
-- **Ant caste hierarchy**: Worker (cheap, ~$36, RP2040), Taskmaster (smart, ~$70, ESP32-S3), Courier (surface ops, ~$1400, vacuum-rated)
+- **3-caste system with modular tools**: Worker (6 legs + 2 mandibles, ~$33, RP2040, swaps tool heads), Taskmaster (~$75, ESP32-S3, permanent sensors), Surface Ant (~$1242, vacuum-rated Maxon, aluminum chassis)
+- **7 modular tool heads**: drill, scoop, paste nozzle, thermal rake, sampling probe, cargo gripper, panel brush. Magnetic clip mount, all 3D-printable via OpenSCAD.
+- **Self-sustaining biology**: Bacteria self-replicate, sugar grown on-site from algae photobioreactor, water recovered from asteroid ice, waste becomes tunnel sealant
 - **Three extraction tracks**: A (mechanical), B (bioleaching), C (hybrid mechanical+bio)
 - **Centrifuge bioreactors** for microgravity fluid handling (30% mass overhead)
 - **Modular mothership**: drill, power, comms, sealing, cargo, bioreactor modules
@@ -32,7 +34,7 @@ AstraAnt is an ant swarm asteroid mining simulator and feasibility tracker. It m
 - PyYAML for catalog/configs
 - Click for CLI
 - Ursina for 3D GUI (planned)
-- SciPy for bioreactor ODE simulation (planned)
+- SciPy for bioreactor ODE simulation (Monod kinetics)
 - pytest for testing
 
 ## Project Structure
@@ -44,30 +46,43 @@ AstraAnt/
     cli.py            # Click CLI
     configs.py        # Ant/mothership config loader
     feasibility.py    # Mass budget, cost, break-even calculator
-    readiness.py      # Readiness assessment framework (planned)
-    gui/              # Ursina 3D visualization (planned)
+    bioreactor.py     # Monod kinetics ODE bioreactor simulation
+    sensitivity.py    # Parameter sweep analysis
+    scad_generator.py # OpenSCAD parametric tool models
+    wiring.py         # Pin-to-pin wiring diagrams
+    readiness.py      # Readiness assessment framework
+    gui/              # Ursina 3D visualization
   catalog/            # Component database (YAML files)
-    parts/            # 15 real electronic components
-    species/          # 5 bioleaching organisms
+    parts/            # 15+ real electronic components
+    species/          # 7 bioleaching organisms
     asteroids/        # 7 target asteroids
     reagents/         # 5 chemicals
     sealing/          # Tunnel sealing materials
+    tools/            # 7 tool head YAML files
   configs/            # Mission configurations
-    ants/             # worker.yaml, taskmaster.yaml, courier.yaml
-    mothership/       # drill, power, comms, sealing, cargo, bioreactor
+    ants/             # worker.yaml, taskmaster.yaml, surface_ant.yaml
+    mothership/       # drill, power, comms, sealing, cargo, bioreactor + more
   tests/              # pytest test suites
-  firmware/           # MicroPython for real hardware (planned)
+  scad/               # Generated OpenSCAD .scad files
+  firmware/
+    worker/           # MicroPython for RP2040
+    taskmaster/       # MicroPython for ESP32-S3
   output/             # Generated reports, BOMs (gitignored)
 ```
 
 ## CLI Commands
 ```
-astraant catalog summary|parts|asteroids|species|stale
+astraant catalog summary|parts|asteroids|species|tools|stale
 astraant ant list|info <caste>
 astraant analyze [--workers N --track a|b|c --asteroid ID --destination lunar_orbit|mars_orbit]
-astraant compare [same options]
+astraant compare
+astraant readiness [--track a|b|c]
+astraant sensitivity [--workers N --track a|b|c]
+astraant simulate [--workers N --days 30 --track a|b|c]
 astraant build bom <caste> [--track a|b|c]
-astraant gui [planned]
+astraant build wiring <caste> [--track a|b|c]
+astraant build scad [tool_id] [--all]
+astraant gui [--workers N --asteroid ID --track a|b|c]
 ```
 
 ## Development Practices
@@ -116,9 +131,20 @@ Key items needing physical testing:
 - **Price update**: Edit the supplier price + date_checked in the part's YAML, add to price_history
 
 ## Key Numbers to Remember
+- Worker ant: $33 (prototype), ~$14 (production)
+- Taskmaster ant: $75 (prototype), ~$41 (production)
+- Surface Ant: $1,242 (prototype), ~$807 (production)
 - 300 kg water dominates Track B/C launch mass (bioreactor wet mass = 410 kg, not 110 kg dry)
 - 2m regolith = ~70-80% GCR reduction (radiation shielding)
 - 5 kPa tunnel pressure stops lubricant outgassing, extends COTS MTBF ~100x
 - Solar power scales with 1/r^2 — Psyche at 2.9 AU gets only 12% of 1 AU power
 - CP1 polyimide sail: ~7 g/m^2 film, NOT 50g for 25 m^2 (real mass ~175g film + booms)
 - NEA surface gravity is negligible for fluid dynamics (Bennu: 6 μm/s^2)
+
+## Current Stats
+- 39 tests passing
+- 15+ catalog parts, 7 asteroids, 7 species, 5 reagents, 7 tool heads
+- 9 mothership modules
+- Bioreactor ODE simulation with Monod kinetics
+- Sensitivity analysis showing destination is #1 economic factor
+- GUI with 3D asteroid, procedural ant models, tunnel cutaway, ground control panel
