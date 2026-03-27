@@ -19,21 +19,6 @@ def _load_yaml(path: Path) -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def _load_directory(subdir: str) -> list[dict[str, Any]]:
-    """Load all YAML files from a catalog subdirectory."""
-    dirpath = CATALOG_DIR / subdir
-    if not dirpath.exists():
-        return []
-    items = []
-    for filepath in sorted(dirpath.glob("*.yaml")):
-        try:
-            data = _load_yaml(filepath)
-            data["_source_file"] = str(filepath.name)
-            items.append(data)
-        except Exception as e:
-            print(f"Warning: failed to load {filepath}: {e}")
-    return items
-
 
 class CatalogEntry:
     """Wrapper around a catalog YAML dict with attribute access."""

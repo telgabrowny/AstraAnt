@@ -79,9 +79,15 @@ def compute_ant_mass(config: dict[str, Any], catalog: Any = None) -> float:
     for sensor in config.get("sensors", []):
         mass += sensor.get("mass_g", 2)
 
-    # Tool
+    # Tool — may be nested by track (track_a, track_b, track_c) or flat
     tool = config.get("tool", {})
-    mass += tool.get("mass_g", 10)
+    if "mass_g" in tool:
+        mass += tool["mass_g"]
+    elif "track_a" in tool:
+        # Use Track A as default for mass estimation (heaviest tool)
+        mass += tool["track_a"].get("mass_g", 10)
+    else:
+        mass += 10  # Fallback
 
     # Solar (if present)
     solar = config.get("solar", {})
