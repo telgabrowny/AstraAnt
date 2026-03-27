@@ -109,25 +109,49 @@ power:
 
 tunnel_power_infrastructure:
   description: >
-    Infrastructure installed by workers as tunnels are dug.
-    Part of the mothership power module distribution system.
-  rail_type: "copper strip on insulating substrate, bonded to tunnel wall"
-  rail_width_mm: 10
-  rail_thickness_mm: 1
-  rail_spacing_mm: 50                  # Gap between + and - rails
-  copper_mass_per_meter_g: 90         # Both rails combined
-  voltage_v: 12                        # Stepped down from 48V bus at regulators every 20m
-  max_current_per_rail_a: 5
+    Power rails installed by workers alongside wall sealing.
+    Three-worker convoy: miner -> plasterer -> rail layer.
+  rail_options:
+    copper_from_earth:
+      description: "Ship 112 kg copper strip from Earth. Best conductivity."
+      rail_type: "copper strip bonded to tunnel wall paste"
+      rail_width_mm: 10
+      rail_thickness_mm: 1
+      mass_per_meter_g: 90             # Both rails combined
+      voltage_v: 12
+      max_current_a: 5
+      earth_supply_needed_kg: 112      # For 1.2km of tunnel
+      note: "112 kg = 0.4% of Starship capacity. The pragmatic choice."
+    iron_local:
+      description: "Use extracted iron for rails. No Earth supply needed."
+      rail_type: "sintered iron strip, wider to compensate for higher resistance"
+      rail_width_mm: 25                # Wider to carry same current
+      rail_thickness_mm: 2
+      mass_per_meter_g: 400            # Heavier but iron is free
+      voltage_v: 48                    # Higher voltage compensates for resistance
+      max_current_a: 3
+      earth_supply_needed_kg: 0
+      note: "Iron is 200,000 ppm on Bennu. Effectively unlimited supply."
+    hybrid:
+      description: "Copper for main tunnels, iron for branches."
+      earth_supply_kg: 50              # Copper for main trunk only
+      local_iron_for_branches: true
+      note: "Best of both: copper where it matters, iron where it's cheap."
+  default: copper_from_earth
   installation:
-    method: "worker with cargo_gripper presses copper strip into paste on tunnel wall"
+    method: "three-worker convoy: miner -> plasterer -> rail layer"
     rate_m_per_hour: 10
-    note: "Rails installed by plasterer-role workers right after wall sealing"
+    workflow:
+      - "Worker #1 (drill_head): excavates rock face"
+      - "Worker #2 (paste_nozzle): seals wall with waste slurry (2-3m behind)"
+      - "Worker #3 (cargo_gripper): presses strip into soft paste (1-2m behind)"
+    note: "Copper strip from Earth supply or iron strip from sintering furnace"
   junctions:
-    type: "ramped overlap — ant contact slides smoothly over the joint"
-    gap_at_junction_mm: 2              # Brief loss of contact (supercap covers this)
-  rail_per_branch:
-    main_tunnel: "dual rail (bidirectional traffic)"
-    branch_tunnel: "single rail (one-way traffic, ants reverse at work face)"
+    type: "ramped overlap for smooth brush transition"
+    gap_at_junction_mm: 2
+  traffic:
+    main_tunnel: "dual rail (bidirectional, ants on opposite walls)"
+    branch_tunnel: "single rail (one-way, ants reverse at work face)"
 
 physical_dimensions:
   body_length_mm: 120           # Thorax + abdomen
