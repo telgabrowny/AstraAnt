@@ -1,0 +1,206 @@
+# Mothership Module: Exterior Maintenance Infrastructure
+# Handles, grip rails, tool points, and ant-accessible features
+# on the mothership exterior for courier ant maintenance operations.
+
+module: exterior_maintenance
+name: "Exterior Maintenance Infrastructure & Ant Access System"
+type: structural
+
+# -- Ant Access Features (built into mothership hull) ----------------------
+
+grip_system:
+  description: >
+    Network of grip rails and cleats on the mothership exterior surface.
+    Courier ants crawl along these in microgravity. Similar concept to
+    ISS external handrails used by astronaut EVA operations.
+  grip_rails:
+    type: "T-slot aluminum extrusion"
+    width_mm: 15
+    spacing_m: 0.3                   # Every 30cm along major paths
+    total_length_m: 30               # All paths combined
+    mass_per_meter_g: 50
+    total_mass_kg: 1.5
+  grip_cleats:
+    type: "textured stainless pads"
+    size_mm: 20x20
+    spacing_mm: 100                  # Between rails, for lateral movement
+    count: 200
+    mass_each_g: 3
+    total_mass_kg: 0.6
+  magnetic_foot_compatibility: true  # Rails are ferrous — magnetic ant feet stick
+  note: "Courier ant feet have magnetic pads for gripping ferrous surfaces"
+
+tool_docking_points:
+  description: >
+    Standardized magnetic docking ports at each maintenance location.
+    Courier ant parks at the port, locks in magnetically, and performs
+    the maintenance task hands-free (body anchored, tool arm free).
+  port_type: "magnetic_latch_with_power"
+  count: 12
+  locations:
+    - id: "solar_panel_left"
+      position: "left panel root hinge"
+      tasks: ["panel_cleaning", "hinge_inspection"]
+    - id: "solar_panel_right"
+      position: "right panel root hinge"
+      tasks: ["panel_cleaning", "hinge_inspection"]
+    - id: "antenna_base"
+      position: "high-gain antenna gimbal"
+      tasks: ["antenna_pointing_adjustment", "cable_inspection"]
+    - id: "tunnel_entrance_seal"
+      position: "base of mothership at tunnel interface"
+      tasks: ["gasket_inspection", "seal_reapplication", "debris_clearing"]
+    - id: "launch_rail_start"
+      position: "cargo launch rail intake"
+      tasks: ["rail_cleaning", "alignment_check"]
+    - id: "launch_rail_end"
+      position: "cargo launch rail exit"
+      tasks: ["rail_cleaning", "debris_clearing"]
+    - id: "fiber_optic_surface"
+      position: "solar concentrator at fiber optic intake"
+      tasks: ["concentrator_cleaning", "fiber_alignment"]
+    - id: "fiber_optic_feedthrough"
+      position: "hull penetration where fiber enters tunnel"
+      tasks: ["cable_inspection", "seal_check"]
+    - id: "power_cable_feedthrough"
+      position: "hull penetration for power cables"
+      tasks: ["cable_inspection", "connector_check", "seal_check"]
+    - id: "thermal_radiator"
+      position: "passive radiator panel"
+      tasks: ["dust_removal", "surface_inspection"]
+    - id: "hull_inspection_1"
+      position: "forward hull section"
+      tasks: ["micrometeorite_damage_check", "fastener_torque_check"]
+    - id: "hull_inspection_2"
+      position: "aft hull section"
+      tasks: ["micrometeorite_damage_check", "fastener_torque_check"]
+  port_mass_g: 30
+  total_mass_kg: 0.36
+
+# -- Maintenance Tasks and Schedules ---------------------------------------
+
+maintenance_schedule:
+  solar_panel_cleaning:
+    interval_days: 7                 # Weekly
+    duration_minutes: 30             # Per panel
+    description: >
+      Courier ant travels to panel, brushes surface with soft bristle
+      attachment to remove electrostatically adhered regolith dust.
+      Critical for maintaining power output.
+    degradation_without_maintenance:
+      efficiency_loss_pct_per_month: 3  # Based on lunar/Mars dust data
+      max_loss_before_critical_pct: 30  # Power budget can absorb ~30% loss
+    tool: "soft_bristle_brush"
+
+  antenna_adjustment:
+    interval_days: 30                # Monthly
+    duration_minutes: 15
+    description: >
+      Check antenna pointing accuracy. If Earth link degraded, courier ant
+      adjusts antenna gimbal by small increments using torque tool.
+    tool: "hex_torque_driver"
+
+  seal_inspection:
+    interval_days: 14                # Biweekly
+    duration_minutes: 45
+    description: >
+      Inspect tunnel entrance gasket seal from outside. Check for
+      regolith particle intrusion, gasket deformation, frost buildup.
+      Apply fresh sealant if needed.
+    tool: "seal_applicator_nozzle"
+
+  fiber_optic_inspection:
+    interval_days: 30                # Monthly
+    duration_minutes: 20
+    description: >
+      Check solar concentrator alignment, clean concentrator mirror,
+      inspect fiber cable for damage (thermal cycling cracks, abrasion).
+      Check light output at tunnel end matches expected level.
+    tool: "cleaning_cloth + visual_camera"
+
+  hull_inspection:
+    interval_days: 90                # Quarterly
+    duration_minutes: 60
+    description: >
+      Full exterior crawl. Check all fasteners (torque test), look for
+      micrometeorite impacts, inspect all cable feedthroughs and seals.
+      Report findings to ground control.
+    tool: "torque_driver + camera"
+
+  launch_rail_cleaning:
+    interval_days: 14                # Before each return vehicle launch
+    duration_minutes: 20
+    description: >
+      Clear regolith dust from electromagnetic launch rail.
+      Check rail alignment and conductor continuity.
+    tool: "soft_bristle_brush + continuity_tester"
+
+# -- Courier Ant Tool Attachments for Maintenance --------------------------
+
+courier_maintenance_tools:
+  description: >
+    Modular tool attachments that clip onto the courier ant's cargo
+    manipulator arm. Stored at the tunnel entrance tool rack.
+    Courier swaps tools before each maintenance task.
+  tool_rack:
+    location: "tunnel entrance, inside pressurized zone"
+    mass_kg: 1
+    slots: 6
+  tools:
+    - id: soft_bristle_brush
+      purpose: "solar panel and rail dust removal"
+      mass_g: 15
+      note: "Anti-static bristles to prevent re-deposition"
+    - id: hex_torque_driver
+      purpose: "fastener torque check and adjustment"
+      sizes_mm: [3, 4, 5, 6]
+      mass_g: 20
+      torque_sensing: true           # Reports actual vs. specified torque
+    - id: seal_applicator_nozzle
+      purpose: "apply fresh gasket compound at seal interfaces"
+      reservoir_ml: 20
+      mass_g: 25
+      sealant_type: "silicone_rtv"
+    - id: continuity_tester
+      purpose: "check electrical/optical cable integrity"
+      mass_g: 10
+      tests: ["resistance", "optical_throughput"]
+    - id: cleaning_cloth
+      purpose: "wipe concentrator mirror and optical surfaces"
+      mass_g: 5
+      material: "microfiber"
+    - id: camera_inspector
+      purpose: "close-up visual inspection at maintenance points"
+      part_id: ov7670_camera
+      mass_g: 3
+      note: "Supplements courier's built-in camera with macro focus"
+
+# -- Totals ────────────────────────────────────────────────────────────────
+
+total_mass_kg: 3.5                   # Grip system + docking points + tool rack
+total_power_w: 0                     # Passive infrastructure (ants provide their own power)
+
+maintenance_ant_requirements:
+  couriers_dedicated_to_maintenance: 1  # 1 courier handles all exterior tasks
+  time_per_week_hours: 3               # ~3 hours/week of maintenance work
+  note: >
+    A single courier ant can handle all exterior maintenance on a weekly
+    rotation schedule. During non-maintenance time, the courier handles
+    surface cargo staging and return vehicle operations.
+
+notes: |
+  The mothership exterior is designed as an "ant-friendly" workspace:
+  grip rails everywhere, standardized docking points, modular tools.
+
+  This is directly analogous to ISS EVA infrastructure — handrails,
+  worksite interfaces, and tool stowage, but sized for 500g robots
+  instead of suited astronauts.
+
+  The maintenance schedule is conservative. On a benign asteroid
+  (low dust, no atmosphere), many of these tasks might be needed
+  less frequently. But for a serious feasibility study, we model
+  the maintenance burden and show it's manageable with 1 courier.
+
+  Key insight: the mothership doesn't need to be maintenance-free.
+  It needs to be MAINTAINABLE by courier ants. Design for access,
+  not for perfection. This is cheaper and more realistic.
