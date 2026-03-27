@@ -157,11 +157,33 @@ def check_placement_position(
                 f"Put this on the opposite wall/ceiling from the heat source."
             )
 
-    # === CEILING BONUS for heat sources ===
-    if is_heat_source and surface == "ceiling":
-        score += 10
-        reasons.append("BONUS: Heat source on ceiling -- heat rises into rock, not toward equipment")
-        tips.append("Excellent placement for hot equipment in microgravity!")
+    # === OPPOSITE-WALL BONUS for heat sources ===
+    # In microgravity, heat does NOT rise. There is no convection without gravity.
+    # The advantage of opposite-wall mounting is DISTANCE + CONDUCTION:
+    # - Maximum air gap between heat source and sensitive equipment
+    # - Heat conducts through mounting bolts into the rock (infinite heat sink)
+    # - Forced air from tunnel fans carries heat away (the ONLY convection)
+    if is_heat_source:
+        # Check if sensitive items are on opposite wall
+        has_sensitive_opposite = False
+        for existing in existing_placements:
+            if existing.get("heat", {}).get("SENSITIVE_TO_HEAT"):
+                ex_angle = existing.get("surface_angle_deg", 0)
+                angle_sep = abs(surface_angle_deg - ex_angle)
+                if angle_sep > 180:
+                    angle_sep = 360 - angle_sep
+                if angle_sep > 120:  # More than 120 degrees apart
+                    has_sensitive_opposite = True
+        if has_sensitive_opposite:
+            score += 10
+            reasons.append(
+                "BONUS: Heat source on opposite wall from sensitive equipment. "
+                "Maximum air gap + rock absorbs heat via conduction through mounting bolts."
+            )
+            tips.append(
+                "Good thermal separation. Tunnel fans provide forced convection "
+                "(the ONLY convection in microgravity -- heat does NOT rise without gravity)."
+            )
 
     # === VIBRATION CHECK ===
     needs_isolation = mounting.get("vibration_isolation", False)
@@ -243,10 +265,11 @@ def get_placement_help(equipment_id: str, equipment_spec: dict) -> str:
 
     # Surface recommendation
     if heat.get("max_surface_temp_c", 25) > 60:
-        lines.append("RECOMMENDED: Mount on CEILING")
-        lines.append("  In microgravity, hot equipment on the ceiling means")
-        lines.append("  radiated heat goes into the rock above, not toward")
-        lines.append("  other equipment below. The rock is an infinite heat sink.")
+        lines.append("RECOMMENDED: Mount on OPPOSITE WALL from sensitive equipment")
+        lines.append("  Heat does NOT rise in microgravity (no convection without gravity).")
+        lines.append("  Opposite-wall mounting maximizes the air gap between hot and sensitive items.")
+        lines.append("  Heat conducts through mounting bolts into the rock (infinite heat sink).")
+        lines.append("  CRITICAL: Tunnel fans provide the ONLY convective cooling. Keep them running.")
     elif heat.get("SENSITIVE_TO_HEAT", False):
         lines.append("RECOMMENDED: Mount on FLOOR (away from ceiling heat sources)")
         lines.append("  Heat-sensitive equipment should be on the opposite surface")
