@@ -18,9 +18,14 @@ from .tunnel_state import TunnelNetwork
 try:
     from ...configs import load_all_ant_configs, compute_ant_mass
 except ImportError:
-    # Allow running simulation standalone without full package
     load_all_ant_configs = None
     compute_ant_mass = None
+
+try:
+    from ...composition import sample_regolith, get_zones_for_asteroid
+except ImportError:
+    sample_regolith = None
+    get_zones_for_asteroid = None
 
 
 @dataclass
@@ -74,8 +79,14 @@ class SimEngine:
         # Bioreactor state (Track B/C only)
         self._has_bioreactor = track in ("b", "c")
         self._bioreactor_state = None
-        self._bioreactor_update_interval = 3600.0  # Update every sim-hour
+        self._bioreactor_update_interval = 3600.0
         self._last_bioreactor_update = 0.0
+
+        # Composition variability
+        self._comp_zones = None
+        self._bulk_metals = {}
+        self._bulk_water_pct = 0.0
+        self._zone_hits: dict[str, int] = {}  # Count of batches per zone
 
     def setup(self) -> None:
         """Initialize all agents and place them in the tunnel/surface."""
@@ -165,6 +176,20 @@ class SimEngine:
             self.agents.append(agent)
             agent_id += 1
 
+        # Initialize composition variability model
+        if get_zones_for_asteroid is not None:
+            try:
+                from ...catalog import Catalog
+                cat = Catalog()
+                self._comp_zones = get_zones_for_asteroid("bennu", cat)
+                ast = cat.get_asteroid("bennu")
+                if ast:
+                    comp = ast.get("composition", {})
+                    self._bulk_metals = comp.get("metals_ppm", {})
+                    self._bulk_water_pct = comp.get("bulk", {}).get("water_hydrated", 0)
+            except Exception:
+                pass
+
         # Initialize bioreactor if Track B/C
         if self._has_bioreactor:
             try:
@@ -198,6 +223,14 @@ class SimEngine:
                 kg = agent_events["material_dumped_g"] / 1000.0
                 self.stats.total_material_extracted_kg += kg
                 self.stats.total_dump_cycles += 1
+                # Sample composition variability for this batch
+                if self._comp_zones and sample_regolith and self._bulk_metals:
+                    sample = sample_regolith(
+                        self._bulk_metals, self._bulk_water_pct,
+                        kg, self._comp_zones,
+                        depth_m=self.tunnel.total_length_m,
+                    )
+                    self._zone_hits[sample.zone] = self._zone_hits.get(sample.zone, 0) + 1
 
             if "water_recovered_g" in agent_events:
                 kg = agent_events["water_recovered_g"] / 1000.0
