@@ -398,6 +398,35 @@ def build_bom(caste: str, track: str, output: str | None):
         click.echo(text)
 
 
+# -- Mission economics command -------------------------------------------------
+
+@main.command("economics")
+@click.option("--workers", "-w", default=100)
+@click.option("--taskmasters", "-t", default=5)
+@click.option("--surface-ants", "-s", default=3)
+@click.option("--track", type=click.Choice(["a", "b", "c"]), default="b")
+@click.option("--asteroid", default="bennu")
+@click.option("--destination", default="lunar_orbit")
+@click.option("--years", default=5.0, help="Mission lifetime in years")
+@click.option("--reality-check", "do_reality", is_flag=True,
+              help="Include full reality check with hidden costs")
+def economics(workers, taskmasters, surface_ants, track, asteroid,
+              destination, years, do_reality):
+    """Full mission economics for a single site over its lifetime."""
+    from .mission_economics import calculate_site_economics, format_economics_report
+    from .reality_check import reality_check
+
+    econ = calculate_site_economics(
+        asteroid_id=asteroid, destination=destination, track=track,
+        workers=workers, taskmasters=taskmasters, surface_ants=surface_ants,
+        mission_years=years,
+    )
+    click.echo(format_economics_report(econ))
+    if do_reality:
+        click.echo()
+        click.echo(reality_check(econ))
+
+
 # -- Sensitivity command -------------------------------------------------------
 
 @main.command()
