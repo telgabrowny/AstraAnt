@@ -373,5 +373,18 @@ def build_bom(caste: str, track: str, output: str | None):
         click.echo(text)
 
 
+# -- Readiness commands -----------------------------------------------------
+
+@main.command()
+@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a",
+              help="Extraction track to assess")
+def readiness(track: str):
+    """Run readiness assessment -- what's proven, what needs testing."""
+    from .readiness import assess_mission, format_readiness_report
+    cat = Catalog()
+    report = assess_mission(cat, track=track)
+    click.echo(format_readiness_report(report))
+
+
 if __name__ == "__main__":
     main()
