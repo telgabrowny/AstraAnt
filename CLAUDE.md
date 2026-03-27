@@ -146,16 +146,29 @@ Key items needing physical testing:
 - NEA surface gravity is negligible for fluid dynamics (Bennu: 6 μm/s^2)
 
 ## Current Stats
-- 60 tests passing
-- 15+ catalog parts, 7 asteroids, 7 species, 5 reagents, 9 tool heads
-- 9 mothership modules
+- 100 tests passing
+- 17+ catalog parts, 7 asteroids, 7 species, 5 reagents, 9 tool heads
+- 12 mothership modules (including compute, propulsion, nuclear, manufacturing, hull layout, landing sequence)
+- 22 CLI commands
 - Bioreactor ODE simulation with Monod kinetics
-- Sensitivity analysis showing destination is #1 economic factor
-- GUI with 3D asteroid, procedural ant models, tunnel cutaway, ground control panel
+- Voxel grid asteroid interior (Minecraft-style geology with mineral veins)
 - Composition variability model (6 spatial zones per asteroid type)
 - Statistical scaling model (10 to 100K ants)
-- Full mission economics with reality check
+- Full mission economics with reality check + game economy (cash flow, transit delay)
+- Mission planner with 9 objectives (cheapest profit to Interstellar habitat)
+- Endgame habitat tracker (progressive cone-to-cylinder, 1g target)
+- In-situ manufacturing simulation (build ants from asteroid materials)
+- Material ledger (every kg tracked from mine face to cargo pod)
+- Per-component failure model with individual part testing + salvage
+- Anomaly detection system (scientific + fanciful findings)
+- Ion propulsion for asteroid redirection + nuclear reactor options
+- Real orbital mechanics (Kepler's equation, asteroid positions at dates)
+- 10 OpenSCAD printable models (chassis + tools + pod scaffold + mothership + servo adapter)
+- Real MicroPython firmware: gait controller, radio protocol, command handler, sensor drivers
+- Taskmaster squad manager with command dispatch and failure recovery
+- GUI: 3D asteroid, procedural ants, tunnel cutaway, ground control, camera modes
+- Streamlit web dashboard
 - Price tracking and staleness detection
-- Solar sail trajectory estimation
-- 8 OpenSCAD printable models (chassis + 7 tools + pod scaffold)
-- MicroPython firmware stubs for RP2040 and ESP32-S3
+- Solar sail trajectory estimation + micro-pod return vehicles
+- Phase 2 facilities (8 types + humanoid construction crew)
+- Single-launch mission planner (everything fits in one Starship)
