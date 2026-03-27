@@ -427,6 +427,16 @@ def economics(workers, taskmasters, surface_ants, track, asteroid,
         click.echo(reality_check(econ))
 
 
+# -- Price report command -------------------------------------------------------
+
+@main.command("price-report")
+@click.option("--stale-days", default=90, help="Days threshold for stale pricing")
+def price_report(stale_days: int):
+    """Full price health check -- stale pricing, trends, worker cost."""
+    from .price_tracker import price_health_report
+    click.echo(price_health_report(stale_threshold_days=stale_days))
+
+
 # -- Composition variability command -------------------------------------------
 
 @main.command("composition")
