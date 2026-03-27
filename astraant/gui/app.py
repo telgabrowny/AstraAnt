@@ -666,6 +666,22 @@ class AstraAntApp:
                 self.gc_status.text = event["message"]
             elif etype == "priority_set":
                 self.gc_status.text = event["message"]
+            elif etype == "anomaly_found":
+                self.gc_status.text = event["message"][:70]
+                self.gc_status.color = color.rgb(255, 100, 100)
+            elif etype == "fleet_expanded":
+                self.gc_status.text = event["message"][:70]
+            elif etype == "insufficient_funds":
+                self.gc_status.text = event["message"][:70]
+                self.gc_status.color = color.rgb(255, 50, 50)
+            elif etype == "revenue":
+                self.gc_status.text = event["message"][:70]
+                self.gc_status.color = color.rgb(50, 255, 50)
+            elif etype == "endgame_milestone":
+                self.gc_status.text = event["message"][:70]
+                self.gc_status.color = color.rgb(100, 200, 255)
+            elif etype == "scan_result":
+                self.gc_status.text = event["message"][:70]
 
 
 def run_app(asteroid: str = "bennu", workers: int = 20, taskmasters: int = 1,
