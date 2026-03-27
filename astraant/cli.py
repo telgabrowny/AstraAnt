@@ -373,6 +373,21 @@ def build_bom(caste: str, track: str, output: str | None):
         click.echo(text)
 
 
+@build.command("wiring")
+@click.argument("caste")
+@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
+@click.option("--output", "-o", default=None, help="Output file path")
+def build_wiring(caste: str, track: str, output: str | None):
+    """Generate wiring diagram for an ant caste."""
+    from .wiring import generate_wiring_diagram
+    text = generate_wiring_diagram(caste, track)
+    if output:
+        Path(output).write_text(text)
+        click.echo(f"Wiring diagram written to {output}")
+    else:
+        click.echo(text)
+
+
 # -- Readiness commands -----------------------------------------------------
 
 @main.command()
