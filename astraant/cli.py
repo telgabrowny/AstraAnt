@@ -659,5 +659,16 @@ def gui(asteroid: str, workers: int, taskmasters: int, surface_ants: int,
            couriers=surface_ants, track=track)
 
 
+# -- Dashboard command ---------------------------------------------------------
+
+@main.command()
+def dashboard():
+    """Launch the web dashboard (Streamlit)."""
+    import subprocess
+    dashboard_path = Path(__file__).parent / "dashboard.py"
+    click.echo(f"Launching dashboard at http://localhost:8501")
+    subprocess.run(["streamlit", "run", str(dashboard_path)], check=False)
+
+
 if __name__ == "__main__":
     main()
