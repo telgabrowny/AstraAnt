@@ -105,6 +105,7 @@ class MissionConfig:
     launch_vehicle: str = "starship_conservative"
     mothership_modules: list[str] | None = None  # Auto-set from track if None
     mission_cycles: int = 3
+    power_source: str = "solar"  # "solar", "nuclear_1kw", "nuclear_10kw", "nuclear_40kw"
 
 
 @dataclass
