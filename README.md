@@ -42,7 +42,7 @@ astraant dashboard
 
 ## Architecture
 
-- **3 ant castes**: Worker (6 legs + 2 mandible arms, $33, RP2040), Taskmaster ($75, ESP32-S3), Surface Ant ($1242, vacuum-rated Maxon actuators)
+- **3 ant castes**: Worker (6 legs + 2 mandible arms, $37, RP2040), Taskmaster ($75, ESP32-S3), Surface Ant ($1242, vacuum-rated Maxon actuators)
 - **7 modular tool heads**: drill, scoop, paste nozzle, thermal rake, sampling probe, cargo gripper, panel brush. Magnetic clip mount, all 3D-printable.
 - **Underground tunnel operations**: sealed at 1-10 kPa, extends COTS component life 100x
 - **3 extraction tracks**: A (mechanical), B (bioleaching), C (hybrid)
@@ -103,7 +103,7 @@ The firmware is real MicroPython that runs on RP2040:
 
 | Metric | Value |
 |--------|-------|
-| Worker ant cost (prototype) | $33 |
+| Worker ant cost (prototype) | $37 |
 | Worker ant cost (10K volume) | $14 |
 | Surface ant cost | $1,242 |
 | Single Starship launch (everything) | 16,187 kg payload, 35% margin |

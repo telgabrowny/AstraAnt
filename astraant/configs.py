@@ -165,28 +165,48 @@ def compute_ant_power(config: dict[str, Any]) -> dict[str, float]:
 
 def compute_ant_cost(config: dict[str, Any], catalog: Any = None) -> float:
     """Estimate total cost of an ant from config (USD). Uses catalog prices if available."""
-    # Simple estimate from config-embedded costs
     cost = 0.0
+
+    # Compute
     cost += config.get("compute", {}).get("cost_usd", 5)
 
+    # Locomotion (legs)
     loco = config.get("locomotion", {})
-    n_actuators = loco.get("actuators", 6)
-    cost += n_actuators * loco.get("per_unit_cost_usd", 3)
+    n_legs = loco.get("legs", loco.get("actuators", 6))
+    cost += n_legs * loco.get("per_unit_cost_usd", 3)
 
+    # Mandible arms
+    mandibles = config.get("mandibles", {})
+    n_mandibles = mandibles.get("count", 0)
+    cost += n_mandibles * mandibles.get("per_unit_cost_usd", 2)
+
+    # Communication
     for comm in _as_list(config.get("communication", {})):
         cost += comm.get("cost_usd", 5)
 
+    # Sensors
     for sensor in config.get("sensors", []):
         cost += sensor.get("cost_usd", 5)
 
-    tool = config.get("tool", {})
-    cost += tool.get("cost_usd", 5)
+    # Tool system (workers have tool_system, not a fixed tool)
+    tool = config.get("tool", config.get("tool_system", {}))
+    cost += tool.get("cost_usd", 0)
 
-    solar = config.get("solar", {})
-    cost += solar.get("cost_usd", 0)
+    # Power (backup supercap or battery + rail contact)
+    power = config.get("power", {})
+    backup = power.get("backup_power", power.get("backup_battery", {}))
+    cost += backup.get("cost_usd", 0)
+    rail = power.get("rail_contact", {})
+    cost += rail.get("cost_usd", 0)
+    battery = config.get("battery", power.get("battery", {}))
+    cost += battery.get("cost_usd", 0)
 
-    sail = config.get("sail", {})
-    cost += sail.get("cost_usd", 0)
+    # Solar + sail (surface ant only)
+    cost += config.get("solar", {}).get("cost_usd", 0)
+    cost += config.get("sail", {}).get("cost_usd", 0)
+
+    # Thermal (surface ant only)
+    cost += config.get("thermal", {}).get("cost_usd", 0)
 
     return cost
 
