@@ -173,11 +173,20 @@ class SimEngine:
         roles = roles[:self._worker_count]
         random.shuffle(roles)
 
+        # Tool assignment per role
+        role_tools = {
+            "worker": "drill_head",
+            "sorter": "thermal_rake",
+            "plasterer": "paste_nozzle",
+            "tender": "sampling_probe",
+        }
+
+        worker_ids = []
         for i in range(self._worker_count):
             role = roles[i]
             agent = AntAgent(
                 id=agent_id,
-                caste=role,  # Visual role (for state machine dispatch)
+                caste=role,
                 position=Position(
                     random.uniform(-2, 2),
                     random.uniform(-2, 2),
@@ -189,10 +198,13 @@ class SimEngine:
             )
             agent._assigned_segment_id = self.tunnel.active_work_face_id
             agent._target = Position(random.uniform(-3, 3), random.uniform(-3, 3), 0)
+            agent._current_tool = role_tools.get(role, "drill_head")
             self.agents.append(agent)
+            worker_ids.append(agent_id)
             agent_id += 1
 
-        # Taskmasters — patrol the tunnel
+        # Taskmasters — patrol the tunnel, each leads a squad of workers
+        tm_ids = []
         for _ in range(self._taskmaster_count):
             agent = AntAgent(
                 id=agent_id,
@@ -203,7 +215,17 @@ class SimEngine:
             )
             agent._target = Position(random.uniform(-5, 5), random.uniform(-5, 5), 0)
             self.agents.append(agent)
+            tm_ids.append(agent_id)
             agent_id += 1
+
+        # Assign workers to taskmaster squads (round-robin)
+        if tm_ids:
+            for i, wid in enumerate(worker_ids):
+                tm_id = tm_ids[i % len(tm_ids)]
+                worker = next(a for a in self.agents if a.id == wid)
+                worker._squad_leader_id = tm_id
+                tm = next(a for a in self.agents if a.id == tm_id)
+                tm._squad_member_ids.append(wid)
 
         # Surface ants — on the asteroid exterior
         for _ in range(self._surface_ant_count):

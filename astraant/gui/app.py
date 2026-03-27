@@ -17,7 +17,9 @@ from ursina import (
 )
 
 from ..catalog import Catalog
-from .models.asteroid_model import create_asteroid_entity, create_tunnel_visual
+from .models.asteroid_model import (
+    create_asteroid_entity, create_tunnel_visual, update_tunnel_visual_from_state,
+)
 from .models.ant_model import create_ant_entity, animate_walk, CASTE_COLORS
 from .simulation.sim_engine import SimEngine
 from .simulation.ant_agent import AntState
@@ -394,10 +396,16 @@ class AstraAntApp:
             if self.asteroid_cutaway:
                 self.asteroid_cutaway.rotation_y += rot
 
-        # Update tunnel visual length from sim state
+        # Update tunnel visual from sim state (every ~60 frames to save perf)
         if self.tunnel_visual and self.cutaway_mode:
-            tunnel_len = max(1.0, self.engine.tunnel.total_length_m / 10.0)
-            self.tunnel_visual.scale_y = tunnel_len / 2
+            if not hasattr(self, '_tunnel_update_counter'):
+                self._tunnel_update_counter = 0
+            self._tunnel_update_counter += 1
+            if self._tunnel_update_counter % 60 == 0:  # Every ~1 second at 60fps
+                update_tunnel_visual_from_state(
+                    self.tunnel_visual, self.engine.tunnel,
+                    self.asteroid_radius, scale_factor=0.3,
+                )
 
         # Camera follow mode
         if self.camera_mode in ("taskmaster", "follow_ant") and self.followed_agent_id is not None:
@@ -440,15 +448,21 @@ class AstraAntApp:
                     current_idx = i
                     break
         next_idx = (current_idx + 1) % len(taskmasters)
-        self.followed_agent_id = taskmasters[next_idx].id
+        tm = taskmasters[next_idx]
+        self.followed_agent_id = tm.id
         self.camera_mode = "taskmaster"
 
-        # Highlight this taskmaster's workers (all workers are in its "squad")
-        # For now, highlight all workers since we don't track squad assignment yet
+        # Highlight ONLY this taskmaster's squad members
+        squad_ids = set(tm._squad_member_ids)
         for agent in self.engine.agents:
             indicator = self.state_indicators.get(agent.id)
             if indicator:
-                indicator.scale = 0.12 if agent.caste in ("worker", "sorter", "plasterer", "tender") else 0.08
+                if agent.id in squad_ids:
+                    indicator.scale = 0.15  # Big — in this squad
+                elif agent.id == tm.id:
+                    indicator.scale = 0.20  # Biggest — the taskmaster itself
+                else:
+                    indicator.scale = 0.04  # Tiny — not in this squad
 
     def _switch_to_mothership_view(self):
         """High-level overview from above the mothership."""

@@ -146,28 +146,123 @@ def create_asteroid_entity(radius=10.0, subdivisions=4, shape="rubble_pile",
     return Entity(model=mesh, color=color.white, **kwargs)
 
 
-def create_tunnel_visual(radius=10.0, tunnel_length=5.0, tunnel_diameter=0.4) -> Entity:
-    """Create a visual tunnel inside the asteroid for cutaway view.
+ZONE_COLORS = {
+    "hydrated_matrix": color.rgb(60, 80, 100),      # Blue-gray
+    "sulfide_pocket": color.rgb(140, 100, 40),       # Bronze/copper
+    "metal_grain": color.rgb(200, 200, 180),         # Bright metallic
+    "organic_rich": color.rgb(50, 70, 40),           # Dark green
+    "silicate_bulk": color.rgb(80, 70, 60),          # Brown-gray
+    "void_rubble": color.rgb(30, 25, 20),            # Very dark
+    "": color.rgb(40, 35, 30),                        # Default tunnel color
+}
 
-    Returns an entity representing the excavated tunnel space.
-    """
-    # Tunnel is a dark cylinder descending from the surface
-    tunnel = Entity(
+
+def create_tunnel_visual(radius=10.0, tunnel_length=5.0, tunnel_diameter=0.4) -> Entity:
+    """Create a basic tunnel visual (used before sim starts)."""
+    root = Entity()
+
+    # Main shaft from surface downward
+    shaft = Entity(
+        parent=root,
         model="cylinder",
-        color=color.rgb(20, 15, 10),   # Very dark interior
+        color=color.rgb(30, 25, 20),
         scale=Vec3(tunnel_diameter, tunnel_length / 2, tunnel_diameter),
         position=Vec3(0, radius - tunnel_length / 2, 0),
     )
 
-    # Work lights (amber dots along the tunnel)
+    # Work lights along shaft
     for i in range(int(tunnel_length)):
-        light = Entity(
-            parent=tunnel,
+        Entity(
+            parent=shaft, model="sphere",
+            color=color.rgb(255, 180, 50), scale=0.05,
+            position=Vec3(0.18, -0.3 + i * 0.15, 0), unlit=True,
+        )
+
+    return root
+
+
+def update_tunnel_visual_from_state(root_entity: Entity, tunnel_network,
+                                     asteroid_radius: float = 10.0,
+                                     scale_factor: float = 0.3) -> None:
+    """Update tunnel visual entities to match the simulation's tunnel network state.
+
+    Creates/updates cylinder entities for each tunnel segment, colored by zone type.
+    Also shows nodes as small spheres (branch points brighter).
+    """
+    # Clear old children (except work lights from initial creation)
+    for child in list(root_entity.children):
+        child.enabled = False
+
+    # Scale tunnel coords to visual space
+    # Tunnel network uses meters, visual uses scene units
+    # Map: sim Y (negative = deeper) -> visual Y (relative to asteroid center)
+    def sim_to_visual(pos) -> Vec3:
+        return Vec3(
+            pos.x * scale_factor,
+            asteroid_radius + pos.y * scale_factor,  # y is negative in sim
+            pos.z * scale_factor,
+        )
+
+    # Draw segments as cylinders
+    for seg in tunnel_network.segments:
+        from_node = next((n for n in tunnel_network.nodes if n.id == seg.from_node_id), None)
+        to_node = next((n for n in tunnel_network.nodes if n.id == seg.to_node_id), None)
+        if from_node is None or to_node is None:
+            continue
+
+        start = sim_to_visual(from_node.position)
+        end = sim_to_visual(to_node.position)
+
+        # Midpoint and length
+        mid = Vec3((start.x + end.x) / 2, (start.y + end.y) / 2, (start.z + end.z) / 2)
+        length = (Vec3(end.x - start.x, end.y - start.y, end.z - start.z)).length()
+        if length < 0.01:
+            continue
+
+        zone_color = ZONE_COLORS.get(seg.zone_type, ZONE_COLORS[""])
+
+        # Sealed segments are slightly brighter
+        if seg.sealed:
+            zone_color = color.rgb(
+                min(255, int(zone_color.r * 255 * 1.3)),
+                min(255, int(zone_color.g * 255 * 1.3)),
+                min(255, int(zone_color.b * 255 * 1.3)),
+            )
+
+        seg_entity = Entity(
+            parent=root_entity,
+            model="cube",  # Simpler than cylinder for many segments
+            color=zone_color,
+            scale=Vec3(0.15, length, 0.15),
+            position=mid,
+        )
+        # Orient toward the end point
+        if length > 0.01:
+            seg_entity.look_at(end)
+            seg_entity.rotation_x += 90  # Cylinder alignment
+
+    # Draw branch points as small bright spheres
+    for node in tunnel_network.nodes:
+        pos = sim_to_visual(node.position)
+        node_color = color.rgb(255, 200, 50) if node.is_entrance else color.rgb(150, 130, 100)
+        Entity(
+            parent=root_entity,
             model="sphere",
-            color=color.rgb(255, 180, 50),
-            scale=0.05,
-            position=Vec3(0.18, -0.3 + i * 0.15, 0),
+            color=node_color,
+            scale=0.08 if node.is_entrance else 0.04,
+            position=pos,
             unlit=True,
         )
 
-    return tunnel
+    # Draw common chamber if it exists
+    if tunnel_network.common_chamber and tunnel_network.common_chamber.current_radius_m > 0:
+        ch = tunnel_network.common_chamber
+        ch_pos = sim_to_visual(ch.center)
+        ch_r = ch.current_radius_m * scale_factor
+        Entity(
+            parent=root_entity,
+            model="sphere",
+            color=color.rgb(100, 150, 200) if ch.sealed else color.rgb(60, 50, 40),
+            scale=ch_r * 2,
+            position=ch_pos,
+        )

@@ -68,6 +68,9 @@ class AntAgent:
     _target: Position = field(default_factory=Position)
     _assigned_segment_id: int = 0
     _cycle_count: int = 0
+    _squad_leader_id: int = -1       # Taskmaster ID this worker reports to
+    _squad_member_ids: list = field(default_factory=list)  # For taskmasters: their workers
+    _current_tool: str = ""          # Current tool head equipped
 
     # Degradation
     hours_operated: float = 0.0
