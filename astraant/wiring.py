@@ -287,19 +287,33 @@ def generate_wiring_diagram(caste: str, track: str = "a") -> str:
     # --- Power ---
     lines.append(f"\n--- POWER ---")
     power = cfg.get("power", {})
-    lines.append(f"  Source: {power.get('source', '?')}")
-    if power.get("source") == "tethered":
+    source = power.get("source", "?")
+    lines.append(f"  Source: {source}")
+    if source == "tunnel_power_rail":
+        lines.append(f"  Power rail contact -> 12V rail (+ and - strips on tunnel wall)")
+        lines.append(f"  Spring-loaded copper brush maintains contact while moving")
+        lines.append(f"  12V rail -> buck converter -> 5V servo rail + 3.3V logic rail")
+        lines.append(f"  Supercapacitor charges continuously while on rail")
+        lines.append(f"  Off-rail: supercap provides ~2 min of full-power operation")
+    elif source == "tethered":
         lines.append(f"  Tether -> 48V bus (via DC-DC buck converter to 5V)")
         lines.append(f"  Buck converter 5V out -> MCU VIN / servo rail")
         lines.append(f"  Buck converter 3.3V out -> sensor/radio rail")
-    elif power.get("source") == "solar":
-        lines.append(f"  Solar panel -> charge controller -> LiPo battery")
+    elif source == "solar":
+        lines.append(f"  Solar panel -> charge controller -> battery")
         lines.append(f"  Battery -> 5V boost converter -> MCU/servo rail")
 
-    battery = power.get("backup_battery", cfg.get("battery", {}))
-    if battery:
-        lines.append(f"  Backup battery: {battery.get('capacity_mah', '?')} mAh LiPo")
-        lines.append(f"  Battery -> LiPo charger module -> system power")
+    backup = power.get("backup_power", power.get("backup_battery", cfg.get("battery", {})))
+    if backup:
+        btype = backup.get("type", "battery")
+        if btype == "supercapacitor":
+            energy = backup.get("energy_wh", 0)
+            lines.append(f"  Backup: {backup.get('capacitance_f', '?')}F supercapacitor ({energy} Wh)")
+            lines.append(f"  Charge time: {backup.get('charge_time_seconds', '?')}s from rail")
+            lines.append(f"  Covers: rail junctions, work face ops, tool dock visits")
+        else:
+            lines.append(f"  Backup: {backup.get('capacity_mah', '?')} mAh battery")
+            lines.append(f"  Battery -> charger module -> system power")
 
     # --- Summary ---
     lines.append(f"\n--- PIN USAGE SUMMARY ---")

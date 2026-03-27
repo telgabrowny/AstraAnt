@@ -74,17 +74,60 @@ storage_hopper:
   capacity_g: 200               # Detachable — different sizes per role
 
 power:
-  source: tethered
-  tether_connector_mass_g: 3
+  source: tunnel_power_rail
+  description: >
+    NOT tethered — uses a power rail system along tunnel walls.
+    Two copper strips (+ and -) run along the sealed tunnel surface.
+    Each ant has a spring-loaded sliding contact arm that maintains
+    connection while moving. Like a slot car or subway third rail.
+    No cables, no tangling, no snagging.
+  rail_contact:
+    type: spring_loaded_brush
+    mass_g: 3
+    contact_force_n: 0.5
+    materials: "copper brush on phosphor bronze spring"
+    cost_usd: 0.50
   backup_power:
-    type: supercapacitor               # Replaced LiPo — infinite cycle life
+    type: supercapacitor
     part_id: supercapacitor_backup
-    capacitance_f: 10
-    energy_wh: 0.04                    # 30 seconds of untethered operation
-    charge_time_seconds: 5
-    mass_g: 8                          # Was 15g for LiPo — 7g savings
-    cost_usd: 2.50                     # Was $3 for LiPo — $0.50 savings
-    cycle_life: 1000000                # Was 500 for LiPo — failure eliminated
+    capacitance_f: 50                  # Larger: covers rail gaps + work face time
+    energy_wh: 0.2                     # ~2 minutes off-rail at full power
+    charge_time_seconds: 10
+    mass_g: 12
+    cost_usd: 4.00
+    cycle_life: 1000000
+    covers:
+      - "Rail junction crossings (1-2 seconds)"
+      - "Work face operations off-rail (up to 2 minutes)"
+      - "Tool dock visits"
+      - "Crossing between tunnel branches"
+    note: >
+      The supercapacitor charges continuously while on the rail.
+      When the ant leaves the rail (at work face or crossing a junction),
+      the supercap provides 2 minutes of full-power operation.
+      If it runs out, the ant stops and waits — not destructive, just stuck.
+
+tunnel_power_infrastructure:
+  description: >
+    Infrastructure installed by workers as tunnels are dug.
+    Part of the mothership power module distribution system.
+  rail_type: "copper strip on insulating substrate, bonded to tunnel wall"
+  rail_width_mm: 10
+  rail_thickness_mm: 1
+  rail_spacing_mm: 50                  # Gap between + and - rails
+  copper_mass_per_meter_g: 90         # Both rails combined
+  voltage_v: 12                        # Stepped down from 48V bus at regulators every 20m
+  max_current_per_rail_a: 5
+  installation:
+    method: "worker with cargo_gripper presses copper strip into paste on tunnel wall"
+    rate_m_per_hour: 10
+    note: "Rails installed by plasterer-role workers right after wall sealing"
+  junctions:
+    type: "ramped overlap — ant contact slides smoothly over the joint"
+    gap_at_junction_mm: 2              # Brief loss of contact (supercap covers this)
+  rail_per_branch:
+    main_tunnel: "dual rail (bidirectional traffic)"
+    branch_tunnel: "single rail (one-way traffic, ants reverse at work face)"
 
 physical_dimensions:
   body_length_mm: 120           # Thorax + abdomen

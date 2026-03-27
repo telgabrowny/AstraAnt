@@ -58,6 +58,8 @@ class TunnelSegment:
     # Composition zone
     zone_type: str = ""
     zone_richness: float = 1.0
+    # Infrastructure
+    rail_installed: bool = False     # Power rails bonded to wall
     # Dig direction (unit vector)
     direction: Vec3 = field(default_factory=lambda: Vec3(0, -1, 0))
 
