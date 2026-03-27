@@ -1,0 +1,126 @@
+# Mothership Module: Colony Brain (Raspberry Pi 4)
+# The strategic intelligence for the entire colony.
+# Taskmasters handle local decisions. The Pi4 handles everything else.
+
+module: compute
+name: "Colony Brain -- Raspberry Pi 4 Compute Module"
+type: compute
+
+hardware:
+  part_id: raspberry_pi_4_8gb
+  processor: "BCM2711 quad-core ARM Cortex-A72 @ 1.5 GHz"
+  ram_gb: 8
+  storage: "256 GB microSD (mission logs, maps, ML models)"
+  power_draw_w: 6                      # Typical under load
+  mass_g: 50                           # Board only
+  cost_usd: 75
+  os: "Raspberry Pi OS Lite (headless)"
+  connectivity:
+    can_bus: "CAN 2.0B via MCP2515 HAT -- backbone to all taskmasters"
+    ethernet: "For local diagnostics if crew present"
+    wifi: "Disabled (power saving, no use case)"
+
+# The four-level intelligence hierarchy
+intelligence_hierarchy:
+
+  level_1_worker:
+    hardware: "RP2040 (133 MHz, 264 KB SRAM)"
+    role: "Reflexes -- execute commands, report status"
+    decisions:
+      - "Am I stalled? (servo current monitoring)"
+      - "Is my supercap low? (ADC voltage check)"
+      - "Is my hopper full? (strain gauge)"
+      - "Did I arrive at the commanded position?"
+    does_NOT_decide:
+      - "What to do next (waits for taskmaster command)"
+      - "Where to go (follows commanded rail position)"
+      - "When to stop drilling (taskmaster says DRILL_STOP)"
+    response_time_ms: 1                # Reflex-level
+    note: "Dumb on purpose. A broken worker just stops. It doesn't improvise."
+
+  level_2_taskmaster:
+    hardware: "ESP32-S3 (240 MHz dual-core, 512 KB SRAM)"
+    role: "Local scout -- fast decisions for individual workers"
+    decisions:
+      - "Should worker #14 drill or haul? (hopper fill + supercap level)"
+      - "Is this servo current normal? (threshold comparison)"
+      - "What mineral is at the work face? (spectral sensor lookup table)"
+      - "Which worker should collect debris? (nearest available)"
+      - "Worker #7 missed 3 heartbeats -- flag as failed"
+    escalates_to_mothership:
+      - "New zone type detected at work face (spectral classification)"
+      - "Worker failure requiring recovery (dispatch from another squad?)"
+      - "Tunnel branch decision (which direction to dig next?)"
+      - "Squad is idle -- need more work assignments"
+    response_time_ms: 10               # Real-time local decisions
+    workers_per_taskmaster: 20
+
+  level_3_mothership:
+    hardware: "Raspberry Pi 4 (1.5 GHz quad-core, 8 GB RAM)"
+    role: "Colony brain -- strategic decisions for all squads"
+    decisions:
+      - "Which tunnel branch should we expand? (voxel grid analysis)"
+      - "Reassign 5 workers from mining to plastering (squad rebalancing)"
+      - "This zone is depleted, redirect to new vein (composition mapping)"
+      - "Start manufacturing batch of 10 new ants (production scheduling)"
+      - "Schedule cargo pod launches (revenue optimization)"
+      - "Thermal sorter vs crusher throughput balancing"
+      - "Power rail routing for new tunnel branches"
+      - "Route planning to avoid tunnel traffic congestion"
+      - "Failure pattern analysis (are we losing too many servos in sector 3?)"
+    data_managed:
+      - "Complete 3D tunnel map (voxel grid + topology)"
+      - "All worker position and health histories"
+      - "Material ledger (every kg tracked)"
+      - "Manufacturing queue and spare parts inventory"
+      - "Cargo pod launch schedule and revenue forecast"
+    response_time_s: 1                 # Strategic, can take a second to think
+    notes: >
+      The Pi4 runs the same simulation engine that drives our GUI.
+      The colony brain IS the AstraAnt simulator, running on-site.
+      It sees the same data the player sees, just without the comm delay.
+
+  level_4_earth:
+    hardware: "Human player + ground control"
+    role: "High-level goals -- environmental pressure"
+    decisions:
+      - "Prioritize platinum over copper"
+      - "Send resupply mission with 4 more motherships"
+      - "Start chamber excavation"
+      - "Deploy humanoid construction crew"
+      - "Set endgame target: 224m radius habitat"
+    comm_delay_minutes: 5-30           # Earth-asteroid light travel time
+    response_time: "minutes to hours"
+    note: >
+      The human player is the slowest level but sets the overall direction.
+      The colony operates autonomously between human commands.
+      If Earth goes silent, the colony continues on its last directives.
+
+software_running_on_pi4:
+  - "astraant simulation engine (headless mode)"
+  - "tunnel mapping and route planning"
+  - "material ledger and production scheduling"
+  - "failure analysis and predictive maintenance"
+  - "cargo pod launch optimizer"
+  - "CAN bus message router (taskmaster communication)"
+  - "telemetry aggregation for Earth uplink"
+  - "mission log and data recorder"
+
+mass_total_kg: 0.2                     # Pi4 + case + microSD + CAN HAT
+power_total_w: 6
+cost_total_usd: 100                    # Pi4 + accessories
+
+notes: |
+  The Pi4 is already on the mothership (part of the comms module).
+  This config just documents what software it runs and its role
+  in the intelligence hierarchy.
+
+  Key insight: the colony brain runs the SAME code as the simulator.
+  The AstraAnt simulation engine is both the design tool AND the
+  operational control software. What you see in the GUI is what
+  the Pi4 sees in real-time on the asteroid.
+
+  If the Pi4 fails, taskmasters can operate independently with
+  reduced capability (local decisions only, no strategic coordination).
+  Workers can operate with just their taskmaster's commands.
+  The hierarchy degrades gracefully.
