@@ -427,6 +427,34 @@ def economics(workers, taskmasters, surface_ants, track, asteroid,
         click.echo(reality_check(econ))
 
 
+# -- Manufacturing command ------------------------------------------------------
+
+@main.command("manufacturing")
+@click.option("--asteroid", default="bennu")
+@click.option("--track", type=click.Choice(["a", "b", "c"]), default="b")
+@click.option("--years", default=5.0, help="Mission years of accumulated excess")
+def manufacturing(asteroid: str, track: str, years: float):
+    """Plan in-situ manufacturing from excess extracted materials."""
+    from .mission_economics import calculate_site_economics
+    from .manufacturing import plan_manufacturing, format_manufacturing_report
+
+    econ = calculate_site_economics(asteroid, "lunar_orbit", track, workers=100, mission_years=years)
+
+    # Calculate excess (produced - shipped)
+    shipped_kg = econ.kg_delivered
+    excess = {
+        "iron": econ.metals_extracted_kg.get("iron", 0) * 0.8,  # 80% not shipped
+        "nickel": econ.metals_extracted_kg.get("nickel", 0) * 0.8,
+        "copper": econ.metals_extracted_kg.get("copper", 0) * 0.8,
+        "cobalt": econ.metals_extracted_kg.get("cobalt", 0) * 0.8,
+        "waste_paste": econ.total_regolith_processed_kg * 0.7,  # 70% becomes waste
+        "water": max(0, econ.total_water_recovered_kg - 300),  # Minus bioreactor needs
+    }
+
+    plan = plan_manufacturing(excess)
+    click.echo(format_manufacturing_report(plan, excess))
+
+
 # -- Price report command -------------------------------------------------------
 
 @main.command("price-report")
