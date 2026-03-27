@@ -24,6 +24,7 @@ from .models.ant_model import create_ant_entity, animate_walk, CASTE_COLORS
 from .simulation.sim_engine import SimEngine
 from .simulation.ant_agent import AntState
 from .simulation.microgravity import get_activity_description
+from .simulation.save_load import save_game, load_game, list_saves, AutoSaver
 
 
 # Map sim states to status indicator colors
@@ -85,6 +86,10 @@ class AstraAntApp:
         self.followed_agent_id: int | None = None
         self._tab_cooldown = 0.0
         self._m_cooldown = 0.0
+        self._save_cooldown = 0.0
+
+        # Auto-save every 5 minutes of real time
+        self.autosaver = AutoSaver(interval_seconds=300)
 
     def setup_scene(self):
         """Create the 3D scene."""
@@ -247,7 +252,7 @@ class AstraAntApp:
             color=color.rgb(200, 200, 255),
         )
 
-        Text(text="[1-5] Speed [Space] Pause [C] Cutaway [Tab] Taskmaster [F] Follow Ant [M] Mothership [Esc] Orbit",
+        Text(text="[1-5] Speed [Space] Pause [C] Cutaway [Tab] Taskmaster [F] Follow [M] Mother [F5] Save [F9] Load",
              position=Vec2(-0.85, -0.47), scale=0.7, color=color.gray)
 
     def _setup_ground_control(self):
@@ -329,6 +334,30 @@ class AstraAntApp:
         if held_keys["m"] and self._m_cooldown <= 0:
             self._switch_to_mothership_view()
             self._m_cooldown = 0.5
+        # Save/load (F5 = quicksave, F9 = quickload)
+        self._save_cooldown -= dt
+        if held_keys["f5"] and self._save_cooldown <= 0:
+            path = save_game(self.engine, slot_name="quicksave")
+            self.gc_status.text = f"SAVED: {path.name}"
+            self.gc_status.color = color.rgb(100, 255, 100)
+            self._save_cooldown = 1.0
+        if held_keys["f9"] and self._save_cooldown <= 0:
+            saves = list_saves()
+            quicksaves = [s for s in saves if "quicksave" in s.get("slot_name", "")]
+            if quicksaves:
+                load_game(quicksaves[0]["path"], self.engine)
+                self.gc_status.text = f"LOADED: {quicksaves[0]['filename']}"
+                self.gc_status.color = color.rgb(100, 200, 255)
+            else:
+                self.gc_status.text = "No quicksave found"
+            self._save_cooldown = 1.0
+
+        # Auto-save check
+        auto_path = self.autosaver.check(self.engine)
+        if auto_path:
+            self.gc_status.text = f"AUTO-SAVED: {auto_path.name}"
+            self.gc_status.color = color.rgb(100, 200, 100)
+
         if held_keys["f"] and self._tab_cooldown <= 0:
             self._switch_to_follow_ant()
             self._tab_cooldown = 0.5

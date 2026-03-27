@@ -785,6 +785,34 @@ def gui(asteroid: str, workers: int, taskmasters: int, surface_ants: int,
            couriers=surface_ants, track=track)
 
 
+# -- Save/load commands --------------------------------------------------------
+
+@main.group()
+def saves():
+    """Manage save game files."""
+    pass
+
+
+@saves.command("list")
+def saves_list():
+    """List all save files."""
+    from .gui.simulation.save_load import list_saves
+    save_files = list_saves()
+    if not save_files:
+        click.echo("No save files found.")
+        return
+    click.echo(f"{'Filename':<40s} {'Saved At':<22s} {'Sim Time':<15s} {'Agents':<8s} {'Revenue'}")
+    click.echo("-" * 95)
+    for s in save_files:
+        if "error" in s:
+            click.echo(f"{s['filename']:<40s} (corrupt)")
+            continue
+        sim_hrs = s.get("sim_time", 0) / 3600
+        days = sim_hrs / 24
+        click.echo(f"{s['filename']:<40s} {s['saved_at']:<22s} "
+                   f"Day {days:<10.0f} {s['agents']:<8d} ${s['revenue']:,.0f}")
+
+
 # -- Dashboard command ---------------------------------------------------------
 
 @main.command()
