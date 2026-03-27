@@ -1,0 +1,86 @@
+# Mothership Module: Communications Hub
+# Hybrid network: Earth deep-space link + tunnel wired backbone + local RF
+
+module: comms
+name: "Hybrid Communication Network Hub"
+type: hybrid_network_hub
+
+earth_link:
+  type: high_gain_antenna
+  band: x_band
+  frequency_ghz: 8.4
+  transmit_power_w: 40
+  antenna_diameter_m: 0.5           # Small high-gain dish
+  mass_kg: 3
+  data_rate_kbps:
+    at_1_au: 20                     # When asteroid is ~1 AU from Earth
+    at_2_au: 5                      # Inverse square drops bandwidth
+    at_3_au: 2
+  latency:
+    min_minutes: 2                  # NEA at closest approach
+    typical_minutes: 10             # Average for NEA targets
+    max_minutes: 30                 # When on far side of orbit
+  protocol: "store_and_forward"     # Batch telemetry, not streaming
+  telemetry_interval_minutes: 15    # Heartbeat every 15 min sim-time
+
+  backup:
+    type: low_gain_antenna
+    mass_kg: 0.5
+    data_rate_kbps: 0.1             # Emergency beacon only
+    omnidirectional: true
+
+tunnel_backbone:
+  type: wired_can_bus
+  standard: "CAN 2.0B"
+  bandwidth_kbps: 1000
+  cable:
+    type: shielded_twisted_pair
+    mass_per_meter_g: 30
+    max_run_m: 500                  # Total backbone length
+  relay_nodes:
+    spacing_m: 20
+    mass_per_node_g: 50
+    power_per_node_w: 1
+    max_nodes: 25
+  junction_boxes:
+    at_tunnel_branches: true
+    mass_per_junction_g: 100
+    power_per_junction_w: 2
+
+local_rf:
+  type: rf_access_point
+  part_id: nrf24l01_rf
+  band: "2.4 GHz"
+  channels: 8                       # Simultaneous ant connections
+  range_m: 50                       # Per access point
+  bandwidth_per_channel_kbps: 250
+  access_points:
+    at_junction_boxes: true         # Co-located with backbone junctions
+    mass_per_ap_g: 10
+    power_per_ap_w: 0.5
+
+network_controller:
+  part_id: esp32_s3
+  mass_g: 10
+  power_w: 0.5
+  functions:
+    - "route messages between backbone and Earth link"
+    - "buffer telemetry for batch transmission"
+    - "prioritize emergency messages"
+    - "manage RF channel allocation"
+
+total_mass_kg: 6                    # Hub only, cables extra
+total_power_w: 45                   # Hub + relay nodes at full deployment
+cable_mass_for_100m_tunnel_kg: 3    # 100m × 30 g/m
+
+notes: |
+  The comm system has three tiers:
+  1. Earth link (high-gain X-band) — slow, delayed, batch telemetry
+  2. Tunnel backbone (wired CAN bus) — fast, reliable, connects taskmasters to mothership
+  3. Local RF (nRF24L01) — short-range, connects workers to nearest taskmaster
+
+  Player commands from Earth go through tier 1 with realistic delay.
+  Taskmasters relay commands to workers via tiers 2+3.
+
+  Cable mass scales with tunnel length — budget ~3 kg per 100m of tunnel.
+  The backbone is deployed by taskmasters as tunnels are extended.

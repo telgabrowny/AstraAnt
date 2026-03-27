@@ -1,0 +1,65 @@
+# Mothership Module: Initial Excavation Drill
+# First module to operate — drills the initial tunnel for ant operations.
+# Must be radiation-hardened since it operates on the surface before tunnels are dug.
+
+module: drill
+name: "Initial Excavation Drill System"
+type: initial_excavation
+
+drill_head:
+  type: rotary_percussion
+  diameter_mm: 200                  # Tunnel bore diameter
+  power_w: 500
+  mass_kg: 8
+  penetration_rate:
+    consolidated_regolith_m_per_hr: 0.5
+    loose_rubble_m_per_hr: 2.0
+    solid_rock_m_per_hr: 0.1
+  bit_material: tungsten_carbide
+  bit_lifetime_hours: 200
+  spare_bits: 3
+  spare_bit_mass_kg: 1.5            # 0.5 kg each
+
+debris_management:
+  type: auger_conveyor
+  power_w: 100
+  mass_kg: 5
+  throughput_kg_per_hr: 50          # Moves debris out of bore
+  conveyor_length_m: 5              # Initial tunnel depth reach
+
+drill_frame:
+  type: anchored_platform
+  mass_kg: 4
+  anchoring: "screw anchors into regolith"
+  degrees_of_freedom: 2             # Tilt for angled tunnels
+
+control:
+  part_id: stm32l4                  # Low-power MCU for drill control
+  rad_hardened: true                # Surface operation before shielding
+  mass_kg: 0.5
+  power_w: 0.5
+
+total_mass_kg: 20.5
+total_power_w: 601
+rad_hardened: true
+
+operating_sequence:
+  - "Land mothership, anchor to asteroid surface"
+  - "Deploy drill frame with screw anchors"
+  - "Bore initial shaft 2-3m deep (provides radiation shielding)"
+  - "Widen bore to operational tunnel diameter"
+  - "Continue drilling to target depth while sealing module follows"
+  - "Drill head retracted; tunnel handed off to ant operations"
+
+notes: |
+  The drill operates on the surface in full vacuum and radiation before
+  any tunnel shielding exists. All components must be radiation-tolerant.
+
+  Penetration rates vary hugely by asteroid composition. Rubble pile
+  asteroids (Bennu, Ryugu) are much easier to drill than monolithic
+  rock (potentially Eros). The sim should model this based on the
+  target asteroid's regolith_type field.
+
+  After initial excavation, the drill can be repurposed for extending
+  the tunnel network, but ants handle most expansion via their own
+  mining tools (more parallel, better utilization).

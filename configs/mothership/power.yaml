@@ -1,0 +1,88 @@
+# Mothership Module: Surface Solar Array & Power Distribution
+# Deploys on asteroid surface, routes power underground via cables.
+
+module: power
+name: "Surface Solar Array & Power Distribution"
+type: surface_solar_array
+
+solar_panels:
+  part_id: alta_gaas_solar
+  type: deployable_array
+  area_m2: 20
+  efficiency: 0.29
+  power_output_w_at_1au: 5800
+  # Power scales with heliocentric distance: P(r) = P(1AU) / r^2
+  # Bennu at perihelion (0.897 AU): ~7200W
+  # Bennu at aphelion (1.356 AU): ~3150W
+  # Psyche (~2.92 AU): ~680W
+  panel_mass_kg: 8                  # GaAs cells + substrate
+  deployment_mechanism_mass_kg: 4   # Hinges, motors, latch
+  deployment_time_minutes: 30
+  stowed_volume_m3: 0.2
+
+power_conditioning:
+  type: mppt_charge_controller
+  efficiency: 0.95
+  mass_kg: 2
+  input_voltage_range_v: [20, 120]
+  output_voltage_v: 48              # Tunnel bus voltage
+
+battery_bank:
+  type: lithium_iron_phosphate      # LiFePO4 — safer, longer cycle life
+  capacity_wh: 10000
+  voltage_v: 48
+  mass_kg: 28                       # ~360 Wh/kg for LiFePO4
+  cycle_life: 5000
+  operating_temp_c: [-20, 60]
+  purpose: "eclipse survival and peak load buffering"
+  eclipse_duration_max_hours: 2.2   # Bennu rotation period / 2
+  eclipse_survival_power_w: 200     # Minimum keepalive power
+  eclipse_margin_hours: 4.5         # 10000 Wh / 200W = 50 hrs — very conservative
+
+tunnel_power_distribution:
+  bus_voltage_v: 48
+  bus_type: dc_power_bus
+  cable:
+    type: silicone_insulated_copper
+    gauge_awg: 14
+    mass_per_meter_g: 50
+    max_current_a: 15
+    resistance_per_meter_ohm: 0.008
+  max_cable_run_m: 200
+  distribution_efficiency_at_100m: 0.92
+  distribution_efficiency_at_200m: 0.85
+  power_taps:
+    spacing_m: 10                   # Ant tether connection points
+    tap_mass_g: 30
+    tap_type: "quick-connect magnetic"
+
+surface_to_tunnel_feedthrough:
+  type: sealed_cable_gland
+  mass_g: 200
+  seal_rating_kpa: 20               # Handles tunnel pressure
+  cable_capacity: 4                 # Number of power cables through seal
+
+total_mass_kg: 45.2
+total_power_w: 5800                 # At 1 AU — varies by target
+
+power_budget_allocation:
+  drill_module_w: 600               # During initial excavation
+  sealing_module_w: 50              # Compressor + polymer spray
+  comms_module_w: 55
+  bioreactor_module_w: 400          # Track B/C only
+  ant_charging_bus_w: 3000          # Supports ~50 active workers simultaneously
+  lighting_w: 20                    # Tunnel work lights
+  reserve_w: 675                    # Margin
+
+notes: |
+  Solar array output varies significantly with asteroid heliocentric distance.
+  At Bennu (0.9-1.4 AU), power is good. At Psyche (2.9 AU), output drops to
+  ~12% of 1 AU rating — the mission may need a much larger array or RTG.
+
+  The battery bank is sized for eclipse survival (asteroid rotation puts
+  panels in shadow periodically) plus peak load buffering when many ants
+  are active simultaneously.
+
+  Power distribution efficiency drops with cable length due to resistive
+  losses. At 48V DC, losses are acceptable to ~200m of cable run.
+  Longer tunnels may need voltage boost converters at relay points.

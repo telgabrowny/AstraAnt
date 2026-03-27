@@ -1,0 +1,108 @@
+# Mothership Module: Cargo Staging & Return Vehicle Dock
+# Manages processed material, packages into cargo pods, stages return vehicles.
+
+module: cargo
+name: "Cargo Staging & Return Vehicle Dock"
+type: return_vehicle_staging
+
+storage_bins:
+  count: 4
+  capacity_per_bin_kg: 150
+  total_capacity_kg: 600
+  bin_material: aluminum_honeycomb
+  bin_mass_each_kg: 2
+  total_bin_mass_kg: 8
+  segregation:
+    - bin: 1
+      contents: "high_value_metals"  # PGM, rare earths
+    - bin: 2
+      contents: "base_metals"        # Copper, nickel, cobalt
+    - bin: 3
+      contents: "iron_nickel"        # Bulk structural metals
+    - bin: 4
+      contents: "water_ice"          # If available — extremely valuable
+
+compactor:
+  type: regolith_bag_compactor
+  power_w: 50
+  mass_kg: 5
+  throughput_kg_per_hour: 20
+  compression_ratio: 2              # Doubles density of loose material
+  bag_material: kevlar_fabric
+  bag_mass_g: 100                   # Per cargo bag
+
+return_vehicle_dock:
+  capacity: 5                        # Vehicles stored/staged simultaneously
+  assembly_area: true                # Space to attach sail to cargo pod
+  launch_rail:
+    type: electromagnetic_rail       # Low-velocity launch assist
+    length_m: 3
+    mass_kg: 10
+    launch_velocity_m_per_s: 5       # Gentle push — sail does the rest
+    power_w: 200                     # Brief pulse during launch
+
+return_vehicle_inventory:
+  vehicles_per_mission: 10           # Loaded on mothership at launch
+  vehicle_config:
+    cargo_capacity_kg: 100
+    structure_mass_kg: 5
+    sail:
+      area_m2: 25
+      mass_kg: 0.5                   # Film + booms
+      material: cp1_polyimide
+    guidance:
+      controller: esp32_s3           # Or rad-tolerant for long transit
+      star_tracker_mass_g: 100
+      sun_sensor_mass_g: 10
+      reaction_wheels:
+        count: 3
+        mass_each_g: 50
+    capture_strategy: lunar_orbit_insertion
+    vehicle_empty_mass_kg: 6.5
+    vehicle_cost_usd: 1500
+  total_vehicle_mass_kg: 65          # 10 vehicles × 6.5 kg each
+
+loading_automation:
+  type: conveyor_and_arm
+  conveyor:
+    length_m: 3
+    power_w: 20
+    mass_kg: 3
+  loading_arm:
+    type: 2dof_arm
+    reach_m: 1
+    payload_kg: 10
+    power_w: 30
+    mass_kg: 4
+  cycle_time_minutes: 30             # Load one cargo pod
+
+total_mass_kg: 100                   # Including 10 return vehicles
+total_mass_without_vehicles_kg: 35
+total_power_w_loading: 100           # During active loading
+total_power_w_launch: 200            # Brief pulse
+total_power_w_idle: 5                # Monitoring only
+
+launch_procedure:
+  - "Courier ant stages cargo bags at tunnel entrance"
+  - "Loading arm transfers bags into cargo pod on dock"
+  - "Sail deployed and attached to pod"
+  - "Guidance system powered on, star tracker calibrated"
+  - "Ground control authorizes launch (with comm delay)"
+  - "Electromagnetic rail provides initial velocity boost"
+  - "Sail unfurls, cargo pod begins transit to destination"
+  - "End-of-life courier ant optionally attached as backup guidance"
+
+notes: |
+  The cargo module is where the economics happen — everything upstream
+  (mining, bioleaching, processing) feeds into this staging area.
+
+  Return vehicles are the main per-cycle cost item. At $1500 each and
+  10 per mission, that's $15K in vehicles alone. But each carries 100 kg
+  of material worth potentially millions at lunar/Mars orbit.
+
+  The electromagnetic launch rail gives a gentle 5 m/s push to escape
+  the asteroid's negligible gravity well. The solar sail handles the
+  actual transit to the destination orbit.
+
+  Loading is semi-automated — courier ants bring material to the dock
+  area, the loading arm handles fine positioning into pods.

@@ -1,0 +1,123 @@
+# Mothership Module: Tunnel Sealing & Pressurization
+# Seals tunnels to 1-10 kPa for COTS component protection.
+
+module: sealing
+name: "Tunnel Sealing & Pressurization System"
+type: tunnel_pressurization
+
+entrance_seal:
+  type: inflatable_gasket
+  material: silicone_rubber
+  mass_kg: 5
+  seal_diameter_mm: 250             # Matches drill bore
+  pressure_rating_kpa: 20           # Well above target 1-10 kPa
+  inflation_method: mechanical      # Spring-loaded, no pump needed
+  spare_gaskets: 2
+  spare_mass_kg: 2
+
+sealing_options:
+  polymer_spray:
+    method: "spray_applied_sealant"
+    material: silicone_conformal_coating
+    consumable_per_m2_kg: 0.1       # ~100g of spray per m2 of tunnel wall
+    seal_effectiveness: 0.98         # 98% pressure retention per day
+    application:
+      tool: spray_nozzle_on_arm
+      power_w: 50
+      mass_kg: 2
+      coverage_rate_m2_per_hour: 5
+    advantages:
+      - "Highly reliable seal"
+      - "Quick application"
+      - "Proven technology"
+    disadvantages:
+      - "Consumable — must be launched from Earth"
+      - "Limited by supply quantity"
+    initial_supply_kg: 10            # Enough for ~100 m2 of tunnel wall
+    resupply_per_cycle_kg: 5
+
+  regolith_sintering:
+    method: "microwave_sintering"
+    power_w: 2000                    # Microwave emitter
+    emitter_mass_kg: 8
+    frequency_ghz: 2.45             # Standard microwave frequency
+    seal_effectiveness: 0.85         # 85% — more porous than spray
+    sintering_rate_m2_per_hour: 1    # Slow but zero consumables
+    penetration_depth_mm: 5
+    advantages:
+      - "Zero consumables from Earth"
+      - "Uses local material"
+      - "Indefinitely sustainable"
+    disadvantages:
+      - "High power requirement (2 kW)"
+      - "Slow coverage rate"
+      - "Lower seal quality than spray"
+      - "May not work on all regolith compositions"
+
+  ice_regolith_paste:
+    method: "ice_binder_paste"
+    requires: "c_type_asteroid"      # Must have water ice available
+    consumable_per_m2_kg: 0          # Uses asteroid water ice + regolith
+    seal_effectiveness: 0.70         # Lowest — sublimation losses in low pressure
+    application:
+      tool: paste_applicator
+      power_w: 30                    # Heating to soften ice
+      mass_kg: 1
+    advantages:
+      - "Uses only local materials"
+      - "Lightweight equipment"
+    disadvantages:
+      - "Only works on water-bearing asteroids"
+      - "Seal degrades via sublimation"
+      - "Requires ongoing maintenance"
+
+compressor:
+  type: mini_diaphragm_compressor
+  mass_kg: 3
+  power_w: 20
+  flow_rate_liters_per_minute: 5
+  max_output_pressure_kpa: 20
+  fill_gas: nitrogen                 # Inert, safe, available
+  purpose: "initial pressurization and leak makeup"
+
+fill_gas_supply:
+  type: compressed_nitrogen_cylinder
+  initial_mass_kg: 5                 # Gas mass
+  cylinder_mass_kg: 3                # Container
+  pressure_bar: 200
+  volume_at_stp_liters: 4000         # Enough for ~800 m3 at 5 kPa
+  purpose: "fills ~200m of tunnel at 5 kPa target pressure"
+
+pressure_monitoring:
+  sensors:
+    - type: mems_pressure_sensor
+      locations: "every 20m along tunnel"
+      mass_per_sensor_g: 5
+      power_per_sensor_mw: 10
+      accuracy_pa: 10
+  leak_detection:
+    method: pressure_decay_monitoring
+    alarm_threshold_pa_per_hour: 50  # Alert if losing >50 Pa/hr
+
+target_pressure_kpa: 5              # Default — configurable 1-10
+pressure_tolerance_kpa: 1           # Acceptable range: target ± 1 kPa
+
+total_mass_kg: 18                   # Base system without consumables
+total_mass_with_consumables_kg: 33  # With spray sealant + gas supply
+total_power_w_spray: 70             # Compressor + spray applicator
+total_power_w_sintering: 2020       # Compressor + microwave sintering
+
+notes: |
+  The sealing module follows behind the drill, coating tunnel walls as
+  they are excavated. The sequence is: drill → seal → pressurize → operate.
+
+  Polymer spray is recommended for initial missions (reliable, fast).
+  Sintering is the long-term goal for self-sustaining operations.
+  Ice paste is a bonus option for C-type asteroids with water ice.
+
+  At 5 kPa target pressure:
+  - COTS servo lubricants stop outgassing → MTBF extends ~100x
+  - Convective heat transfer works → thermal management simplified
+  - Fans and filters work → dust management enabled
+  - No structural strength needed — tunnels don't need to be pressure vessels
+    because microgravity means no differential pressure loading on walls

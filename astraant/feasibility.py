@@ -185,13 +185,19 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     for mod_name in mission.mothership_modules:
         if mod_name in modules:
             mod = modules[mod_name]
-            mod_mass = mod.get("total_mass_kg", 0)
+            # Try multiple keys for mass — configs use different names
+            mod_mass = (mod.get("total_mass_kg")
+                        or mod.get("total_mass_with_consumables_kg")
+                        or mod.get("mass_summary", {}).get("total_dry_mass_kg")
+                        or 0)
             mass.mothership_dry_mass_kg += mod_mass
 
-    # Bioreactor
+    # Bioreactor (read from module config if available, otherwise use defaults)
     if mission.include_bioreactor:
-        mass.bioreactor_dry_mass_kg = 110  # From spec
-        mass.water_mass_kg = 300  # 300L water = 300kg
+        bio_mod = modules.get("bioreactor", {})
+        bio_summary = bio_mod.get("mass_summary", {})
+        mass.bioreactor_dry_mass_kg = bio_summary.get("total_dry_mass_kg", 110)
+        mass.water_mass_kg = bio_summary.get("water_mass_kg", 300)
         mass.consumables_mass_kg = 25  # Per year
         report.notes.append(
             "CRITICAL: Bioreactor wet mass includes 300 kg water. "
