@@ -1,0 +1,102 @@
+# Mothership Module: Thermal Sorting & Ice Recovery
+# First processing step: heats raw regolith to separate water ice and volatiles
+# before material enters the crusher. Recovers water and CO2 for other systems.
+
+module: thermal_sorter
+name: "Thermal Sorting & Ice Recovery System"
+type: material_preprocessing
+prerequisite_for: ["crusher", "bioreactor"]
+
+thermal_drum:
+  type: rotating_heated_drum
+  volume_liters: 20
+  drum_material: stainless_316L
+  drum_mass_kg: 5
+  rotation_rpm: 5                      # Gentle tumbling for even heating
+  heating:
+    type: resistance_coil
+    power_w: 200
+    target_temp_c: 120                 # Above water sublimation point
+    max_temp_c: 200                    # For organic volatile release
+    ramp_time_minutes: 10
+  batch_size_kg: 10                    # Per drum load
+  cycle_time_minutes: 15               # Heat + tumble + cool enough to handle
+  throughput_kg_per_hour: 40           # 4 cycles/hour × 10 kg
+
+ice_recovery:
+  method: "vapor capture and condensation"
+  condenser:
+    type: cold_plate_condenser
+    mass_kg: 3
+    power_w: 20                        # Active cooling to condense vapor
+    condensation_temp_c: 5
+  collection_tank:
+    capacity_liters: 50
+    mass_kg: 2
+  recovery_rate: 0.90                  # 90% of water ice recovered as liquid
+  water_per_100kg_regolith:
+    c_type_asteroid: 5-10              # kg water from 100 kg C-type regolith
+    s_type_asteroid: 0-0.1             # Essentially none from S-type
+
+volatile_capture:
+  method: "gas collection during heating"
+  captured_gases: ["CO2", "CO", "CH4", "H2O_vapor", "organic_volatiles"]
+  co2_per_100kg_regolith_g: 500        # From carbonate decomposition + organic pyrolysis
+  routing:
+    co2: "algae_photobioreactor"       # Feeds sugar production
+    h2o: "water_storage"               # Joins ice recovery water
+    ch4: "future_use_or_vent"          # Could feed methanotrophs later
+    organic_volatiles: "carbon_capture" # Condensed for supplementary carbon source
+
+dry_output:
+  description: "Heated, dried mineral residue ready for spectral sorting and crushing"
+  moisture_content_pct: 0.1            # Essentially bone dry
+  temperature_c: 50                    # Cooled enough for ant handling
+  routing: "to spectral sorting (taskmaster) then crusher"
+
+operator: "sorter_ant"                 # Specialized ant caste
+
+# Full processing pipeline position
+processing_pipeline:
+  step_1: "Raw regolith delivered by worker ants to thermal sorting bay"
+  step_2: "Sorter ant loads thermal drum (10 kg batch)"
+  step_3: "Drum heats to 120C, tumbles for 15 min"
+  step_4: "Water vapor captured by condenser -> water tank"
+  step_5: "CO2 and volatiles captured -> gas collection -> algae reactor"
+  step_6: "Sorter ant rakes dried material out of drum"
+  step_7: "Taskmaster ant spectral-sorts dried material by mineral type"
+  step_8: "Sorted material enters jaw crusher (dry, correct grain type)"
+  step_9: "Crushed material enters appropriate bioreactor vat"
+  step_10: "Bioreactor waste slurry -> plasterer ant applies to tunnel walls"
+
+total_mass_kg: 13
+total_power_w: 220                     # Heating + condenser
+
+water_production_estimate:
+  asteroid: "bennu"
+  ice_content_pct: 8
+  regolith_processed_per_day_kg: 120   # Crusher throughput limit
+  water_recovered_per_day_liters: 8.6  # 120 kg × 8% × 90% recovery
+  note: >
+    At 8.6 L/day water recovery, the bioreactor water loss (5 L/cycle)
+    is fully compensated. The system is water-positive on C-type asteroids.
+    Excess water can supply electrolysis for H2 (chemosynthetic backup)
+    or be stored for future mission needs.
+
+notes: |
+  The thermal sorter is the first step in the processing pipeline.
+  Everything downstream benefits from dry, pre-sorted input:
+
+  - Crusher: dry material doesn't clog jaws, consistent grain size
+  - Bioreactors: no ice contamination, correct mineral type per vat
+  - Water recovery: captured ice is a valuable resource
+  - CO2 recovery: feeds algae for sugar production
+
+  On C-type asteroids (Bennu, Ryugu), the thermal sorter also serves
+  as a CO2 and water factory — producing inputs for the sugar production
+  system. This is a critical integration point between modules.
+
+  On S-type asteroids (dry, no ice), the thermal sorter is optional —
+  material can go directly to spectral sorting and crushing.
+  But even on S-type, gentle heating can release adsorbed volatiles
+  and improve crusher performance.

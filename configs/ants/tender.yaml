@@ -1,0 +1,137 @@
+# Tender Ant — Bioreactor and life support specialist
+# Monitors and maintains the bioreactor vats, algae photobioreactor, and
+# chemical processing stages. The "nurse ant" of the colony.
+# Worker-class body with sensor-heavy loadout and fine manipulation tool.
+
+caste: tender
+base_caste: worker
+chassis:
+  type: spider_6leg
+  base_mass_g: 20
+  mass_budget_g: 220
+
+compute:
+  part_id: rp2040
+  mass_g: 5
+  power_draw_mw: 100
+  cost_usd: 4
+
+locomotion:
+  actuators: 6
+  part_id: sg90_servo
+  per_unit_mass_g: 9
+  per_unit_power_mw: 600
+  per_unit_cost_usd: 3
+
+communication:
+  part_id: nrf24l01_rf
+  mass_g: 2
+  power_mw: 40
+  cost_usd: 2
+  range_m: 50
+  bandwidth_kbps: 250
+
+sensors:
+  - part_id: vl53l0x_lidar
+    mass_g: 1
+    power_mw: 20
+    cost_usd: 4
+    purpose: "proximity / collision avoidance"
+  - part_id: ds18b20_temp
+    mass_g: 1
+    power_mw: 1
+    cost_usd: 2
+    purpose: "temperature monitoring at vat surface"
+  - id: ph_probe_portable
+    type: portable_ph_sensor
+    mass_g: 5
+    power_mw: 30
+    cost_usd: 15
+    purpose: "spot-check pH at various points in bioreactor circuit"
+    note: "Supplements the fixed monitoring sensors with mobile spot checks"
+  - id: turbidity_sensor
+    type: optical_turbidity
+    mass_g: 2
+    power_mw: 10
+    cost_usd: 8
+    purpose: "check slurry density, detect contamination, monitor algae growth"
+
+tool:
+  type: fine_manipulator_and_sampler
+  description: >
+    Small gripper arm with sampling probe. Can turn valves, adjust flow
+    restrictors, collect fluid samples from ports, and mechanically agitate
+    bioreactor contents. The Swiss Army knife of the bioreactor bay.
+  gripper:
+    type: micro_servo_gripper
+    grip_force_n: 2
+    opening_mm: 30
+  sampling_probe:
+    type: syringe_sampler
+    volume_ml: 5
+    purpose: "collect fluid samples for spot analysis"
+  valve_turner:
+    type: hex_socket_attachment
+    sizes_mm: [3, 4, 5]
+    purpose: "turn manual valve handles in the bioreactor plumbing"
+  mass_g: 18
+  power_mw: 100
+  cost_usd: 12
+
+storage_hopper:
+  hopper_mass_g: 0
+  capacity_g: 0                  # No bulk material — carries samples only
+
+power:
+  source: tethered
+  tether_connector_mass_g: 3
+  backup_battery:
+    capacity_mah: 500
+    mass_g: 15
+    cost_usd: 3
+
+behavior:
+  state_machine:
+    - IDLE: "Wait at bioreactor bay for task assignment"
+    - PATROL: "Walk circuit of all vats, check sensor readings"
+    - SAMPLE: "Collect fluid sample from designated port"
+    - SPOT_CHECK: "Dip portable pH/turbidity sensors into open port"
+    - ADJUST_VALVE: "Turn valve handle to adjust flow rate"
+    - AGITATE: "Mechanically stir slurry at designated agitation port"
+    - ALERT: "If readings out of range, flag to taskmaster immediately"
+    - REAGENT_ADD: "Dispense measured reagent from reservoir into vat port"
+    - CULTURE_CHECK: "Check algae photobioreactor density and color"
+  patrol_interval_minutes: 30    # Full circuit of all vats
+  station: "bioreactor_bay"
+
+monitored_systems:
+  - "Vat 1 (sulfide metals) — pH, temp, ORP, slurry density"
+  - "Vat 2 (rare earths) — pH, temp, nutrient level, fungal growth"
+  - "Vat 3 (PGM) — pH, temp, sealed headspace check"
+  - "Precipitation stages — flow rates, filter condition"
+  - "Water recovery loop — recirculation rate, pH"
+  - "Algae photobioreactor — turbidity (cell density), color, temp"
+  - "Thermal sorting drum — temperature, water collection rate"
+
+notes: |
+  Tender ants are the caretakers of the biological and chemical systems.
+  They're the "nurse ants" — in real ant colonies, nurse ants tend brood
+  and regulate nest chemistry. Here, they tend bioreactors.
+
+  They supplement the fixed monitoring sensors (pH, ORP, temp probes
+  permanently installed in each vat) with mobile spot-checking. This
+  catches problems the fixed sensors might miss — like a pH gradient
+  inside the vat, or a clogged sampling port.
+
+  Tender ants also handle physical maintenance: turning valves that
+  automated actuators can't reach, mechanically agitating settled
+  slurry, and adding reagent doses from portable reservoirs.
+
+  The portable pH sensor is key — it allows spot-checking at any point
+  in the bioreactor circuit, not just where fixed sensors are installed.
+  This is how you catch contamination early (unexpected pH at a location
+  between fixed sensors).
+
+  Ratio: 1-2 tender ants per bioreactor bay. They work fixed shifts
+  at the bioreactor station. Critical role — bioreactor health directly
+  impacts extraction output.

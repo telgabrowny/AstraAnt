@@ -71,6 +71,40 @@ sealing_options:
       - "Seal degrades via sublimation"
       - "Requires ongoing maintenance"
 
+  waste_slurry_plaster:
+    method: "bioreactor_waste_paste"
+    requires: "bioreactor_module"        # Only available with Track B/C
+    consumable_per_m2_kg: 0              # Made entirely from mining waste
+    seal_effectiveness: 0.75             # Lower than spray but FREE
+    application:
+      tool: "plasterer_ant"              # Specialized ant caste
+      power_w: 0                         # Ant power, not module power
+      mass_kg: 0                         # Ants carry their own tools
+    composition:
+      rock_fines_pct: 70                 # Depleted mineral particles from bioleaching
+      water_pct: 25                      # Binder — evaporates at 5 kPa
+      residual_bacteria_pct: 3           # May form biofilm that improves seal
+      reagent_traces_pct: 2              # CaO traces act as natural cement
+    properties:
+      setting_time_hours: 4
+      compressive_strength_mpa: 2
+      coats_recommended: 2               # Double coat for reliable seal
+    advantages:
+      - "Zero consumable cost — made from mining waste"
+      - "Infinite supply — scales with mining output"
+      - "CaO reagent traces act as natural cement (Portland cement chemistry)"
+      - "Residual biofilm may seal micro-pores over time"
+      - "Closes the waste disposal loop completely"
+      - "Applied by dedicated plasterer ants — organic, distributed"
+    disadvantages:
+      - "Lower seal quality than polymer spray (75% vs 98%)"
+      - "Slow setting time (4 hours per coat)"
+      - "Needs 2+ coats for reliable pressure retention"
+    recommended_combination: >
+      Best results: waste slurry as bulk filler (plasterer ants, 2 coats),
+      then polymer spray as final topcoat on critical sections.
+      This uses minimal polymer consumable while achieving 90%+ seal quality.
+
 compressor:
   type: mini_diaphragm_compressor
   mass_kg: 3

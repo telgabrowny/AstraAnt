@@ -1,0 +1,116 @@
+# Sorter Ant — Thermal separation and material routing specialist
+# Operates the thermal sorting drum where raw regolith is heated to drive off
+# ice and volatiles before crushing. Routes dry material to the correct vat intake.
+# Worker-class body with heat-resistant tool attachment.
+
+caste: sorter
+base_caste: worker               # Same cheap body plan as worker
+chassis:
+  type: spider_6leg
+  base_mass_g: 20
+  mass_budget_g: 220             # Slightly heavier than base worker (heat-resistant tool)
+
+compute:
+  part_id: rp2040
+  mass_g: 5
+  power_draw_mw: 100
+  cost_usd: 4
+
+locomotion:
+  actuators: 6
+  part_id: sg90_servo
+  per_unit_mass_g: 9
+  per_unit_power_mw: 600
+  per_unit_cost_usd: 3
+
+communication:
+  part_id: nrf24l01_rf
+  mass_g: 2
+  power_mw: 40
+  cost_usd: 2
+  range_m: 50
+  bandwidth_kbps: 250
+
+sensors:
+  - part_id: vl53l0x_lidar
+    mass_g: 1
+    power_mw: 20
+    cost_usd: 4
+    purpose: "proximity / collision avoidance"
+  - part_id: ds18b20_temp
+    mass_g: 1
+    power_mw: 1
+    cost_usd: 2
+    purpose: "monitor thermal drum temperature"
+
+tool:
+  type: thermal_sorting_manipulator
+  description: >
+    Heat-resistant scoop and rake for loading raw regolith into the thermal
+    separation drum and raking out dried material. Ceramic-tipped for thermal
+    protection. Also operates the drum rotation and heating controls.
+  scoop:
+    material: ceramic_tipped_steel
+    mass_g: 15
+    heat_resistant_c: 200
+  drum_interface:
+    type: mechanical_coupler
+    mass_g: 5
+    purpose: "engage/disengage thermal drum rotation"
+  mass_g: 20
+  power_mw: 100                  # Scoop actuator only — drum has its own power
+  cost_usd: 8
+
+storage_hopper:
+  hopper_mass_g: 8
+  capacity_g: 250                # Handles raw wet regolith (heavier with ice)
+
+power:
+  source: tethered
+  tether_connector_mass_g: 3
+  backup_battery:
+    capacity_mah: 500
+    mass_g: 15
+    cost_usd: 3
+
+behavior:
+  state_machine:
+    - IDLE: "Wait at thermal sorting station for raw regolith delivery"
+    - LOAD_DRUM: "Scoop raw regolith into thermal separation drum"
+    - MONITOR_HEAT: "Monitor drum temperature, wait for ice sublimation complete"
+    - RAKE_DRY: "Rake dried material out of drum into sorted bins"
+    - ROUTE_MATERIAL: "Push dried material to correct crusher/vat intake chute"
+    - COLLECT_ICE: "Check water condenser, route collected water to storage"
+  cycle_time_minutes: 15         # One drum load cycle
+  station: "thermal_sorting_bay" # Fixed work location near crusher
+
+thermal_sorting_drum:
+  description: >
+    The drum itself is mothership infrastructure, not ant equipment.
+    The sorter ant operates it like a machine operator.
+  drum_volume_liters: 20
+  heating_element_power_w: 200
+  target_temp_c: 120             # Above water sublimation, below mineral damage
+  rotation_rpm: 5                # Gentle tumbling for even heating
+  ice_recovery_rate: 0.90        # 90% of water ice captured as vapor
+  volatile_capture_rate: 0.70    # 70% of organic volatiles captured for CO2
+  drum_mass_kg: 8                # Part of mothership, not ant
+  condenser_mass_kg: 3           # Vapor -> liquid water
+
+notes: |
+  Sorter ants are specialized workers that operate the thermal separation
+  station. They load raw wet regolith, monitor heating, and route the
+  dried output. Think of them as machine operators, not miners.
+
+  The thermal drum is mothership infrastructure. The ant just feeds it
+  and manages the output — like a factory worker at a conveyor belt.
+
+  Processing pipeline:
+  Raw regolith -> [Sorter ant loads drum] -> Heat to 120C ->
+  Ice sublimes (captured as water) -> Volatiles captured (CO2 for algae) ->
+  Dry mineral residue -> [Sorter ant routes to crusher intake]
+
+  Only needed on C-type asteroids with water ice. On dry S-type asteroids,
+  sorter ants are unnecessary — material goes straight to crushing.
+
+  Ratio: 1-2 sorter ants per thermal drum. Drums run continuously.
