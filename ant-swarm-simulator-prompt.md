@@ -217,6 +217,139 @@ ant_config:
   estimated_cost_usd: 400-800
 ```
 
+### Sorter Ant — Thermal Drum Operator
+Operates the thermal sorting drum, separating water ice and volatiles from raw regolith before it enters the jaw crusher. Worker-class body with a heat-resistant ceramic scoop for handling hot material.
+
+```yaml
+ant_config:
+  caste: "sorter"
+  chassis:
+    type: "spider_6leg"
+    mass_budget_grams: 111
+  compute:
+    part: "RP2040"
+    clock_mhz: 133
+    ram_kb: 264
+    power_draw_mw: 100
+  locomotion:
+    actuators: 6
+    part: "micro_servo_sg90"
+    per_unit_mass_g: 9
+    per_unit_power_mw: 600
+    mtbf_hours_sealed_tunnel: 8000
+    cost_usd: 3
+  communication:
+    part: "nrf24l01_rf"
+    range_m: 50
+    power_mw: 40
+    bandwidth_kbps: 250
+  sensors:
+    - part: "vl53l0x_lidar"
+      power_mw: 20
+    - part: "ds18b20_temp_probe"
+      power_mw: 1
+  tool:
+    type: "ceramic_scoop"
+    heat_rating_c: 200
+    part: "custom_ceramic_end_effector"
+    power_mw: 100
+  power:
+    source: "tethered"
+    backup_battery_mah: 500
+  estimated_cost_usd: 38
+```
+
+### Plasterer Ant — Tunnel Wall Sealant Applicator
+Applies bioreactor waste slurry to tunnel walls as a sealant paste. Worker-class body fitted with a nozzle-and-trowel paste applicator for even coating.
+
+```yaml
+ant_config:
+  caste: "plasterer"
+  chassis:
+    type: "spider_6leg"
+    mass_budget_grams: 108
+  compute:
+    part: "RP2040"
+    clock_mhz: 133
+    ram_kb: 264
+    power_draw_mw: 100
+  locomotion:
+    actuators: 6
+    part: "micro_servo_sg90"
+    per_unit_mass_g: 9
+    per_unit_power_mw: 600
+    mtbf_hours_sealed_tunnel: 8000
+    cost_usd: 3
+  communication:
+    part: "nrf24l01_rf"
+    range_m: 50
+    power_mw: 40
+    bandwidth_kbps: 250
+  sensors:
+    - part: "vl53l0x_lidar"
+      power_mw: 20
+  tool:
+    type: "nozzle_and_trowel"
+    paste_flow_rate_ml_per_min: 50
+    coverage_m2_per_hour: 2
+    part: "custom_paste_applicator"
+    power_mw: 150
+  slurry_hopper:
+    capacity_ml: 500
+  power:
+    source: "tethered"
+    backup_battery_mah: 500
+  estimated_cost_usd: 41
+```
+
+### Tender Ant — Bioreactor Monitor
+Monitors bioreactor vats, performing spot-checks on pH and turbidity, and adjusting valves as needed. Worker-class body with a portable pH sensor and fine manipulator for valve operations.
+
+```yaml
+ant_config:
+  caste: "tender"
+  chassis:
+    type: "spider_6leg"
+    mass_budget_grams: 108
+  compute:
+    part: "ESP32-S3"           # Needs more processing for sensor analysis
+    clock_mhz: 240
+    ram_kb: 512
+    power_draw_mw: 250
+  locomotion:
+    actuators: 6
+    part: "micro_servo_sg90"
+    per_unit_mass_g: 9
+    per_unit_power_mw: 600
+    mtbf_hours_sealed_tunnel: 8000
+    cost_usd: 3
+  communication:
+    part: "nrf24l01_rf"
+    range_m: 50
+    power_mw: 40
+    bandwidth_kbps: 250
+  sensors:
+    - part: "vl53l0x_lidar"
+      power_mw: 20
+    - part: "atlas_scientific_ph_probe_portable"
+      power_mw: 50
+      accuracy: 0.02
+    - part: "turbidity_sensor_tsd10"
+      power_mw: 30
+    - part: "ds18b20_temp_probe"
+      power_mw: 1
+  tool:
+    type: "fine_manipulator"
+    grip_force_n: 5
+    precision_mm: 0.5
+    part: "micro_servo_gripper"
+    power_mw: 200
+  power:
+    source: "tethered"
+    backup_battery_mah: 500
+  estimated_cost_usd: 65
+```
+
 ---
 
 ## Architecture Layers
@@ -347,6 +480,12 @@ mothership_module_sealing:
       requires: "c_type_asteroid"      # Needs water ice
       consumable_kg_per_m2: 0
       seal_effectiveness: 0.70
+    - method: "bioreactor_waste_slurry"
+      requires: "active_bioreactor"    # Track B/C only
+      consumable_kg_per_m2: 0          # Zero cost — uses waste stream
+      seal_effectiveness: 0.75         # CaO traces act as natural cement
+      application: "plasterer_ant"     # Applied by plasterer caste
+      notes: "Depleted rock fines + water + CaO traces form paste. Portland cement chemistry. Best used as bulk filler with polymer spray topcoat for 0.98 combined effectiveness."
   gasket:
     type: "inflatable_entrance_seal"
     mass_kg: 5
@@ -378,6 +517,74 @@ mothership_module_cargo:
     count: 5                           # Per mission cycle
     config: "see return vehicle section"
   total_mass_kg: 20                    # Excluding return vehicles
+```
+
+#### Thermal Sorting Module
+```yaml
+mothership_module_thermal_sort:
+  type: "pre_crusher_volatile_separation"
+  heated_drum:
+    operating_temp_c: 120
+    drum_diameter_m: 0.4
+    drum_length_m: 0.6
+    rotation_rpm: 5
+    heating_power_w: 300
+    mass_kg: 15
+  ice_recovery:
+    rate: 0.90                          # 90% water ice recovery
+    collection: "cold_trap_condenser"
+    condenser_power_w: 50
+    condenser_mass_kg: 5
+  co2_capture:
+    method: "cold_trap"
+    destination: "algae_photobioreactor" # Feeds sugar production module
+  throughput_kg_per_hour: 10
+  operator: "sorter_ant"                # Sorter caste loads/unloads drum
+  benefits:
+    - "Prevents crusher clogging from wet material"
+    - "Recovers water ice for bioreactor medium and electrolysis"
+    - "Captures CO2 for algae photobioreactor"
+    - "Dry sorted material improves crusher efficiency"
+  total_mass_kg: 22
+  total_power_w: 380
+```
+
+#### Exterior Maintenance System
+```yaml
+mothership_exterior_maintenance:
+  type: "hull_maintenance_infrastructure"
+  grip_rails:
+    type: "extruded_aluminum_t_slot"
+    coverage: "full_hull_grid"
+    spacing_m: 0.5
+    mass_kg: 8
+  magnetic_cleats:
+    type: "switchable_magnetic_anchor"
+    count: 24
+    per_unit_mass_g: 50
+    per_unit_power_mw: 100              # Only when switching
+  tool_docking_points:
+    count: 12
+    locations: "distributed_at_maintenance_stations"
+    per_point_mass_g: 200
+    tools_available: ["brush", "torque_driver", "seal_applicator", "inspection_camera"]
+  maintenance_tasks:
+    - task: "solar_panel_dust_removal"
+      frequency: "weekly"
+      duration_minutes: 30
+    - task: "antenna_alignment_check"
+      frequency: "weekly"
+      duration_minutes: 20
+    - task: "hull_seal_inspection"
+      frequency: "weekly"
+      duration_minutes: 40
+    - task: "thermal_radiator_cleaning"
+      frequency: "biweekly"
+      duration_minutes: 30
+  operator: "courier_ant"               # Only caste rated for exterior work
+  dedicated_units: 1                    # 1 courier ant assigned to maintenance
+  weekly_maintenance_hours: 3
+  total_infrastructure_mass_kg: 12
 ```
 
 ### Layer 3C: Bioreactor Module (Track B and Track C)
