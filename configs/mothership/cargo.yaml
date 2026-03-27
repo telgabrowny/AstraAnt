@@ -42,25 +42,48 @@ return_vehicle_dock:
     power_w: 200                     # Brief pulse during launch
 
 return_vehicle_inventory:
-  vehicles_per_mission: 10           # Loaded on mothership at launch
+  # MICRO-POD DESIGN: many small packages, not one big truck.
+  # Solar sail transit time scales with mass — 2 kg pod with 10m2 sail
+  # reaches lunar orbit in ~2.5 years. 100 kg pod would take 54 years.
+  # The ant philosophy: thousands of small deliveries, continuous stream.
+  vehicles_per_mission: 200          # Carried flat-packed, sails stowed
   vehicle_config:
-    cargo_capacity_kg: 100
-    structure_mass_kg: 5
+    cargo_capacity_kg: 2             # Small, optimized for sail transit
+    structure_mass_g: 200            # Kevlar bag + frame
     sail:
-      area_m2: 25
-      mass_kg: 0.5                   # Film + booms
+      area_m2: 10                    # ~70g film + 30g deployment booms
+      mass_g: 100
       material: cp1_polyimide
     guidance:
-      controller: esp32_s3           # Or rad-tolerant for long transit
-      star_tracker_mass_g: 100
+      source: "end_of_life_surface_ant"
+      description: >
+        An end-of-life surface ant (degraded actuators, high rad dose)
+        is stripped to its ESP32-S3 + sun sensor + IMU and attached
+        to the cargo pod. It becomes a disposable autopilot for the
+        1-3 year transit. The ant was going to fail soon anyway —
+        this is its final mission.
+      controller: esp32_s3
       sun_sensor_mass_g: 10
-      reaction_wheels:
-        count: 3
-        mass_each_g: 50
+      imu_mass_g: 3
+      total_guidance_mass_g: 50     # Board + sensors stripped from ant
     capture_strategy: lunar_orbit_insertion
-    vehicle_empty_mass_kg: 6.5
-    vehicle_cost_usd: 1500
-  total_vehicle_mass_kg: 65          # 10 vehicles × 6.5 kg each
+    vehicle_empty_mass_g: 350       # Structure + sail + guidance
+    vehicle_total_mass_kg: 2.35     # Empty + 2 kg cargo
+    vehicle_cost_usd: 15            # Sail film + bag (guidance is "free" — recycled ant)
+    estimated_transit:
+      to_lunar_orbit_years: 2.5     # From Bennu with 10 m2 sail
+      to_mars_orbit_years: 4.0
+      confidence: "medium"
+  total_vehicle_mass_kg: 70         # 200 vehicles × 0.35 kg each
+  total_vehicle_cost_usd: 3000      # 200 × $15 each
+  launch_cadence:
+    pods_per_day: 3                  # Continuous stream
+    kg_per_month: 180                # 3 pods/day × 2 kg × 30 days
+  note: >
+    At 180 kg/month throughput and $50K/kg value at lunar orbit,
+    that is $9M/month in delivered material. The pods form a continuous
+    stream — new ones launching daily as old ones arrive at destination.
+    Like a conveyor belt through space.
 
 loading_automation:
   type: conveyor_and_arm

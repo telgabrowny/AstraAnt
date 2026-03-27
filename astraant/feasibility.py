@@ -270,11 +270,14 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     else:
         mass.consumables_mass_kg = 5  # Track A: minimal (replacement drill bits)
 
-    # Return vehicles (from cargo module config if available)
+    # Return vehicles — micro-pod design (many small, not one big)
     cargo_mod = modules.get("cargo", {})
-    rv_count = cargo_mod.get("return_vehicle_inventory", {}).get("vehicles_per_mission", 10)
-    rv_mass = cargo_mod.get("return_vehicle_inventory", {}).get("vehicle_empty_mass_kg", 6.5)
-    mass.return_vehicles_mass_kg = rv_count * rv_mass
+    rv_inv = cargo_mod.get("return_vehicle_inventory", {})
+    rv_count = rv_inv.get("vehicles_per_mission", 200)
+    # Mass can be in grams or kg depending on config version
+    rv_mass_g = rv_inv.get("vehicle_config", {}).get("vehicle_empty_mass_g", 350)
+    rv_mass_kg = rv_mass_g / 1000 if rv_mass_g > 100 else rv_inv.get("vehicle_empty_mass_kg", 0.35)
+    mass.return_vehicles_mass_kg = rv_count * rv_mass_kg
 
     # --- Cost Estimate ---
     cost = report.cost_estimate
@@ -289,8 +292,9 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     total_mothership_dry = mass.mothership_dry_mass_kg + mass.bioreactor_dry_mass_kg
     cost.mothership_hardware_usd = total_mothership_dry * 5000
 
-    # Return vehicles
-    rv_cost_each = cargo_mod.get("return_vehicle_inventory", {}).get("vehicle_cost_usd", 1500)
+    # Return micro-pods (guidance is "free" — recycled end-of-life surface ants)
+    rv_cfg = rv_inv.get("vehicle_config", {})
+    rv_cost_each = rv_cfg.get("vehicle_cost_usd", 15)
     cost.mothership_hardware_usd += rv_count * rv_cost_each
 
     # Launch cost
