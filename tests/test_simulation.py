@@ -90,16 +90,14 @@ def test_ant_agent_failure():
 
 
 def test_sim_engine_setup():
-    engine = SimEngine(workers=10, taskmasters=1, couriers=1,
-                       sorters=1, plasterers=1, tenders=1)
+    engine = SimEngine(workers=10, taskmasters=1, surface_ants=2)
     engine.setup()
-    assert len(engine.agents) == 15
+    assert len(engine.agents) == 13  # 10 workers + 1 taskmaster + 2 surface
     assert engine.tunnel.total_length_m > 0
 
 
 def test_sim_engine_tick():
-    engine = SimEngine(workers=5, taskmasters=1, couriers=1,
-                       sorters=1, plasterers=1, tenders=1)
+    engine = SimEngine(workers=5, taskmasters=1, surface_ants=1)
     engine.setup()
     engine.clock.speed = 100.0
 
@@ -108,12 +106,22 @@ def test_sim_engine_tick():
         engine.tick(0.1)
 
     status = engine.status()
-    assert status["total_ants"] == 10
+    assert status["total_ants"] == 7
     assert status["clock"] != "00:00"
 
 
+def test_sim_engine_worker_roles():
+    """Workers should be dynamically assigned roles (mining, sorting, etc.)."""
+    engine = SimEngine(workers=20, taskmasters=1, surface_ants=1)
+    engine.setup()
+    roles = set(a.caste for a in engine.agents if a.caste not in ("taskmaster", "surface_ant"))
+    # Should have multiple roles assigned from the worker pool
+    assert "worker" in roles  # Mining role
+    assert len(roles) >= 2    # At least mining + one other role
+
+
 def test_sim_engine_status():
-    engine = SimEngine(workers=3, taskmasters=1, couriers=1)
+    engine = SimEngine(workers=3, taskmasters=1, surface_ants=1)
     engine.setup()
     status = engine.status()
     assert "ants_by_caste" in status
@@ -123,7 +131,7 @@ def test_sim_engine_status():
 
 
 def test_sim_engine_player_command():
-    engine = SimEngine(workers=3, taskmasters=1, couriers=1)
+    engine = SimEngine(workers=3, taskmasters=1, surface_ants=1)
     engine.setup()
     engine.send_player_command({"type": "retarget", "area": "sector_b"})
     assert len(engine.comms.pending_outbound()) == 1

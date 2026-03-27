@@ -65,11 +65,17 @@ def compute_ant_mass(config: dict[str, Any], catalog: Any = None) -> float:
     # Compute module
     mass += config.get("compute", {}).get("mass_g", 5)
 
-    # Locomotion
+    # Locomotion (legs)
     loco = config.get("locomotion", {})
-    n_actuators = loco.get("actuators", 6)
+    n_legs = loco.get("legs", loco.get("actuators", 6))
     per_mass = loco.get("per_unit_mass_g", 9)
-    mass += n_actuators * per_mass
+    mass += n_legs * per_mass
+
+    # Mandible arms (if present)
+    mandibles = config.get("mandibles", {})
+    n_mandibles = mandibles.get("count", 0)
+    mandible_mass = mandibles.get("per_unit_mass_g", 5)
+    mass += n_mandibles * mandible_mass
 
     # Communication
     for comm in _as_list(config.get("communication", {})):

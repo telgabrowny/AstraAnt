@@ -47,8 +47,9 @@ class SimEngine:
             # GUI reads engine.agents, engine.tunnel, engine.stats
     """
 
-    def __init__(self, workers: int = 100, taskmasters: int = 5, couriers: int = 3,
-                 sorters: int = 2, plasterers: int = 3, tenders: int = 2,
+    def __init__(self, workers: int = 100, taskmasters: int = 5,
+                 surface_ants: int = 3, couriers: int = 0,
+                 sorters: int = 0, plasterers: int = 0, tenders: int = 0,
                  track: str = "a", asteroid_distance_au: float = 1.0) -> None:
         self.clock = MissionClock()
         self.tunnel = TunnelNetwork()
@@ -59,10 +60,8 @@ class SimEngine:
 
         self._worker_count = workers
         self._taskmaster_count = taskmasters
-        self._courier_count = couriers
-        self._sorter_count = sorters
-        self._plasterer_count = plasterers
-        self._tender_count = tenders
+        # Support both old 'couriers' param and new 'surface_ants'
+        self._surface_ant_count = surface_ants or couriers
         self._track = track
 
         # Telemetry broadcast interval (sim seconds)
@@ -95,11 +94,28 @@ class SimEngine:
                 return loco.get("mtbf_hours_vacuum", 2000)
             return loco.get("mtbf_hours_sealed", 8000)
 
-        # Workers — in the tunnel near the work face
-        for _ in range(self._worker_count):
+        # Workers — modular, assigned initial roles by the sim
+        # Role distribution: ~60% miners, ~10% sorters, ~15% plasterers, ~15% tenders
+        role_distribution = {
+            "worker": 0.60,       # Mining/hauling (uses drill_head or scoop_head)
+            "sorter": 0.10,       # Thermal drum ops (uses thermal_rake)
+            "plasterer": 0.15,    # Wall sealing (uses paste_nozzle)
+            "tender": 0.15,       # Bioreactor monitoring (uses sampling_probe)
+        }
+        roles = []
+        for role, frac in role_distribution.items():
+            roles.extend([role] * max(1, int(self._worker_count * frac)))
+        # Fill remaining slots with workers
+        while len(roles) < self._worker_count:
+            roles.append("worker")
+        roles = roles[:self._worker_count]
+        random.shuffle(roles)
+
+        for i in range(self._worker_count):
+            role = roles[i]
             agent = AntAgent(
                 id=agent_id,
-                caste="worker",
+                caste=role,  # Visual role (for state machine dispatch)
                 position=Position(
                     random.uniform(-2, 2),
                     random.uniform(-2, 2),
@@ -121,63 +137,23 @@ class SimEngine:
                 caste="taskmaster",
                 position=Position(random.uniform(-1, 1), random.uniform(-1, 1), 0),
                 speed=random.uniform(0.2, 0.3),
-                mtbf_hours=8000,
+                mtbf_hours=_get_mtbf("taskmaster"),
             )
             agent._target = Position(random.uniform(-5, 5), random.uniform(-5, 5), 0)
             self.agents.append(agent)
             agent_id += 1
 
-        # Couriers — on the asteroid surface
-        for _ in range(self._courier_count):
+        # Surface ants — on the asteroid exterior
+        for _ in range(self._surface_ant_count):
             agent = AntAgent(
                 id=agent_id,
-                caste="courier",
+                caste="surface_ant",
                 position=Position(random.uniform(-5, 5), 10, random.uniform(-5, 5)),
                 speed=random.uniform(0.15, 0.25),
-                mtbf_hours=2000,  # Lower in vacuum
+                mtbf_hours=2000,  # Vacuum — shorter life
             )
             agent._target = Position(random.uniform(-8, 8), 10, random.uniform(-8, 8))
             self.agents.append(agent)
-            agent_id += 1
-
-        # Sorters — at the thermal sorting station
-        for _ in range(self._sorter_count):
-            agent = AntAgent(
-                id=agent_id,
-                caste="sorter",
-                position=Position(0, 0, 3),
-                speed=0.2,
-                mtbf_hours=8000,
-            )
-            self.agents.append(agent)
-            agent_id += 1
-
-        # Plasterers — following behind the mining front
-        for _ in range(self._plasterer_count):
-            agent = AntAgent(
-                id=agent_id,
-                caste="plasterer",
-                position=Position(random.uniform(-1, 1), random.uniform(-1, 1), 1),
-                speed=0.2,
-                mtbf_hours=8000,
-            )
-            agent._assigned_segment_id = max(0, self.tunnel.active_work_face_id - 1)
-            agent._target = Position(random.uniform(-2, 2), random.uniform(-2, 2), 0)
-            self.agents.append(agent)
-            agent_id += 1
-
-        # Tenders — in the bioreactor bay
-        for _ in range(self._tender_count):
-            agent = AntAgent(
-                id=agent_id,
-                caste="tender",
-                position=Position(2, 0, -2),
-                speed=0.15,
-                mtbf_hours=8000,
-            )
-            agent._target = Position(random.uniform(0, 4), 0, random.uniform(-4, 0))
-            self.agents.append(agent)
-            agent_id += 1
 
     def tick(self, real_dt: float) -> list[dict[str, Any]]:
         """Advance the simulation by real_dt seconds.

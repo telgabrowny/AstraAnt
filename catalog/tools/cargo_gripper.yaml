@@ -1,0 +1,53 @@
+id: cargo_gripper
+name: "Cargo Gripper"
+type: hauling_tool
+description: >
+  Wide-jaw gripper for carrying cargo bags, regolith chunks, and material
+  between stations. The mandibles provide the grip force while the gripper
+  jaw extends the reach and carrying width. Passive — no motors or
+  electronics. Essentially mandible extensions.
+
+physical:
+  total_mass_g: 10
+  total_length_mm: 40
+  mount_interface:
+    type: magnetic_clip
+    width_mm: 15
+    depth_mm: 10
+    magnet_recess_mm: 4
+  jaw:
+    shape: curved_fork
+    width_mm: 35                 # Wider than mandible spread
+    opening_mm: 40               # Max grip diameter
+    depth_mm: 20                 # How deep the fork cradles the cargo
+    material: "PETG with rubber grip pads"
+    grip_pads:
+      material: "silicone rubber sheet (glued to jaw faces)"
+      thickness_mm: 1
+      purpose: "prevent cargo slipping during transport"
+
+electrical:
+  connector: none                # Passive
+  power: 0
+
+operation:
+  max_cargo_mass_g: 250          # Limited by mandible grip force
+  cargo_types:
+    - "filled cargo bags (regolith, dried material)"
+    - "tool heads (for carrying to/from dock)"
+    - "replacement parts (filter elements, spare drill bits)"
+    - "reagent containers"
+  note: "For hauling regolith, the ant's hopper is more efficient. The gripper is for carrying discrete objects that don't fit in the hopper."
+
+printable:
+  stl_available: true
+  openscad_parametric: true
+  print_material: "PETG"
+  print_time_hours: 0.5
+  supports_needed: false
+  orientation: "print jaw-side up"
+  tolerance_mm: 0.2
+  additional_parts: ["2x silicone rubber pad 15x10x1mm"]
+
+cost_usd: 1.50
+added_date: "2026-03-27"

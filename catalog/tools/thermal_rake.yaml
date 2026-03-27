@@ -1,0 +1,56 @@
+id: thermal_rake
+name: "Thermal Sorting Rake"
+type: sorting_tool
+description: >
+  Heat-resistant rake for loading raw regolith into the thermal separation
+  drum and raking dried material out. Ceramic-tipped tines resist the
+  120C drum temperature. Also used to push sorted material toward
+  the correct chute intake.
+
+physical:
+  total_mass_g: 12
+  total_length_mm: 50
+  mount_interface:
+    type: magnetic_clip
+    width_mm: 15
+    depth_mm: 10
+    magnet_recess_mm: 4
+  body:
+    shape: handle_with_rake_head
+    handle_length_mm: 25
+    handle_diameter_mm: 10
+    material: "PETG or aluminum"
+  rake_head:
+    width_mm: 30
+    tine_count: 5
+    tine_length_mm: 15
+    tine_spacing_mm: 6
+    tine_material: "ceramic (alumina) or stainless steel"
+    heat_resistant_c: 200        # Comfortably handles 120C drum
+  pusher_face:
+    description: "Flat back of rake head doubles as a pusher blade"
+    width_mm: 30
+    height_mm: 15
+
+electrical:
+  connector: none                # Passive tool
+  power: 0
+
+operation:
+  rake_load_g: 40                # Amount of material moved per rake stroke
+  strokes_per_drum_cycle: 10     # Load + unload
+  heat_exposure: "intermittent — tines contact hot material briefly"
+  note: "Ant body stays clear of drum heat zone — only tines enter"
+
+printable:
+  stl_available: true
+  openscad_parametric: true
+  print_material: "PETG for handle, ceramic tines press-fit (or print in stainless via DMLS)"
+  print_time_hours: 0.75
+  supports_needed: false
+  orientation: "print flat (handle horizontal)"
+  tolerance_mm: 0.2
+  additional_parts: ["5x ceramic rod 3mm x 15mm (alumina, from Amazon/McMaster)"]
+
+cost_usd: 5                      # Printed handle + ceramic rod inserts
+added_date: "2026-03-27"

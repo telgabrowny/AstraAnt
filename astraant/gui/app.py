@@ -45,8 +45,7 @@ class AstraAntApp:
     """The main 3D simulation application backed by SimEngine."""
 
     def __init__(self, asteroid_id: str = "bennu", workers: int = 20,
-                 taskmasters: int = 1, couriers: int = 1,
-                 sorters: int = 1, plasterers: int = 1, tenders: int = 1,
+                 taskmasters: int = 1, surface_ants: int = 2,
                  track: str = "a"):
         self.asteroid_id = asteroid_id
         self.track = track
@@ -62,8 +61,8 @@ class AstraAntApp:
                            .get("orbit", {})
                            .get("semi_major_axis_au", 1.0))
         self.engine = SimEngine(
-            workers=workers, taskmasters=taskmasters, couriers=couriers,
-            sorters=sorters, plasterers=plasterers, tenders=tenders,
+            workers=workers, taskmasters=taskmasters,
+            surface_ants=surface_ants,
             track=track, asteroid_distance_au=distance_au,
         )
 
@@ -366,8 +365,7 @@ class AstraAntApp:
 
 
 def run_app(asteroid: str = "bennu", workers: int = 20, taskmasters: int = 1,
-            couriers: int = 1, sorters: int = 1, plasterers: int = 1,
-            tenders: int = 1, track: str = "a"):
+            surface_ants: int = 2, track: str = "a"):
     """Launch the Ursina application."""
     app_instance = Ursina(
         title="AstraAnt -- Asteroid Mining Simulator",
@@ -379,10 +377,7 @@ def run_app(asteroid: str = "bennu", workers: int = 20, taskmasters: int = 1,
         asteroid_id=asteroid,
         workers=workers,
         taskmasters=taskmasters,
-        couriers=couriers,
-        sorters=sorters,
-        plasterers=plasterers,
-        tenders=tenders,
+        surface_ants=surface_ants,
         track=track,
     )
 

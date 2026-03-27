@@ -182,17 +182,17 @@ def ant_list():
 @main.command()
 @click.option("--workers", "-w", default=100, help="Number of worker ants")
 @click.option("--taskmasters", "-t", default=5, help="Number of taskmaster ants")
-@click.option("--couriers", "-c", default=3, help="Number of courier ants")
+@click.option("--surface-ants", "-s", default=3, help="Number of surface ants")
 @click.option("--track", type=click.Choice(["a", "b", "c"]), default="a", help="Extraction track")
 @click.option("--asteroid", default="bennu", help="Target asteroid ID")
 @click.option("--destination", type=click.Choice(["lunar_orbit", "mars_orbit", "earth_return"]),
               default="lunar_orbit", help="Cargo destination")
 @click.option("--vehicle", default="starship_conservative", help="Launch vehicle")
-def analyze(workers: int, taskmasters: int, couriers: int, track: str,
+def analyze(workers: int, taskmasters: int, surface_ants: int, track: str,
             asteroid: str, destination: str, vehicle: str):
     """Run feasibility analysis for a mission configuration."""
     mission = MissionConfig(
-        swarm=SwarmConfig(workers=workers, taskmasters=taskmasters, couriers=couriers, track=track),
+        swarm=SwarmConfig(workers=workers, taskmasters=taskmasters, surface_ants=surface_ants, track=track),
         asteroid_id=asteroid,
         destination=destination,
         launch_vehicle=vehicle,
@@ -205,12 +205,12 @@ def analyze(workers: int, taskmasters: int, couriers: int, track: str,
 @main.command()
 @click.option("--workers", "-w", default=100, help="Number of worker ants")
 @click.option("--taskmasters", "-t", default=5, help="Number of taskmasters")
-@click.option("--couriers", "-c", default=3, help="Number of couriers")
+@click.option("--surface-ants", "-s", default=3, help="Number of surface ants")
 @click.option("--asteroid", default="bennu", help="Target asteroid ID")
 @click.option("--destination", type=click.Choice(["lunar_orbit", "mars_orbit", "earth_return"]),
               default="lunar_orbit")
 @click.option("--vehicle", default="starship_conservative")
-def compare(workers: int, taskmasters: int, couriers: int,
+def compare(workers: int, taskmasters: int, surface_ants: int,
             asteroid: str, destination: str, vehicle: str):
     """Compare all three extraction tracks head-to-head."""
     cat = Catalog()
@@ -219,7 +219,7 @@ def compare(workers: int, taskmasters: int, couriers: int,
     reports = {}
     for track in ["a", "b", "c"]:
         mission = MissionConfig(
-            swarm=SwarmConfig(workers=workers, taskmasters=taskmasters, couriers=couriers, track=track),
+            swarm=SwarmConfig(workers=workers, taskmasters=taskmasters, surface_ants=surface_ants, track=track),
             asteroid_id=asteroid,
             destination=destination,
             launch_vehicle=vehicle,
@@ -230,7 +230,7 @@ def compare(workers: int, taskmasters: int, couriers: int,
     click.echo("=" * 70)
     click.echo("THREE-TRACK COMPARISON")
     click.echo("=" * 70)
-    click.echo(f"Swarm: {workers}W + {taskmasters}T + {couriers}C -> {asteroid} -> {destination}\n")
+    click.echo(f"Swarm: {workers}W + {taskmasters}T + {surface_ants}S -> {asteroid} -> {destination}\n")
 
     click.echo(f"{'Metric':<30s} {'Track A':<18s} {'Track B':<18s} {'Track C':<18s}")
     click.echo("-" * 85)
@@ -406,24 +406,21 @@ def readiness(track: str):
 @main.command()
 @click.option("--workers", "-w", default=50, help="Number of worker ants")
 @click.option("--taskmasters", "-t", default=3, help="Number of taskmasters")
-@click.option("--couriers", "-c", default=2, help="Number of couriers")
-@click.option("--sorters", default=2, help="Number of sorters")
-@click.option("--plasterers", default=2, help="Number of plasterers")
-@click.option("--tenders", default=1, help="Number of tenders")
+@click.option("--surface-ants", "-s", default=2, help="Number of surface ants")
 @click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
 @click.option("--days", default=30, help="Simulated mission days to run")
 @click.option("--speed", default=10000.0, help="Simulation speed multiplier")
-def simulate(workers: int, taskmasters: int, couriers: int, sorters: int,
-             plasterers: int, tenders: int, track: str, days: int, speed: float):
+def simulate(workers: int, taskmasters: int, surface_ants: int,
+             track: str, days: int, speed: float):
     """Run headless simulation and print results."""
     from .gui.simulation.sim_engine import SimEngine
 
-    total_ants = workers + taskmasters + couriers + sorters + plasterers + tenders
+    total_ants = workers + taskmasters + surface_ants
     click.echo(f"Running {days}-day simulation with {total_ants} ants (Track {track.upper()})...")
+    click.echo(f"  Workers dynamically assigned roles: mining, sorting, plastering, tending")
 
     engine = SimEngine(
-        workers=workers, taskmasters=taskmasters, couriers=couriers,
-        sorters=sorters, plasterers=plasterers, tenders=tenders,
+        workers=workers, taskmasters=taskmasters, surface_ants=surface_ants,
         track=track,
     )
     engine.setup()
@@ -471,13 +468,10 @@ def simulate(workers: int, taskmasters: int, couriers: int, sorters: int,
 @click.option("--asteroid", default="bennu", help="Target asteroid ID")
 @click.option("--workers", "-w", default=20, help="Number of worker ants")
 @click.option("--taskmasters", "-t", default=1, help="Number of taskmasters")
-@click.option("--couriers", "-c", default=1, help="Number of couriers")
-@click.option("--sorters", default=1, help="Number of sorters")
-@click.option("--plasterers", default=1, help="Number of plasterers")
-@click.option("--tenders", default=1, help="Number of tenders")
+@click.option("--surface-ants", "-s", default=2, help="Number of surface ants")
 @click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
-def gui(asteroid: str, workers: int, taskmasters: int, couriers: int,
-        sorters: int, plasterers: int, tenders: int, track: str):
+def gui(asteroid: str, workers: int, taskmasters: int, surface_ants: int,
+        track: str):
     """Launch the 3D interactive simulation."""
     try:
         from .gui import launch
@@ -486,8 +480,7 @@ def gui(asteroid: str, workers: int, taskmasters: int, couriers: int,
         click.echo(f"Error: {e}")
         return
     launch(asteroid=asteroid, workers=workers, taskmasters=taskmasters,
-           couriers=couriers, sorters=sorters, plasterers=plasterers,
-           tenders=tenders, track=track)
+           couriers=surface_ants, track=track)
 
 
 if __name__ == "__main__":

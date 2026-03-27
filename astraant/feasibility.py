@@ -73,19 +73,16 @@ MATERIAL_VALUES = {
 
 @dataclass
 class SwarmConfig:
-    """Define a swarm composition — all 6 castes."""
+    """Define a swarm composition — 3 castes with modular workers."""
     workers: int = 100
     taskmasters: int = 5
-    couriers: int = 3
-    sorters: int = 2
-    plasterers: int = 3
-    tenders: int = 2
+    surface_ants: int = 3
     track: str = "a"  # a, b, or c
+    tool_heads: int = 0  # Auto-calculated if 0
 
     @property
     def total_ants(self) -> int:
-        return (self.workers + self.taskmasters + self.couriers +
-                self.sorters + self.plasterers + self.tenders)
+        return self.workers + self.taskmasters + self.surface_ants
 
 
 # Default mothership modules per track
@@ -190,14 +187,11 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     # --- Mass Budget ---
     mass = report.mass_budget
 
-    # All ant castes with their counts
+    # 3 castes with their counts
     caste_counts = {
         "worker": mission.swarm.workers,
         "taskmaster": mission.swarm.taskmasters,
-        "courier": mission.swarm.couriers,
-        "sorter": mission.swarm.sorters,
-        "plasterer": mission.swarm.plasterers,
-        "tender": mission.swarm.tenders,
+        "surface_ant": mission.swarm.surface_ants,
     }
 
     # Per-caste mass and total swarm mass
@@ -211,7 +205,13 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     # Store primary caste masses for report display
     mass.worker_mass_g = caste_masses.get("worker", 0)
     mass.taskmaster_mass_g = caste_masses.get("taskmaster", 0)
-    mass.courier_mass_g = caste_masses.get("courier", 0)
+    mass.courier_mass_g = caste_masses.get("surface_ant", 0)
+
+    # Tool heads inventory (workers need ~1.5 tool heads each — some spares)
+    tool_head_count = mission.swarm.tool_heads or int(mission.swarm.workers * 1.5)
+    tool_head_avg_mass_g = 14  # Average across drill(18), scoop(8), paste(20), rake(12), probe(15), gripper(10)
+    tool_head_avg_cost = 7     # Average cost
+    mass.swarm_mass_kg += (tool_head_count * tool_head_avg_mass_g) / 1000
 
     # Mothership modules (excluding bioreactor which is handled separately)
     modules = load_all_mothership_modules()
@@ -255,10 +255,11 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     # --- Cost Estimate ---
     cost = report.cost_estimate
 
-    # Swarm hardware — all castes
+    # Swarm hardware — 3 castes + tool heads
     for caste, count in caste_counts.items():
         if caste in ant_configs and count > 0:
             cost.swarm_hardware_usd += compute_ant_cost(ant_configs[caste]) * count
+    cost.swarm_hardware_usd += tool_head_count * tool_head_avg_cost
 
     # Mothership hardware (rough: $5k/kg for custom space hardware)
     total_mothership_dry = mass.mothership_dry_mass_kg + mass.bioreactor_dry_mass_kg
@@ -374,9 +375,8 @@ def format_report(report: FeasibilityReport) -> str:
     lines.append("=" * 70)
 
     s = m.swarm
-    lines.append(f"\nSwarm: {s.workers}W + {s.taskmasters}T + {s.couriers}C"
-                 f" + {s.sorters}So + {s.plasterers}P + {s.tenders}Te"
-                 f" = {s.total_ants} ants")
+    lines.append(f"\nSwarm: {s.workers} Workers + {s.taskmasters} Taskmasters"
+                 f" + {s.surface_ants} Surface Ants = {s.total_ants} ants")
     lines.append(f"Target: {m.asteroid_id} -> {m.destination}")
     lines.append(f"Track: {m.swarm.track.upper()} | Vehicle: {m.launch_vehicle}")
     lines.append(f"Modules: {', '.join(m.mothership_modules or [])}")
@@ -385,18 +385,15 @@ def format_report(report: FeasibilityReport) -> str:
     caste_info = [
         ("Worker", mb.worker_mass_g, s.workers),
         ("Taskmaster", mb.taskmaster_mass_g, s.taskmasters),
-        ("Courier", mb.courier_mass_g, s.couriers),
+        ("Surface Ant", mb.courier_mass_g, s.surface_ants),
     ]
     for name, mass_g, count in caste_info:
         if count > 0:
             lines.append(f"  {name:14s} {mass_g:.0f}g x{count} = "
                          f"{mass_g * count / 1000:.1f} kg")
-    # Specialized castes (use swarm total minus primaries)
-    specialist_mass = mb.swarm_mass_kg - sum(m * c / 1000 for _, m, c in caste_info)
-    specialist_count = s.sorters + s.plasterers + s.tenders
-    if specialist_count > 0:
-        lines.append(f"  {'Specialists':14s} ({s.sorters}So+{s.plasterers}P+{s.tenders}Te)"
-                     f" = {specialist_mass:.1f} kg")
+    tool_count = s.tool_heads or int(s.workers * 1.5)
+    lines.append(f"  {'Tool heads':14s} ~{tool_count} heads = "
+                 f"{tool_count * 14 / 1000:.1f} kg")
     lines.append(f"  Swarm total:     {mb.swarm_mass_kg:.1f} kg")
     lines.append(f"  Mothership dry:  {mb.mothership_dry_mass_kg:.1f} kg")
     has_bioreactor = "bioreactor" in (m.mothership_modules or [])

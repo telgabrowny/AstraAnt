@@ -9,9 +9,11 @@ from ursina import Entity, Vec3, color, destroy
 
 # Caste visual properties
 CASTE_COLORS = {
-    "worker": color.rgb(220, 160, 50),       # Orange/amber
+    "worker": color.rgb(220, 160, 50),       # Orange/amber (mining role)
     "taskmaster": color.rgb(60, 160, 200),    # Blue/teal
-    "courier": color.rgb(160, 200, 160),      # Silver/green
+    "surface_ant": color.rgb(200, 210, 200),  # Silver/white (hardened)
+    "courier": color.rgb(200, 210, 200),      # Legacy alias for surface_ant
+    # Worker role colors (same body, different tool = different indicator)
     "sorter": color.rgb(200, 100, 100),       # Rust red
     "plasterer": color.rgb(180, 180, 130),    # Khaki/clay
     "tender": color.rgb(140, 100, 200),       # Purple
@@ -20,7 +22,9 @@ CASTE_COLORS = {
 CASTE_SCALES = {
     "worker": 1.0,
     "taskmaster": 1.3,
+    "surface_ant": 1.5,
     "courier": 1.5,
+    # Worker roles use worker scale
     "sorter": 1.0,
     "plasterer": 1.0,
     "tender": 1.0,
@@ -126,8 +130,27 @@ def create_ant_entity(caste: str = "worker", parent: Entity = None) -> Entity:
                 "phase": 0.0 if pos_name in ("front", "rear") else math.pi,
             })
 
+    # -- Mandible arms (all castes have these) --
+    for side in (-1, 1):
+        mandible = Entity(
+            parent=root,
+            model="cube",
+            color=ant_color * 0.65,
+            scale=Vec3(body_length * 0.15, body_length * 0.03, body_length * 0.03),
+            position=Vec3(body_length * 0.5, -body_length * 0.05, side * body_length * 0.1),
+            rotation=Vec3(0, side * 15, 0),
+        )
+        # Mandible tip (gripper pad)
+        Entity(
+            parent=mandible,
+            model="sphere",
+            color=ant_color * 0.5,
+            scale=Vec3(0.3, 0.5, 0.5),
+            position=Vec3(0.5, 0, 0),
+        )
+
     # -- Caste-specific details --
-    if caste == "worker":
+    if caste in ("worker", "sorter", "plasterer", "tender"):
         # Hopper on abdomen (small box)
         Entity(
             parent=root,
@@ -166,7 +189,7 @@ def create_ant_entity(caste: str = "worker", parent: Entity = None) -> Entity:
             position=Vec3(-body_length * 0.5, 0, 0),
         )
 
-    elif caste == "courier":
+    elif caste in ("courier", "surface_ant"):
         # Solar panel on back
         Entity(
             parent=root,

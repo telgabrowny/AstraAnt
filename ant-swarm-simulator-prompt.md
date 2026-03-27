@@ -29,6 +29,7 @@ Sealing methods are configurable in the component catalog:
 - **Regolith sintering** — Microwave or solar concentrator fuses tunnel walls into ceramic shell (no Earth consumables)
 - **Polymer spray** — Epoxy/silicone coating brought from Earth (known mass, reliable)
 - **Regolith + ice paste** — For C-type asteroids with water ice content (mixed binder)
+- **Bioreactor waste slurry** — Depleted rock fines + water + CaO traces applied by plasterer ants (Track B/C only, zero consumable cost, 75% seal effectiveness; best as bulk filler under polymer spray topcoat)
 
 The mothership serves as the tunnel entrance end cap with an inflatable gasket seal.
 
@@ -747,6 +748,81 @@ bioprocessing_totals:
 ```
 
 **CRITICAL NOTE FOR LAUNCH ECONOMICS:** The wet mass of the bioprocessing module is **410 kg**, not 110 kg. The 300 kg of water dominates the launch cost for Track B/C. This must be reflected in all economic calculations.
+
+#### Processing Pipeline — Complete Material Flow
+
+The full extraction pipeline from raw regolith to return cargo, showing which ant caste operates each stage:
+
+```
+Raw regolith
+  -> [Sorter ant] Thermal drum (120C: ice sublimes, CO2 captured)
+  -> [Taskmaster] Spectral sort by mineral type
+  -> Jaw crusher (dry, sorted, <2mm)
+  -> [Worker ants] deliver to correct bioreactor vat
+  -> Bioleaching (bacteria extract metals into solution)
+  -> Selective precipitation (metals separated by pH)
+  -> Metal concentrates -> cargo pods -> return vehicle
+
+Waste slurry -> [Plasterer ant] tunnel wall sealant (zero consumable cost)
+Captured water -> bioreactor medium + electrolysis for H2
+Captured CO2 -> algae photobioreactor -> sugar -> feeds Aspergillus
+```
+
+**Key integration points:**
+- Thermal sorting (sorter ants) prevents crusher clogging and recovers volatiles *before* crushing
+- Spectral sorting (taskmasters) ensures each bioreactor vat receives the correct mineral feedstock
+- Waste slurry recycling (plasterer ants) closes the waste loop at zero consumable cost
+- CO2 and water recovery feed back into the bioreactor and sugar production systems
+- Tender ants provide continuous bioreactor monitoring between automated sensor readings
+
+#### Sugar Production Module — On-Site Nutrient Synthesis
+
+Eliminates Earth resupply of sucrose for the Aspergillus niger REE bioreactor vat by producing sugar on-site from captured CO2.
+
+```yaml
+sugar_production_module:
+  photobioreactor:
+    organism: "chlorella_vulgaris"
+    volume_liters: 200
+    vessel_material: "polycarbonate"
+    vessel_mass_kg: 12
+    illumination:
+      type: "fiber_optic_solar"        # Fiber optic bundle routes surface sunlight
+      fiber_bundle_mass_kg: 3
+      collector_area_m2: 0.5
+      transmission_efficiency: 0.60
+    co2_source: "asteroid_carbonate_pyrolysis"
+    growth_rate_g_per_liter_per_day: 0.5-0.8
+    sugar_output_g_per_day: 100-160    # 1 kg every 7-10 days
+    harvesting: "centrifugal_continuous"
+    harvesting_power_w: 20
+
+  co2_supply:
+    source: "carbonate_pyrolysis_kiln"
+    kiln_temp_c: 700
+    kiln_power_w: 300
+    kiln_mass_kg: 8
+    feedstock: "asteroid_carbonates"    # CaCO3 -> CaO + CO2
+    co2_yield_kg_per_kg_rock: 0.44     # Stoichiometric
+    byproduct: "calcium_oxide"         # CaO -> used by plasterer ants as cement
+
+  chemosynthetic_backup:
+    organism: "cupriavidus_necator"
+    type: "hydrogen_autotroph"
+    inputs: ["H2", "CO2"]              # No light needed
+    sugar_output_g_per_day: 40-60      # Lower yield but light-independent
+    power_w: 80                        # Electrolysis for H2 production
+    use_case: "eclipse_periods_or_deep_asteroid"
+
+  totals:
+    total_mass_kg: 62
+    total_power_w: 470
+    sugar_output_kg_per_year: 36-58
+    eliminates_earth_resupply: true    # No more sucrose launches
+    consumables_saved_kg_per_year: 25  # Previously imported from Earth
+```
+
+**Integration with bioreactor system:** Sugar output feeds directly into the Aspergillus niger REE vat (Vat 2), which requires 10g/L sucrose per cycle. At 100-160g/day production, the photobioreactor can sustain continuous REE bioleaching without Earth resupply. The CaO byproduct from carbonate pyrolysis feeds the plasterer ant waste slurry sealant system.
 
 ### Layer 4: Ant Control Code
 - Written in **MicroPython** targeting the specified microcontroller (RP2040 for workers, ESP32-S3 for taskmasters/couriers)

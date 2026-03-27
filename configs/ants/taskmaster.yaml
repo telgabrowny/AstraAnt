@@ -1,24 +1,39 @@
 # Taskmaster Ant — Squad leader with full sensor suite
-# Commands a squad of ~20 worker ants. Rich sensors, navigation, task allocation.
+# Same body plan as worker (6 legs + 2 mandibles) but with ESP32-S3
+# and rich sensor loadout. Permanently equipped with sensor cluster —
+# does not swap tools. Commands a squad of ~20 workers.
 
 caste: taskmaster
 chassis:
-  type: spider_6leg
-  base_mass_g: 25          # Slightly sturdier frame
+  type: hexapod_with_mandibles
+  base_mass_g: 25
   mass_budget_g: 400
 
 compute:
   part_id: esp32_s3
-  mass_g: 10               # Module on breakout board
+  mass_g: 10
   power_draw_mw: 250
   cost_usd: 5
 
 locomotion:
-  actuators: 6
-  part_id: sg90_servo       # Or vacuum_actuator_maxon — catalog option
+  legs: 6
+  leg_dof: 1
+  part_id: sg90_servo
   per_unit_mass_g: 9
   per_unit_power_mw: 600
   per_unit_cost_usd: 3
+
+mandibles:
+  count: 2
+  part_id: sg51r_micro_servo
+  per_unit_mass_g: 5
+  per_unit_power_mw: 300
+  per_unit_cost_usd: 2
+  dof_per_mandible: 1
+  grip_force_n: 1.5
+  tool_mount:
+    type: permanent_sensor_cluster
+    note: "Taskmasters don't swap tools — sensor cluster is permanently mounted"
 
 communication:
   - id: local_rf
@@ -31,7 +46,7 @@ communication:
     purpose: "short-range to workers"
   - id: backbone
     type: wired_can_bus
-    mass_g: 5               # CAN transceiver module
+    mass_g: 5
     power_mw: 10
     cost_usd: 3
     bandwidth_kbps: 1000
@@ -64,14 +79,12 @@ sensors:
     cost_usd: 2
     purpose: "temperature monitoring"
 
-tool:
-  type: none                # Taskmasters don't mine — they command
-  mass_g: 0
-  power_mw: 0
-  cost_usd: 0
+tool_system:
+  current_tool: sensor_cluster   # Permanent — not swappable
+  compatible_tools: []           # Taskmasters don't use the tool dock
 
 storage_hopper:
-  hopper_mass_g: 0          # No hopper — not a hauler
+  hopper_mass_g: 0
   capacity_g: 0
 
 power:
@@ -79,17 +92,34 @@ power:
   tether_connector_mass_g: 3
   backup_battery:
     capacity_mah: 1000
-    mass_g: 30              # Larger battery for extended untethered ops
+    mass_g: 30
     cost_usd: 5
 
-squad_size: 20              # Workers per taskmaster
+squad_size: 20
+
+physical_dimensions:
+  body_length_mm: 140           # Slightly larger than worker
+  body_width_mm: 70
+  body_height_mm: 45
+  leg_span_mm: 200
+  mandible_reach_mm: 40
+  total_length_mm: 180
+  ground_clearance_mm: 35
+  sensor_cluster_height_mm: 25  # Visible dome on head
 
 notes: |
-  Taskmasters are the brains of each squad. They navigate tunnels using IMU +
-  visual odometry, classify regolith with spectral sensors, and direct workers.
+  Taskmasters are the brains. Same body plan as workers but with ESP32-S3
+  (more compute) and a permanent sensor cluster instead of swappable tools.
 
-  One taskmaster per ~20 workers. They connect to the tunnel wired backbone
-  for mothership communication and use short-range RF for worker commands.
+  The sensor cluster is mounted between the mandibles where a tool head
+  would go. The mandibles hold it in place and can adjust its angle for
+  scanning (spectral sensor needs to point at the rock face).
 
-  More expensive per unit but far fewer needed. Critical single point of failure
-  for their squad — consider redundancy or re-assignment protocols.
+  Taskmasters handle:
+  - Navigation (IMU + visual odometry + lidar mapping)
+  - Mineral classification (spectral sensor at work face)
+  - Worker assignment (radio commands for role/tool changes)
+  - Anomaly detection (monitors for unusual patterns)
+  - Mothership communication (wired backbone relay)
+
+  Servo count: 6 leg + 2 mandible = 8 total (same as worker)

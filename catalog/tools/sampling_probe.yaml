@@ -1,0 +1,64 @@
+id: sampling_probe
+name: "Bioreactor Sampling Probe"
+type: monitoring_tool
+description: >
+  Combined pH sensor + turbidity sensor + sampling syringe for bioreactor
+  tending duties. Clips between mandibles. The ant dips the probe into
+  vat sampling ports to spot-check conditions. Includes a 5ml syringe
+  barrel that the mandibles can squeeze to collect a fluid sample.
+
+physical:
+  total_mass_g: 15
+  total_length_mm: 60            # Long enough to reach into vat port
+  mount_interface:
+    type: magnetic_clip
+    width_mm: 15
+    depth_mm: 10
+    magnet_recess_mm: 4
+  body:
+    shape: cylindrical_probe
+    diameter_mm: 10
+    length_mm: 50
+    material: "PETG + stainless steel probe tip"
+  syringe:
+    capacity_ml: 5
+    barrel_material: "polypropylene (standard lab syringe body)"
+    plunger_actuation: "mandible squeeze"
+
+sensors_on_tool:
+  - type: portable_ph_electrode
+    mass_g: 3
+    accuracy: "+/- 0.1 pH"
+    range: "0-14"
+    calibration: "single-point, factory calibrated, recal every 30 days"
+  - type: optical_turbidity_sensor
+    mass_g: 2
+    range: "0-1000 NTU"
+    purpose: "check bacterial density, detect contamination"
+
+electrical:
+  connector: "4-pin magnetic pogo (VCC, GND, pH_signal, turbidity_signal)"
+  voltage: "3.3V from ant"
+  current_draw_ma: 15
+  note: "Sensor signals read by ant's ADC pins"
+
+operation:
+  dip_time_seconds: 10           # Hold probe in liquid for stable reading
+  sample_collection_time_seconds: 5
+  readings_per_patrol: 6          # One per vat + precipitation stages
+  patrol_circuit_time_minutes: 15
+
+printable:
+  stl_available: true
+  openscad_parametric: true
+  print_material: "PETG body, stainless probe tip (purchased)"
+  print_time_hours: 1.0
+  supports_needed: true
+  additional_parts:
+    - "1x miniature pH electrode (Atlas Scientific or equivalent)"
+    - "1x optical turbidity sensor module"
+    - "1x 5ml syringe body"
+    - "4-pin magnetic pogo connector pair"
+
+cost_usd: 25                     # pH electrode is the expensive part
+added_date: "2026-03-27"

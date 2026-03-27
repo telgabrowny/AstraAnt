@@ -1,25 +1,42 @@
-# Worker Ant — Cheap, disposable tunnel laborer
-# The majority of the swarm (80-90%). Minimal sensors, follows taskmaster commands.
+# Worker Ant — Universal tunnel laborer with modular tool system
+# The bulk of the swarm. 6 walking legs + 2 mandible arms.
+# Swaps tool heads at tool docks based on current assignment.
+# Can perform ANY tunnel role: mining, hauling, sorting, plastering, tending.
 
 caste: worker
 chassis:
-  type: spider_6leg
-  base_mass_g: 20          # Frame structure (3D printed PETG)
-  mass_budget_g: 200
+  type: hexapod_with_mandibles
+  base_mass_g: 25              # 3D printed PETG frame
+  mass_budget_g: 250           # Slightly higher to accommodate mandibles
 
 compute:
   part_id: rp2040
-  mass_g: 5                # Pico board
+  mass_g: 5                    # Pico board
   power_draw_mw: 100
   cost_usd: 4
 
 locomotion:
-  actuators: 6
-  # Default to COTS — catalog has vacuum-rated alternative
+  legs: 6
+  leg_dof: 1                   # 1 servo per leg (basic). 2-DOF = future upgrade
   part_id: sg90_servo
   per_unit_mass_g: 9
   per_unit_power_mw: 600
   per_unit_cost_usd: 3
+
+mandibles:
+  count: 2
+  part_id: sg51r_micro_servo   # Smaller servo for manipulation arms
+  per_unit_mass_g: 5
+  per_unit_power_mw: 300
+  per_unit_cost_usd: 2
+  dof_per_mandible: 1          # Open/close. 2-DOF (+ up/down) = future upgrade
+  grip_force_n: 1.5
+  tool_mount:
+    type: magnetic_clip         # Tool heads snap on magnetically
+    mount_width_mm: 15
+    mount_depth_mm: 10
+    magnet_diameter_mm: 4       # Small neodymium disc magnet
+    magnet_pull_force_n: 3      # Holds tool securely during operation
 
 communication:
   part_id: nrf24l01_rf
@@ -36,45 +53,59 @@ sensors:
     cost_usd: 4
     purpose: "proximity / collision avoidance"
 
-tool:
-  # Tool varies by track — this is the Track A default
-  track_a:
-    type: rotary_scraper
-    part_id: n20_dc_motor
-    mass_g: 12
-    power_mw: 500
-    cost_usd: 5
-  track_b:
-    type: scoop_gripper
-    part_id: sg90_servo
-    mass_g: 9
-    power_mw: 100
-    cost_usd: 3
-  track_c:
-    type: rotary_scraper
-    part_id: n20_dc_motor
-    mass_g: 12
-    power_mw: 500
-    cost_usd: 5
+tool_system:
+  current_tool: null             # Set at runtime by taskmaster assignment
+  tool_swap_time_seconds: 30     # Time to travel to dock and swap
+  compatible_tools:
+    - drill_head
+    - scoop_head
+    - paste_nozzle
+    - thermal_rake
+    - sampling_probe
+    - cargo_gripper
+  tool_dock_locations:
+    - "tunnel_entrance"
+    - "bioreactor_bay"
+    - "thermal_sorting_station"
+    - "cargo_staging_area"
 
 storage_hopper:
-  hopper_mass_g: 8         # Thin-wall 3D printed
-  track_a_capacity_g: 200
-  track_b_capacity_g: 350  # Larger — no heavy mining tool
-  track_c_capacity_g: 200
+  hopper_mass_g: 8              # Thin-wall 3D printed, clips to abdomen
+  capacity_g: 200               # Detachable — different sizes per role
 
 power:
-  source: tethered          # Power via cable from tunnel bus
+  source: tethered
   tether_connector_mass_g: 3
   backup_battery:
     capacity_mah: 500
-    mass_g: 15              # Small LiPo for untethered moves
+    mass_g: 15
     cost_usd: 3
 
-notes: |
-  Worker ants are the cheapest, simplest units. They follow taskmaster commands
-  and perform repetitive dig/haul/dump cycles. Designed to be disposable —
-  high attrition is acceptable if per-unit cost stays low.
+physical_dimensions:
+  body_length_mm: 120           # Thorax + abdomen
+  body_width_mm: 60
+  body_height_mm: 40
+  leg_span_mm: 180              # Tip-to-tip when walking
+  mandible_reach_mm: 40         # Forward reach of each mandible arm
+  total_length_mm: 160          # Including mandibles extended
+  ground_clearance_mm: 30
 
-  In sealed tunnels (1-10 kPa), COTS SG90 servos have extended MTBF (~8000 hrs).
-  In vacuum, MTBF drops to ~500 hrs. The sim should model this based on environment.
+notes: |
+  The worker is the universal unit. Every tunnel role is performed by
+  the same ant body with a different tool head clipped to its mandibles.
+
+  Role assignment flow:
+  1. Taskmaster evaluates colony needs (mining vs sealing vs tending etc.)
+  2. Taskmaster radios worker: "switch to plastering, dock at station 2"
+  3. Worker walks to nearest tool dock
+  4. Drops current tool head (magnetic release)
+  5. Picks up new tool head (magnetic clip)
+  6. Walks to assigned work area
+  7. Performs new role until reassigned
+
+  This means the colony can dynamically shift workforce allocation.
+  Pressure breach? 20 miners become 20 plasterers in minutes.
+  Bioreactor alarm? 5 miners become 5 tenders immediately.
+
+  Servo count: 6 leg servos + 2 mandible servos = 8 total
+  Future upgrade: 2-DOF legs (12 leg servos) + 2-DOF mandibles (4 arm servos) = 16 total

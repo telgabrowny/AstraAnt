@@ -1,0 +1,49 @@
+id: scoop_head
+name: "Regolith Scoop"
+type: collection_tool
+description: >
+  Passive scoop for collecting loose regolith. No motor — the ant's
+  mandibles provide all the force. The scoop shovels material into
+  the ant's hopper. Simple, cheap, no electrical connection needed.
+
+physical:
+  total_mass_g: 8
+  total_length_mm: 45
+  mount_interface:
+    type: magnetic_clip
+    width_mm: 15
+    depth_mm: 10
+    magnet_recess_mm: 4
+  body:
+    shape: scoop
+    width_mm: 25
+    depth_mm: 15                 # Scoop depth (how much it holds per scoop)
+    length_mm: 35
+    material: "PETG or stainless steel sheet"
+    wall_thickness_mm: 1.5
+  edge:
+    type: straight
+    sharpened: false              # Blunt edge — scoops, doesn't cut
+    note: "Slight lip at rear prevents material from sliding out during carry"
+
+electrical:
+  connector: none                 # Passive tool — no electrical connection
+  power: 0
+
+operation:
+  scoop_capacity_g: 25            # Per scoop load
+  scoops_per_hopper_fill: 8       # ~200g hopper / 25g per scoop
+  cycle_time_seconds: 10          # Scoop + lift + dump into hopper
+  works_with: "loose regolith, crushed material, dried thermal drum output"
+
+printable:
+  stl_available: true
+  openscad_parametric: true
+  print_material: "PETG"
+  print_time_hours: 0.5
+  supports_needed: false
+  orientation: "print scoop-side up"
+  tolerance_mm: 0.2
+
+cost_usd: 1                       # Just a 3D printed part
+added_date: "2026-03-27"

@@ -1,0 +1,158 @@
+# Surface Ant (Super Ant) — Hardened exterior operations specialist
+# Same 6+2 body plan but built with vacuum-rated materials throughout.
+# Handles all surface and space operations: cargo staging, mothership
+# maintenance, return vehicle loading, and end-of-life guidance duty.
+
+caste: surface_ant
+chassis:
+  type: hexapod_with_mandibles
+  base_mass_g: 35              # Reinforced frame for vacuum/thermal
+  mass_budget_g: 600           # Heavier — hardened everything
+  material: "aluminum_6061"    # Metal frame instead of PETG
+  note: "Metal chassis acts as thermal mass and radiation shielding for electronics"
+
+compute:
+  part_id: esp32_s3            # Needs more compute for navigation + guidance
+  mass_g: 10
+  power_draw_mw: 250
+  cost_usd: 5
+
+locomotion:
+  legs: 6
+  leg_dof: 1
+  part_id: vacuum_actuator_maxon   # Vacuum-rated brushless — no grease outgassing
+  per_unit_mass_g: 35
+  per_unit_power_mw: 800
+  per_unit_cost_usd: 150
+
+mandibles:
+  count: 2
+  part_id: vacuum_actuator_maxon   # Mandibles also vacuum-rated
+  per_unit_mass_g: 20              # Smaller Maxon for arms
+  per_unit_power_mw: 400
+  per_unit_cost_usd: 100
+  dof_per_mandible: 2              # Up/down + open/close (more capable for cargo)
+  grip_force_n: 5.0                # Stronger grip for cargo pods and tool use
+  tool_mount:
+    type: magnetic_clip             # Same universal mount as workers
+    mount_width_mm: 20
+    mount_depth_mm: 12
+    magnet_diameter_mm: 6
+    magnet_pull_force_n: 5
+
+communication:
+  part_id: sx1276_lora
+  mass_g: 5
+  power_mw: 120
+  cost_usd: 8
+  range_km: 10
+  bandwidth_kbps: 50
+  purpose: "long-range for surface/orbit ops"
+
+sensors:
+  - part_id: bno055_imu
+    mass_g: 3
+    power_mw: 12
+    cost_usd: 20
+    purpose: "navigation / attitude determination"
+  - id: sun_sensor
+    type: coarse_sun_sensor
+    mass_g: 5
+    power_mw: 5
+    cost_usd: 15
+    purpose: "attitude determination on surface"
+  - part_id: vl53l0x_lidar
+    mass_g: 1
+    power_mw: 20
+    cost_usd: 4
+    purpose: "proximity / collision avoidance"
+  - id: radiation_dosimeter
+    type: radfet_dosimeter
+    mass_g: 2
+    power_mw: 2
+    cost_usd: 10
+    purpose: "track cumulative radiation for lifetime estimation"
+
+tool_system:
+  current_tool: null
+  tool_swap_time_seconds: 45      # Slightly slower — bulkier tools
+  compatible_tools:
+    - cargo_gripper_heavy          # Larger version for cargo pod handling
+    - panel_brush                  # Solar panel dust removal
+    - hex_torque_driver            # Fastener inspection/tightening
+    - seal_applicator              # Gasket maintenance
+    - continuity_tester            # Cable inspection
+  tool_dock_locations:
+    - "tunnel_entrance_exterior"   # Tools stored just outside the seal
+
+solar:
+  part_id: alta_gaas_solar
+  area_cm2: 50
+  mass_g: 4
+  power_output_mw_at_1au: 1450
+  cost_usd: 75
+
+sail:
+  type: personal_stationkeeping
+  part_id: cp1_polyimide_sail
+  area_m2: 3
+  mass_g: 30
+  cost_usd: 200
+
+thermal:
+  heater_power_mw: 500
+  mli_blanket_mass_g: 20
+  heater_mass_g: 10
+  mass_g: 30
+  cost_usd: 20
+
+battery:
+  capacity_mah: 2000
+  mass_g: 55
+  cost_usd: 10
+
+storage_hopper:
+  hopper_mass_g: 0
+  capacity_g: 0
+
+power:
+  source: solar
+  note: "Solar + battery. No tether — operates on surface."
+
+physical_dimensions:
+  body_length_mm: 160
+  body_width_mm: 80
+  body_height_mm: 50
+  leg_span_mm: 240
+  mandible_reach_mm: 50          # Longer reach for cargo handling
+  total_length_mm: 210
+  ground_clearance_mm: 40
+  solar_panel_area_mm: 70x70     # On dorsal surface
+
+end_of_life_role:
+  description: >
+    When a surface ant's radiation dosimeter shows approaching lifetime limits,
+    or actuator degradation exceeds 50%, the ant is assigned guidance duty:
+    attach to a loaded return cargo pod, use IMU + sun sensor for navigation,
+    and guide the solar-sail-propelled pod to the destination orbit.
+    The ant becomes a disposable guidance computer for the cargo.
+  guidance_sensors: ["bno055_imu", "sun_sensor"]
+  guidance_compute: "esp32_s3"
+  guidance_actuators: "reaction control via sail trim"
+
+notes: |
+  The surface ant is the "super ant" — same body plan as the worker
+  but built from space-grade materials throughout. Every actuator is
+  vacuum-rated, the chassis is aluminum (not PETG), and it carries
+  its own solar power + battery.
+
+  It costs ~40x more than a tunnel worker (~$1500 vs ~$40) but it's
+  the only caste that can survive on the asteroid surface. You need
+  very few of them (2-3 per mission).
+
+  The surface ant uses the same universal tool mount as workers,
+  but with larger/heavier tool heads designed for exterior work
+  (brushing panels, tightening bolts, applying sealant).
+
+  At end of life, it becomes a guidance unit for return cargo —
+  the most elegant possible retirement plan.

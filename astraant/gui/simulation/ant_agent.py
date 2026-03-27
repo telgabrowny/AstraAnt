@@ -98,7 +98,7 @@ class AntAgent:
             events.update(self._tick_plasterer(dt, tunnel))
         elif self.caste == "tender":
             events.update(self._tick_tender(dt))
-        elif self.caste == "courier":
+        elif self.caste in ("courier", "surface_ant"):
             events.update(self._tick_courier(dt))
 
         return events

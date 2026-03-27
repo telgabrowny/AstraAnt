@@ -1,0 +1,58 @@
+id: paste_nozzle
+name: "Paste Applicator Nozzle"
+type: sealing_tool
+description: >
+  Nozzle for extruding waste slurry paste onto tunnel walls. Includes a
+  small peristaltic squeeze mechanism driven by the mandible grip force.
+  The mandibles squeeze the reservoir body to push paste through the nozzle.
+  A flat trowel edge on the bottom smooths the applied layer.
+
+physical:
+  total_mass_g: 20               # Empty — paste adds ~150g when loaded
+  total_length_mm: 55
+  mount_interface:
+    type: magnetic_clip
+    width_mm: 15
+    depth_mm: 10
+    magnet_recess_mm: 4
+  reservoir:
+    shape: flexible_bladder
+    material: "silicone tube"
+    capacity_ml: 100             # ~150g of paste
+    refill_method: "dip into slurry tank — suction via mandible squeeze release"
+    outer_diameter_mm: 20
+    length_mm: 35
+  nozzle:
+    shape: flat_slit
+    width_mm: 20                 # Wide nozzle for even coverage
+    slit_height_mm: 2            # Controls paste thickness
+    material: "PETG"
+  trowel:
+    shape: flat_blade
+    width_mm: 25
+    material: "stainless steel strip or PETG"
+    angle_deg: 45                # Angled to smooth paste as ant moves forward
+
+electrical:
+  connector: none                # Passive — mandible squeeze provides pressure
+  power: 0
+
+operation:
+  paste_flow_ml_per_minute: 15   # At mandible squeeze pressure
+  coverage_m2_per_load: 0.2      # ~100ml spread 0.5mm thick
+  coat_thickness_mm: 0.5
+  smoothing: "trowel trailing edge smooths as ant walks forward"
+  refill_time_seconds: 20        # Dip and suction-fill at slurry tank
+
+printable:
+  stl_available: true
+  openscad_parametric: true
+  print_material: "PETG for body, silicone tube for reservoir (purchased)"
+  print_time_hours: 1.0
+  supports_needed: true          # Nozzle overhang needs support
+  orientation: "print mount-face down"
+  tolerance_mm: 0.2
+  additional_parts: ["1x silicone tube 20mm OD x 35mm", "1x stainless strip 25x5mm"]
+
+cost_usd: 3                      # Printed body + silicone tube + steel strip
+added_date: "2026-03-27"

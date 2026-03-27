@@ -1,0 +1,61 @@
+id: drill_head
+name: "Rotary Drill Head"
+type: mining_tool
+description: >
+  Rotary scraper/drill bit for excavating asteroid regolith. Clips between
+  the ant's mandibles via magnetic mount. The mandibles grip the tool body
+  while the motor spins the bit. N20 micro gearmotor drives the rotation.
+
+physical:
+  total_mass_g: 18
+  total_length_mm: 50            # From mount face to bit tip
+  mount_interface:
+    type: magnetic_clip
+    width_mm: 15
+    depth_mm: 10
+    magnet_recess_mm: 4          # Magnet sits in this pocket
+  body:
+    shape: cylinder
+    diameter_mm: 12
+    length_mm: 30
+    material: "PETG or aluminum"
+  bit:
+    shape: conical_fluted
+    diameter_mm: 8
+    length_mm: 20
+    material: "hardened steel or tungsten carbide insert"
+    flute_count: 4
+    note: "Replaceable bit inserts — carry spares in tool dock"
+
+motor:
+  part_id: n20_dc_motor
+  voltage_v: 6
+  power_mw: 500
+  rpm_no_load: 300               # With 100:1 gear ratio
+  torque_stall_kg_cm: 1.5
+  mass_g: 12                     # Included in total_mass_g
+  wiring: "2 wires from motor to ant's tool power connector"
+
+electrical:
+  connector: "2-pin magnetic pogo connector (power + ground)"
+  voltage: "supplied by ant's motor driver circuit"
+  current_draw_ma: 100           # Typical
+  current_stall_ma: 500          # Stall detection threshold
+
+operation:
+  excavation_rate_g_per_minute: 15   # Regolith removed per minute of drilling
+  duty_cycle: 0.7                     # 70% active, 30% cooldown/repositioning
+  bit_lifetime_hours: 50              # Before replacement needed
+  vibration_note: "Mandibles must grip firmly — vibration will loosen weak grip"
+
+printable:
+  stl_available: true
+  openscad_parametric: true
+  print_material: "PETG recommended, PLA acceptable for testing"
+  print_time_hours: 1.5
+  supports_needed: false          # Designed for supportless printing
+  orientation: "print standing up (mount face on build plate)"
+  tolerance_mm: 0.2               # Magnet pocket tolerance
+
+cost_usd: 8                       # Motor + printed body + bit insert
+added_date: "2026-03-27"

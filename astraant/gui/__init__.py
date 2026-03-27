@@ -2,10 +2,8 @@
 
 
 def launch(asteroid: str = "bennu", workers: int = 20, taskmasters: int = 1,
-           couriers: int = 1, sorters: int = 1, plasterers: int = 1,
-           tenders: int = 1, track: str = "a"):
+           couriers: int = 2, track: str = "a", **kwargs):
     """Launch the 3D simulation window."""
     from .app import run_app
     run_app(asteroid=asteroid, workers=workers, taskmasters=taskmasters,
-            couriers=couriers, sorters=sorters, plasterers=plasterers,
-            tenders=tenders, track=track)
+            surface_ants=couriers, track=track)
