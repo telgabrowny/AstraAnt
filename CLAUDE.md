@@ -83,6 +83,10 @@ astraant build bom <caste> [--track a|b|c]
 astraant build wiring <caste> [--track a|b|c]
 astraant build scad [tool_id] [--all]
 astraant gui [--workers N --asteroid ID --track a|b|c]
+astraant economics [--asteroid ID --years 5 --reality-check]
+astraant composition [--asteroid ID --batches 200]
+astraant scaling [--track a|b|c --baseline N]
+astraant price-report [--stale-days 90]
 ```
 
 ## Development Practices
@@ -142,9 +146,16 @@ Key items needing physical testing:
 - NEA surface gravity is negligible for fluid dynamics (Bennu: 6 μm/s^2)
 
 ## Current Stats
-- 39 tests passing
-- 15+ catalog parts, 7 asteroids, 7 species, 5 reagents, 7 tool heads
+- 60 tests passing
+- 15+ catalog parts, 7 asteroids, 7 species, 5 reagents, 9 tool heads
 - 9 mothership modules
 - Bioreactor ODE simulation with Monod kinetics
 - Sensitivity analysis showing destination is #1 economic factor
 - GUI with 3D asteroid, procedural ant models, tunnel cutaway, ground control panel
+- Composition variability model (6 spatial zones per asteroid type)
+- Statistical scaling model (10 to 100K ants)
+- Full mission economics with reality check
+- Price tracking and staleness detection
+- Solar sail trajectory estimation
+- 8 OpenSCAD printable models (chassis + 7 tools + pod scaffold)
+- MicroPython firmware stubs for RP2040 and ESP32-S3
