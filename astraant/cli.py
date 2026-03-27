@@ -427,6 +427,33 @@ def economics(workers, taskmasters, surface_ants, track, asteroid,
         click.echo(reality_check(econ))
 
 
+# -- Phase 2 command ------------------------------------------------------------
+
+@main.command("phase2")
+@click.option("--facilities", "-f", multiple=True, default=None,
+              help="Facility IDs to install (repeat for multiple)")
+@click.option("--all-facilities", is_flag=True, help="Install everything")
+@click.option("--chamber-m3", default=2572.0, help="Available chamber volume")
+def phase2(facilities, all_facilities, chamber_m3):
+    """Plan Phase 2 facilities inside the excavated chamber."""
+    from .phase2 import plan_phase2, format_phase2_report, FACILITIES
+
+    if all_facilities:
+        fac_ids = [f.id for f in FACILITIES]
+    elif facilities:
+        fac_ids = list(facilities)
+    else:
+        fac_ids = None  # Use default recommendation
+
+    plan = plan_phase2(fac_ids, chamber_volume_m3=chamber_m3)
+
+    # Get Phase 1 revenue for combined economics
+    from .mission_economics import calculate_site_economics
+    econ = calculate_site_economics("bennu", "lunar_orbit", "b", workers=100, mission_years=5)
+
+    click.echo(format_phase2_report(plan, phase1_revenue=econ.total_revenue_usd))
+
+
 # -- Manufacturing command ------------------------------------------------------
 
 @main.command("manufacturing")
