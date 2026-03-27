@@ -46,6 +46,7 @@ EXTERNAL_FLUID_TARGETS = frozenset({
 })
 from .random_events import EventSystem
 from .tech_upgrades import UpgradeManager
+from .loan_shark import LoanShark
 
 try:
     from ...endgame import HabitatGoal
@@ -135,6 +136,7 @@ class SimEngine:
         self.anomaly_detector = AnomalyDetector(fanciful_mode=False)
         self.event_system = EventSystem()
         self.upgrade_manager = UpgradeManager()
+        self.loan_shark = LoanShark(difficulty="hard")  # Set at game start
 
         # Performance: cached status + counters
         self._status_cache: dict[str, Any] | None = None
@@ -552,14 +554,33 @@ class SimEngine:
                 "upgrade_id": upg.id,
             })
 
-        # Process game economy (revenue arrivals from cargo pod transit)
-        econ_events = self.economy.tick(self.clock.sim_time / 3600)
-        for ee in econ_events:
+        # Loan shark interest + payments (runs on the revenue stream)
+        revenue_this_tick = 0
+        for ee in self.economy.tick(self.clock.sim_time / 3600):
+            if ee.get("type") == "revenue":
+                revenue_this_tick += ee.get("value_usd", 0)
             events.append({
                 "type": ee.get("type", "economy"),
                 "time": self.clock.sim_time,
                 "message": ee.get("message", ""),
             })
+
+        shark_events = self.loan_shark.tick(self.clock.sim_time / 3600, revenue_this_tick)
+        for se in shark_events:
+            events.append({
+                "type": se.get("type", "loan"),
+                "time": self.clock.sim_time,
+                "message": se.get("message", ""),
+            })
+
+        # Tutorial triggers
+        if self.stats.total_dump_cycles == 1:
+            tip = self.loan_shark.get_tutorial("first_material_dumped")
+            if tip:
+                events.append({"type": "tutorial", "time": self.clock.sim_time,
+                               "message": tip["shark_says"], "explains": tip["explains"]})
+
+        # (economy.tick already called above in the loan shark section)
 
         # Feed excavation into endgame habitat goal (scaled by fleet)
         if self.habitat_goal and self.stats.total_dump_cycles > 0:
@@ -965,6 +986,7 @@ class SimEngine:
                     key=lambda x: -x[1]
                 )[:3] if self.mining.revenue_by_material else [],
             },
+            "loan": self.loan_shark.summary(),
             "events": self.event_system.summary(),
             "upgrades": self.upgrade_manager.summary(),
             "economy": self.economy.summary(),

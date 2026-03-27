@@ -213,14 +213,26 @@ class AstraAntApp:
             color=color.light_gray,
         )
 
-        # Revenue counter (the big gamification number)
+        # Loan shark debt display (the pressure)
+        self.debt_text = Text(
+            text="", position=Vec2(-0.85, 0.38), scale=0.9,
+            color=color.rgb(255, 100, 100),
+        )
+
+        # Revenue counter (the relief)
         self.revenue_text = Text(
-            text="Revenue: $0", position=Vec2(-0.85, 0.35), scale=1.0,
+            text="Revenue: $0", position=Vec2(-0.85, 0.34), scale=1.0,
             color=color.rgb(50, 255, 50),
         )
         self.profit_text = Text(
-            text="", position=Vec2(-0.85, 0.31), scale=0.8,
+            text="", position=Vec2(-0.85, 0.30), scale=0.8,
             color=color.rgb(200, 200, 50),
+        )
+
+        # Loan shark comment (tutorial/mood)
+        self.shark_text = Text(
+            text="", position=Vec2(-0.85, 0.26), scale=0.7,
+            color=color.rgb(200, 180, 100),
         )
 
         # Bottom left: mission clock and speed
@@ -650,6 +662,31 @@ class AstraAntApp:
             f"  Ants:     {status['total_ants']}  Failed: {s['failures']}"
             f"{mfg_line}{fleet_line}{chamber_line}{endgame_line}"
         )
+
+        # Loan shark debt display
+        loan = status.get("loan", {})
+        if loan and not loan.get("paid_off"):
+            balance = loan.get("balance", 0)
+            rate = loan.get("rate", "?")
+            mood = loan.get("mood", "neutral")
+            if balance >= 1e6:
+                self.debt_text.text = f"DEBT: ${balance/1e6:.1f}M ({rate} interest)"
+            else:
+                self.debt_text.text = f"DEBT: ${balance:,.0f}"
+            mood_colors = {
+                "nervous": color.rgb(255, 200, 50),
+                "angry": color.rgb(255, 50, 50),
+                "pleased": color.rgb(100, 255, 100),
+                "ecstatic": color.rgb(50, 255, 50),
+            }
+            self.debt_text.color = mood_colors.get(mood, color.rgb(255, 150, 100))
+        elif loan and loan.get("paid_off"):
+            self.debt_text.text = "DEBT: PAID OFF!"
+            self.debt_text.color = color.rgb(50, 255, 50)
+
+        # Shark comment
+        from .simulation.loan_shark import LoanShark
+        self.shark_text.text = f'"{self.engine.loan_shark.get_shark_comment()}"'
 
         # Revenue and profit (gamification)
         mi = status.get("mining", {})
