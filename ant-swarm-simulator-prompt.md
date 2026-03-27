@@ -60,7 +60,7 @@ All tracks share the same orbital mechanics, tunnel physics, swarm logistics, an
 
 Inspired by real ant colonies, the swarm uses **three castes** with a shared body plan. All castes use the same 6-leg + 2-mandible-arm chassis (8 actuated limbs total). The mandible arms serve as the universal tool interface: workers swap modular tool heads at magnetic docking stations to change roles, taskmasters carry a permanent sensor cluster, and surface ants are vacuum-hardened variants for exterior work.
 
-Old roles (courier, sorter, plasterer, tender) are **not separate castes** — they are **roles** that workers or surface ants assume by equipping the appropriate tool head.
+Workers are dynamically assigned roles (miner, hauler, plasterer, sorter, tender) by taskmasters, switching function by swapping tool heads at magnetic docking stations. The modular tool system includes 7 tool heads with magnetic clip mounts (see Tool Head Catalog below).
 
 ### Shared Body Plan — All Castes
 
