@@ -131,6 +131,11 @@ class SimEngine:
         self._bioreactor_update_interval = 3600.0
         self._last_bioreactor_update = 0.0
 
+        # Processing throughput bottleneck (Track B/C)
+        self._crusher_capacity_kg_per_day = 120.0  # 5 kg/hr × 24
+        self._regolith_buffer_kg = 0.0             # Pile at crusher intake
+        self._buffer_capacity_kg = 500.0           # Max buffer before workers idle
+
         # Composition variability
         self._comp_zones = None
         self._bulk_metals = {}
@@ -308,6 +313,20 @@ class SimEngine:
 
             if "material_dumped_g" in agent_events:
                 kg = agent_events["material_dumped_g"] / 1000.0
+
+                # Track B/C: crusher bottleneck — material goes to buffer first
+                if self._has_bioreactor:
+                    self._regolith_buffer_kg += kg
+                    # If buffer is full, this dump was wasted time
+                    # (worker should have been reassigned)
+                    if self._regolith_buffer_kg > self._buffer_capacity_kg:
+                        self._regolith_buffer_kg = self._buffer_capacity_kg
+                        # Signal that workers should switch roles
+                        agent_events["buffer_full"] = True
+                else:
+                    # Track A: no bottleneck, all material counts
+                    pass
+
                 self.stats.total_material_extracted_kg += kg
                 self.stats.total_dump_cycles += 1
 
@@ -440,6 +459,15 @@ class SimEngine:
                     "type": "drum_cycle",
                     "time": self.clock.sim_time,
                 })
+
+        # Crusher processes regolith from buffer at fixed rate (Track B/C bottleneck)
+        if self._has_bioreactor and self._regolith_buffer_kg > 0:
+            crusher_rate_per_sec = self._crusher_capacity_kg_per_day / 86400.0
+            processed = min(self._regolith_buffer_kg,
+                            crusher_rate_per_sec * sim_dt * self._fleet_multiplier)
+            self._regolith_buffer_kg -= processed
+            # The actual "value" from bioleaching comes from crushed material
+            # (revenue calculation already handles this via composition sampling)
 
         # Feed excavation into endgame habitat goal (scaled by fleet)
         if self.habitat_goal and self.stats.total_dump_cycles > 0:
@@ -780,6 +808,8 @@ class SimEngine:
                 "failures": self.stats.ants_failed,
                 "metals_extracted_kg": round(self.stats.metals_extracted_kg, 3),
                 "biomass_g_per_l": round(self.stats.biomass_g_per_l, 3),
+                "crusher_buffer_kg": round(self._regolith_buffer_kg, 1),
+                "crusher_buffer_pct": round(self._regolith_buffer_kg / self._buffer_capacity_kg * 100, 0) if self._has_bioreactor else 0,
             },
             "comms": {
                 "delay_minutes": round(self.comms.one_way_delay_minutes, 1),

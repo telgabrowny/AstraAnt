@@ -427,6 +427,30 @@ def economics(workers, taskmasters, surface_ants, track, asteroid,
         click.echo(reality_check(econ))
 
 
+# -- Mission planner command ---------------------------------------------------
+
+@main.command("plan")
+@click.argument("objective", required=False, default=None)
+def plan_cmd(objective):
+    """Mission planner -- pick a goal, get the best asteroid + loadout.
+
+    Objectives: cheapest_profit, max_water, max_platinum, rare_earths,
+    fuel_depot, habitat_small, habitat_medium, interstellar, self_replicating
+    """
+    from .mission_planner import plan_mission, format_mission_plan, OBJECTIVES
+    if objective is None:
+        click.echo("Available objectives:")
+        for o in OBJECTIVES:
+            click.echo(f"  {o.id:<25s} {o.name}")
+        click.echo("\nUsage: astraant plan <objective>")
+        return
+    result = plan_mission(objective)
+    if "error" in result:
+        click.echo(result["error"])
+        return
+    click.echo(format_mission_plan(result))
+
+
 # -- Endgame command -----------------------------------------------------------
 
 @main.command("endgame")
