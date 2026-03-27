@@ -371,12 +371,15 @@ class AstraAntApp:
         # Production stats
         s = status["stats"]
         t = status["tunnel"]
+        metals = s.get('metals_extracted_kg', 0)
+        biomass = s.get('biomass_g_per_l', 0)
+        bio_line = f"\n  Metals:   {metals:.3f} kg\n  Biomass:  {biomass:.2f} g/L" if metals > 0 else ""
         self.stats_text.text = (
             f"Production:\n"
             f"  Material: {s['material_kg']:.1f} kg\n"
             f"  Water:    {s['water_kg']:.1f} kg\n"
             f"  Sealed:   {s['sealed_m2']:.1f} m2\n"
-            f"  Tunnel:   {t['total_length_m']:.1f} m\n"
+            f"  Tunnel:   {t['total_length_m']:.1f} m{bio_line}\n"
             f"  Failures: {s['failures']}\n"
             f"  Anomalies:{s['anomalies']}"
         )
