@@ -1,0 +1,151 @@
+# Mothership Module: Modular Nuclear Reactor
+# Game-changer for power availability at any heliocentric distance.
+# Based on NASA Kilopower / KRUSTY (Kilopower Reactor Using Stirling Technology).
+
+module: nuclear_reactor
+name: "Modular Fission Reactor (Kilopower-class)"
+type: power_generation
+
+# Three size options — pick based on mission needs
+reactor_options:
+
+  kilopower_1kw:
+    name: "Kilopower 1 kWe"
+    description: >
+      Smallest option. Based on NASA's KRUSTY test (2018).
+      Uranium-235 fuel, Stirling power conversion. Flight-ready design.
+      Provides constant 1 kW regardless of distance from Sun.
+    electrical_output_w: 1000
+    thermal_output_w: 4000           # Stirling efficiency ~25%
+    mass_kg: 134                     # NASA published mass
+    fuel: "highly_enriched_uranium_235"
+    fuel_mass_kg: 28                 # ~28 kg U-235 core
+    lifetime_years: 15
+    cost_usd: 10_000_000             # Estimated
+    trl: 5                           # Tested on Earth, not flown
+    advantages:
+      - "Proven technology (KRUSTY test 2018)"
+      - "Works at any distance from Sun"
+      - "No eclipse interruptions"
+      - "Small and light for its output"
+    disadvantages:
+      - "Nuclear regulatory approvals required"
+      - "Public perception challenges"
+      - "Only 1 kW — need multiple for industrial loads"
+    reference: "NASA/DOE Kilopower project, tested at Nevada National Security Site"
+
+  kilopower_10kw:
+    name: "Kilopower 10 kWe"
+    description: >
+      Scaled-up Kilopower. Same technology, larger core.
+      10 kW constant output replaces the entire solar array.
+      Enough for Phase 1 mining operations without solar panels.
+    electrical_output_w: 10000
+    thermal_output_w: 40000
+    mass_kg: 500                     # Scaled estimate
+    fuel_mass_kg: 60
+    lifetime_years: 12
+    cost_usd: 30_000_000
+    trl: 3                           # Design phase
+    advantages:
+      - "Replaces solar array entirely"
+      - "Enables Psyche mission (2.9 AU — solar gives only 680W there)"
+      - "Constant power through eclipses and dust storms"
+    disadvantages:
+      - "Heavier than solar for inner solar system missions"
+      - "Higher cost"
+      - "Regulatory complexity"
+
+  fission_surface_power_40kw:
+    name: "Fission Surface Power 40 kWe"
+    description: >
+      Based on NASA's Fission Surface Power project for lunar base.
+      40 kW constant output — enough for Phase 1 + Phase 2 combined.
+      Enables full industrial operations including ion propulsion.
+    electrical_output_w: 40000
+    thermal_output_w: 160000
+    mass_kg: 2000                    # Estimated
+    fuel_mass_kg: 150
+    lifetime_years: 10
+    cost_usd: 100_000_000
+    trl: 3
+    advantages:
+      - "Powers everything: mining + manufacturing + ion thrusters"
+      - "Enables asteroid redirection (28 kW for thrusters + 12 kW for ops)"
+      - "Works anywhere in the solar system"
+      - "Waste heat useful for tunnel heating, sintering, processing"
+    disadvantages:
+      - "2 tonnes — significant launch mass"
+      - "$100M — doubles the mission cost"
+      - "Regulatory nightmare"
+      - "Public opposition to nuclear in space"
+
+# Impact on mission economics at different locations
+power_comparison:
+  bennu_1au:
+    solar_output_w: 5800
+    kilopower_1kw_output_w: 1000
+    kilopower_10kw_output_w: 10000
+    fission_40kw_output_w: 40000
+    notes: "At 1 AU, solar is competitive. Nuclear adds cost for marginal benefit."
+
+  psyche_2_9au:
+    solar_output_w: 690              # 5800 / 2.9^2 = 690W
+    kilopower_1kw_output_w: 1000     # Unchanged by distance
+    kilopower_10kw_output_w: 10000
+    fission_40kw_output_w: 40000
+    notes: >
+      At Psyche, solar barely powers the comms module.
+      Nuclear is REQUIRED for any meaningful operations.
+      The 10 kW Kilopower makes Psyche viable.
+      The 40 kW FSP makes Psyche a full colony.
+
+  trojan_asteroids_5_2au:
+    solar_output_w: 214              # 5800 / 5.2^2
+    notes: "Solar is useless. Nuclear is the only option beyond 3 AU."
+
+# Integration with existing modules
+integration:
+  replaces: "power module solar array (partially or fully)"
+  waste_heat_uses:
+    - "Tunnel heating (maintains 5 kPa atmosphere temperature)"
+    - "Sintering furnace (free heat source for manufacturing)"
+    - "Water melting (for C-type asteroid ice extraction)"
+    - "Bioreactor temperature control (free heating)"
+  power_distribution: "Same 48V DC bus as solar array"
+  location: >
+    Reactor sits on the asteroid surface, 20-50m from the mothership.
+    Connected via power cable. Radiation shadow shield protects the
+    mothership and tunnel entrance. Ants avoid the reactor area.
+
+# Regulatory notes
+regulatory:
+  us_law: "Nuclear materials in space regulated by DOE + NRC + NASA"
+  international: "UN Principles on Nuclear Power Sources in Space (1992)"
+  precedent:
+    - "RTGs on Voyager, Cassini, New Horizons, Perseverance (plutonium)"
+    - "SNAP-10A: only fission reactor flown in space (1965, US)"
+    - "BES-5/Topaz: 30+ Soviet fission reactors flown (1970s-80s)"
+  readiness: "NEEDS_PHYSICAL_TEST — KRUSTY tested but not flown"
+
+notes: |
+  Nuclear power is THE technology that unlocks the entire outer solar system.
+
+  For Bennu (1 AU): nuclear is nice-to-have. Solar works fine.
+  For Psyche (2.9 AU): nuclear is REQUIRED. Solar gives only 690W.
+  For Trojans (5.2 AU): nuclear is the ONLY option.
+
+  The 10 kW Kilopower at 500 kg and $30M is the sweet spot:
+  - Replaces 20 m2 solar array (saves 45 kg and complexity)
+  - Works at any distance
+  - Enables ion propulsion for asteroid redirection
+  - Waste heat useful for manufacturing and bio-processing
+  - 12-year lifetime covers entire mission
+
+  The 40 kW FSP at 2000 kg and $100M is for full colonies:
+  - Powers Phase 1 + Phase 2 + ion thrusters simultaneously
+  - Enables full manufacturing (sintering from reactor heat)
+  - Makes any asteroid viable regardless of solar distance
+
+  Nuclear + ion propulsion + asteroid mining = the trifecta.
+  Mine the asteroid, power the colony, move the rock.

@@ -427,6 +427,27 @@ def economics(workers, taskmasters, surface_ants, track, asteroid,
         click.echo(reality_check(econ))
 
 
+# -- Orbit commands ------------------------------------------------------------
+
+@main.command("orbit")
+@click.option("--asteroid", default="bennu")
+@click.option("--date", default="2030-01-01", help="Date for position (YYYY-MM-DD)")
+@click.option("--motherships", default=16, help="Number of motherships for redirection")
+@click.option("--power", type=click.Choice(["solar", "nuclear_10kw", "nuclear_40kw"]),
+              default="nuclear_10kw")
+@click.option("--years", default=5.0, help="Years of continuous thrust")
+def orbit(asteroid, date, motherships, power, years):
+    """Show asteroid orbital state and redirection analysis."""
+    from .orbits import get_orbital_state, analyze_redirection, format_orbital_report
+    state = get_orbital_state(asteroid, date)
+    if state is None:
+        click.echo(f"Asteroid '{asteroid}' not found.")
+        return
+    redir = analyze_redirection(asteroid, n_motherships=motherships,
+                                 power_source=power, duration_years=years)
+    click.echo(format_orbital_report(state, redir))
+
+
 # -- Launch planner command -----------------------------------------------------
 
 @main.command("launch-plan")

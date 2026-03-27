@@ -1,0 +1,86 @@
+# Mothership Module: Ion Propulsion System
+# Slowly redirects the asteroid to a more favorable orbit over years.
+# Each mothership contributes thrust. 16 motherships = 16x push.
+
+module: propulsion
+name: "Ion Thruster Array for Asteroid Redirection"
+type: orbital_modification
+
+# Ion thrusters are the only realistic option for moving a 73-billion-kg asteroid.
+# Chemical rockets are too inefficient. Solar sails too weak at this mass.
+# Ion thrusters provide tiny but continuous thrust for years.
+
+thruster_array:
+  type: gridded_ion_thruster
+  reference: "NEXT-C (NASA) or similar Hall-effect thruster"
+  thrusters_per_mothership: 4
+  per_thruster:
+    thrust_n: 0.5                    # 500 mN per thruster (NEXT-C class)
+    isp_seconds: 4000                # Very high efficiency
+    power_draw_w: 7000               # Per thruster — needs nuclear power
+    propellant: xenon                # Traditional. Or argon (cheaper, lower Isp)
+    propellant_mass_kg: 50           # Per thruster, 5-year supply
+  total_thrust_per_mothership_n: 2.0 # 4 thrusters × 0.5N
+  total_power_per_mothership_w: 28000
+  total_propellant_per_mothership_kg: 200
+
+# With 16 motherships:
+fleet_total:
+  total_thrust_n: 32                 # 16 × 2N
+  total_propellant_kg: 3200
+
+# Asteroid redirection math for Bennu:
+redirection_analysis:
+  asteroid: bennu
+  asteroid_mass_kg: 7.329e10         # 73.29 billion kg
+  fleet_thrust_n: 32
+  acceleration_m_s2: 4.37e-10        # F/m = 32 / 7.329e10
+  # Over 5 years continuous thrust:
+  delta_v_5yr_m_s: 0.069             # a × t = 4.37e-10 × 5 × 365.25 × 86400
+  delta_v_5yr_note: >
+    0.069 m/s over 5 years. That's tiny — but orbital mechanics amplifies
+    small changes over time. DART changed Dimorphos's orbit with ~0.4 mm/s.
+    Our 69 mm/s is 170x more than DART achieved.
+
+  # What does 69 mm/s do to Bennu's orbit?
+  orbital_effect:
+    semi_major_axis_change_km: 150   # Rough: Bennu moves ~150 km in its orbit
+    period_change_seconds: 600       # ~10 minutes change in orbital period
+    useful_for: >
+      Not enough to move Bennu to Earth orbit, but enough to:
+      1. Adjust perihelion/aphelion timing for better launch windows
+      2. Phase the orbit for closer Earth approaches (shorter transit)
+      3. Begin the decades-long process of migrating to a more useful orbit
+      4. With continuous operation over 20+ years: meaningful orbit change
+
+  scaling_note: >
+    Asteroid mass scales with radius^3. A 50m asteroid (1000x less massive)
+    would get 1000x more delta-v from the same thrust: 69 m/s in 5 years.
+    That's enough to redirect a small asteroid to Earth-Moon L2 within a decade.
+    Strategy: mine the big ones in place, redirect small ones to convenient orbits.
+
+mass_summary:
+  thrusters_per_mothership_kg: 40    # 4 thruster units
+  propellant_per_mothership_kg: 200
+  structure_per_mothership_kg: 10    # Mounting, plumbing
+  total_per_mothership_kg: 250
+  total_fleet_16_kg: 4000
+
+power_requirement: >
+  28 kW per mothership for full thrust. Solar panels at 1 AU provide ~5.8 kW.
+  REQUIRES NUCLEAR POWER for full operation at any distance.
+  Can run 1 thruster on solar (7 kW) at 1 AU as a reduced-thrust option.
+
+notes: |
+  Ion propulsion for asteroid redirection is real technology:
+  - DART proved asteroid deflection works (2022)
+  - Dawn spacecraft used ion thrusters to orbit Vesta and Ceres
+  - NEXT-C thruster tested at NASA Glenn (7 kW, 0.5N thrust)
+
+  The math is humbling: even with 16 motherships pushing for 5 years,
+  Bennu barely notices (69 mm/s delta-v on a 73-billion-kg asteroid).
+
+  But for SMALL asteroids (10-50m diameter, <1 million tonnes):
+  the same fleet could redirect them to useful orbits within years.
+  This is the long game: mine big asteroids in place, capture small
+  valuable ones and bring them to where you need them.
