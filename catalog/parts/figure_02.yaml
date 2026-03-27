@@ -1,0 +1,170 @@
+id: figure_02
+name: "Figure 02 Humanoid Robot"
+category: humanoid_robot
+description: >
+  General-purpose humanoid robot for construction, maintenance, and
+  operations tasks inside the pressurized asteroid chamber. Uses
+  standard human tools — wrenches, drills, welding torches, paint guns.
+  Walks on two legs, has two dexterous arms with 5-finger hands.
+  Basically a construction worker that doesn't need air, food, or sleep.
+
+specs:
+  height_cm: 170
+  mass_kg: 70
+  payload_capacity_kg: 25           # Can carry/lift 25 kg
+  battery_life_hours: 5             # Per charge
+  charge_time_hours: 1
+  degrees_of_freedom: 40+
+  walking_speed_m_per_s: 1.2
+  manipulation:
+    grip_force_n: 100               # Strong enough for power tools
+    finger_dexterity: "human-equivalent"
+    tool_compatibility: "standard human hand tools"
+  compute:
+    onboard: "custom SoC, neural inference"
+    connectivity: "WiFi + 5G (or wired in chamber)"
+  sensors:
+    - "stereo cameras (head)"
+    - "depth sensors"
+    - "force/torque in hands"
+    - "IMU"
+    - "LIDAR"
+
+environmental:
+  temp_min_c: 0
+  temp_max_c: 45
+  vacuum_compatible: false          # Standard electronics, NOT space-rated
+  sealed_tunnel_compatible: true    # Works in 5-10 kPa pressurized chamber
+  radiation_tolerance: "none"       # Must be inside shielded chamber
+  note: >
+    NOT designed for vacuum or radiation. Works ONLY inside the
+    pressurized, shielded asteroid chamber. This is the whole point --
+    the ant colony builds the protected environment, then standard
+    Earth robots can work inside it.
+
+sourcing:
+  suppliers:
+    - name: "Figure AI"
+      url: "https://figure.ai"
+      price_usd: 50000              # Estimated commercial pricing (not yet available)
+      date_checked: "2026-03-27"
+      note: "Price estimated. Figure 02 targeting ~$50K for commercial."
+  price_history:
+    - date: "2026-03-27"
+      price_usd: 50000
+      source: "estimate"
+
+capabilities:
+  construction:
+    - "Bolt/unbolt fasteners with standard wrenches"
+    - "Operate power drills and impact drivers"
+    - "Weld with MIG/TIG torch (with training data)"
+    - "Cut with angle grinder or reciprocating saw"
+    - "Paint/coat surfaces with spray equipment"
+    - "Carry and position structural beams up to 25 kg"
+    - "Route and connect electrical wiring"
+    - "Install plumbing and fluid connections"
+    - "Assemble modular furniture/equipment from flat-pack"
+  maintenance:
+    - "Inspect equipment visually and with instruments"
+    - "Replace worn parts and consumables"
+    - "Clean surfaces and filters"
+    - "Tighten loose connections"
+    - "Read gauges and adjust settings"
+  specialized:
+    - "Operate CNC mill (load/unload workpieces)"
+    - "Tend 3D printers (swap filament, remove prints)"
+    - "Monitor bioreactors (physical tasks: stir, sample, adjust valves)"
+    - "Assemble centrifuge ring segments"
+    - "Install habitat module interior fittings"
+
+microgravity_adaptations:
+  note: >
+    Standard humanoid robots expect 1g. In microgravity:
+    - Foot magnets or gecko-grip pads for walking on metal surfaces
+    - Tether attachment points on harness
+    - Modified gait algorithm (push/pull along guide rails instead of walking)
+    - Tool tethers (prevent floating away)
+    - Containment protocols for cutting/grinding (debris capture)
+  estimated_adaptation_cost_usd: 10000  # Firmware + foot mods per unit
+  adaptation_time_weeks: 4
+
+tasks_in_chamber:
+  centrifuge_construction:
+    description: "Assemble the 5m-radius centrifuge ring inside the chamber"
+    steps:
+      - "Position ring segment structural beams (bolt to chamber wall anchors)"
+      - "Weld ring segments together at joints"
+      - "Install bearing assemblies at hub"
+      - "Route power and data cables through ring structure"
+      - "Install flooring panels inside the ring"
+      - "Mount sleeping pods and storage in ring interior"
+      - "Balance the ring (add/remove counterweights)"
+      - "Spin test at low RPM, verify bearing operation"
+    estimated_time_days: 30          # With 2 robots working
+    robots_needed: 2
+
+  habitat_outfitting:
+    description: "Install interior fittings in the habitat module"
+    steps:
+      - "Mount wall panels and insulation"
+      - "Install life support ductwork"
+      - "Connect water and air plumbing"
+      - "Set up galley equipment"
+      - "Install exercise equipment (resistance bands, bike)"
+      - "Set up communications and lighting"
+      - "Test all systems"
+    estimated_time_days: 20
+    robots_needed: 2
+
+  fuel_depot_assembly:
+    description: "Install and connect electrolysis equipment"
+    steps:
+      - "Position electrolyzer unit on mounting frame"
+      - "Connect water intake plumbing from bioreactor water recovery"
+      - "Connect H2 and O2 outlet plumbing to storage tanks"
+      - "Install cryogenic cooling for LH2 storage"
+      - "Wire power connections to reactor/solar bus"
+      - "Install safety systems (leak detection, venting)"
+      - "Pressure test all connections"
+      - "Commissioning run"
+    estimated_time_days: 15
+    robots_needed: 2
+
+  general_maintenance:
+    description: "Ongoing tasks to keep the colony running"
+    tasks:
+      - "Replace bioreactor filters (every 90 days)"
+      - "Calibrate sensors (pH, pressure, flow meters)"
+      - "Inspect and tighten structural connections (monthly)"
+      - "Clean solar concentrator optics (quarterly)"
+      - "Swap PETG filament on 3D printers"
+      - "Clear debris from tunnel entrances"
+      - "Restock tool docks with fresh tool heads"
+      - "Paint/coat surfaces showing wear"
+    robots_needed: 1                 # 1 robot handles ongoing maintenance
+
+notes: |
+  The Figure 02 (or equivalent humanoid) is the bridge between the
+  ant colony phase and human habitation. The ants build the protected
+  chamber, then humanoid robots do the "human-scale" construction work
+  that ants are too small for: assembling the centrifuge, outfitting
+  the habitat, installing industrial equipment.
+
+  Key insight: these are NOT space robots. They're standard Earth
+  construction robots working in a space that the ant colony made
+  Earth-like (pressurized, shielded, thermally stable). The only
+  adaptation is microgravity locomotion (foot magnets + guide rails).
+
+  At ~$50K each and 70 kg, a pair of Figure 02 robots adds only
+  $100K and 140 kg to the mission. Compared to the $67M Phase 2
+  equipment budget, they're a rounding error. But they're the ones
+  that actually assemble everything.
+
+  The game element: watching humanoid robots in hard hats bolting
+  together a centrifuge inside an asteroid is incredibly satisfying.
+  Especially after spending the first 5 years watching tiny ants
+  scurry around mining tunnels.
+
+added_date: "2026-03-27"
+last_updated: "2026-03-27"

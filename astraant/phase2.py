@@ -140,7 +140,63 @@ FACILITIES = [
         power_draw_w=500,            # Just bearing friction + air circulation
         installation_time_days=90,
         strategic_value="Crew health for long-duration stays. Reduces bone/muscle loss.",
-        requires=["habitat_module"],
+        requires=["habitat_module", "humanoid_crew"],  # Humanoids assemble it
+    ),
+
+    # --- HUMANOID CONSTRUCTION CREW ---
+    Facility(
+        id="humanoid_crew",
+        name="Humanoid Robot Construction Crew (x4)",
+        category="industrial",
+        description=(
+            "Four Figure 02 humanoid robots with magnetic boots, tool belts, "
+            "and hard hats. General-purpose construction workers that use "
+            "standard human tools. They assemble the centrifuge, outfit the "
+            "habitat, install plumbing, weld structures, and handle every "
+            "construction task that's too big or complex for the mining ants. "
+            "Think construction workers in space — because that's exactly what they are."
+        ),
+        equipment_mass_kg=320,       # 4 x 70 kg robot + 40 kg tools + spares
+        equipment_cost_usd=250_000,  # 4 x $50K + $50K adaptation + tools
+        requires_chamber_m3=20,      # Charging station + tool storage
+        power_draw_w=1000,           # 4 robots charging in rotation
+        installation_time_days=7,    # Unpack, flash firmware, test
+        annual_operating_cost_usd=10_000,  # Spare parts, tool replacement
+        annual_revenue_usd=0,        # No direct revenue — they BUILD things
+        strategic_value=(
+            "The bridge between ant colony and human-scale construction. "
+            "Ants build the chamber, humanoids outfit it. At 70 kg each, "
+            "they're cheaper and lighter than any alternative. Installs "
+            "centrifuge in 30 days, habitat interior in 20 days. "
+            "Ongoing maintenance: filter swaps, sensor calibration, "
+            "structural inspection. Like having a 24/7 construction crew "
+            "that never sleeps, never complains, and works in zero gravity."
+        ),
+    ),
+
+    Facility(
+        id="tool_workshop",
+        name="Humanoid Tool Workshop & Charging Bay",
+        category="industrial",
+        description=(
+            "Dedicated workspace for the humanoid robots: charging stations, "
+            "tool storage racks, spare parts bins, welding bench, and a "
+            "small workbench for precision tasks. Guide rails on the chamber "
+            "walls for microgravity locomotion. Magnetic floor pads at "
+            "each workstation."
+        ),
+        equipment_mass_kg=200,
+        equipment_cost_usd=50_000,
+        requires_chamber_m3=30,
+        power_draw_w=500,
+        installation_time_days=5,
+        strategic_value=(
+            "Enables the humanoid crew to operate at full efficiency. "
+            "Without the workshop, robots lose time retrieving tools "
+            "and waiting for charges. With it, 4 robots can maintain "
+            "nearly 24/7 productivity in rotation."
+        ),
+        requires=["humanoid_crew"],
     ),
 
     # --- COMMS RELAY ---

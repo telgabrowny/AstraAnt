@@ -621,6 +621,32 @@ class SimEngine:
                 "nearby_veins": nearby[:5],
             })
 
+        elif cmd_type == "deploy_humanoids":
+            count = command.get("count", 4)
+            self.manufacturing.enabled = True
+            events.append({
+                "type": "humanoids_deployed",
+                "time": self.clock.sim_time,
+                "message": f"HUMANOID CREW DEPLOYED: {count} Figure 02 robots activated in chamber. "
+                           f"Hard hats on. Tools out. Ready to build.",
+            })
+
+        elif cmd_type == "build_centrifuge":
+            events.append({
+                "type": "construction_start",
+                "time": self.clock.sim_time,
+                "message": "CONSTRUCTION: Humanoid crew beginning centrifuge ring assembly. "
+                           "Estimated 30 days. Welding structural beams to chamber wall anchors.",
+            })
+
+        elif cmd_type == "build_habitat":
+            events.append({
+                "type": "construction_start",
+                "time": self.clock.sim_time,
+                "message": "CONSTRUCTION: Humanoid crew outfitting habitat module interior. "
+                           "Estimated 20 days. Mounting wall panels, routing plumbing, wiring.",
+            })
+
         elif cmd_type == "emergency_stop":
             # Stop all workers
             for agent in self.agents:
