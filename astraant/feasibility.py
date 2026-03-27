@@ -47,7 +47,7 @@ MATERIAL_VALUES = {
         "rare_earths": 100.0,  # Average, varies widely
     },
     "lunar_orbit": {
-        "water": 100000.0,    # Launch cost avoidance
+        "water": 50000.0,     # Conservative: $50K/kg (Starship-era launch cost avoidance)
         "iron": 20000.0,
         "nickel": 25000.0,
         "copper": 22000.0,

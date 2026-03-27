@@ -15,6 +15,13 @@ from .comms_delay import CommsDelay
 from .mission_clock import MissionClock
 from .tunnel_state import TunnelNetwork
 
+try:
+    from ...configs import load_all_ant_configs, compute_ant_mass
+except ImportError:
+    # Allow running simulation standalone without full package
+    load_all_ant_configs = None
+    compute_ant_mass = None
+
 
 @dataclass
 class SimStats:
@@ -66,6 +73,28 @@ class SimEngine:
         """Initialize all agents and place them in the tunnel/surface."""
         agent_id = 0
 
+        # Load ant configs for calibrated parameters
+        ant_cfgs = {}
+        if load_all_ant_configs is not None:
+            try:
+                ant_cfgs = load_all_ant_configs()
+            except Exception:
+                pass
+
+        def _get_cargo(caste: str) -> float:
+            cfg = ant_cfgs.get(caste, {})
+            hopper = cfg.get("storage_hopper", {})
+            track_key = f"track_{self._track}_capacity_g"
+            return hopper.get(track_key, hopper.get("capacity_g", 200))
+
+        def _get_mtbf(caste: str) -> float:
+            cfg = ant_cfgs.get(caste, {})
+            loco = cfg.get("locomotion", {})
+            # Use sealed tunnel MTBF for tunnel ants, vacuum for courier
+            if caste == "courier":
+                return loco.get("mtbf_hours_vacuum", 2000)
+            return loco.get("mtbf_hours_sealed", 8000)
+
         # Workers — in the tunnel near the work face
         for _ in range(self._worker_count):
             agent = AntAgent(
@@ -76,9 +105,9 @@ class SimEngine:
                     random.uniform(-2, 2),
                     random.uniform(-2, 2),
                 ),
-                max_cargo_g=200 if self._track in ("a", "c") else 350,
+                max_cargo_g=_get_cargo("worker"),
                 speed=random.uniform(0.25, 0.4),
-                mtbf_hours=8000,
+                mtbf_hours=_get_mtbf("worker"),
             )
             agent._assigned_segment_id = self.tunnel.active_work_face_id
             agent._target = Position(random.uniform(-3, 3), random.uniform(-3, 3), 0)
