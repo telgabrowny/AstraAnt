@@ -1,0 +1,283 @@
+# Mothership Hull Layout -- Physical geometry and securing
+# Everything must survive launch (3-6g vibration), transit, and landing.
+# Every module has a physical location and securing method.
+
+module: hull_layout
+name: "Mothership Hull Structure and Internal Layout"
+type: structural
+
+hull:
+  shape: cylinder_with_conical_base
+  outer_diameter_m: 1.6
+  total_height_m: 4.0
+  wall_material: aluminum_6061
+  wall_thickness_mm: 3
+  hull_mass_kg: 40
+  internal_volume_m3: 6.2
+  usable_volume_m3: 4.0              # At 65% packing efficiency
+
+# Deck layout (bottom to top)
+decks:
+
+  deck_0_drill:
+    name: "Drill Deck (bottom -- contacts asteroid)"
+    z_range_m: [0.0, 0.3]
+    diameter_m: 1.0
+    contents:
+      - item: "Drill head (rotary percussion)"
+        position: "centerline, pointing down"
+        securing: "4x M8 bolts to hull floor plate"
+        deploy: "extends below hull on linear actuator after landing"
+      - item: "Inflatable gasket seal"
+        position: "ring around drill bore"
+        securing: "bonded to hull base plate"
+        deploy: "inflates on contact with asteroid surface, seals the tunnel entrance"
+      - item: "Auger conveyor"
+        position: "alongside drill shaft"
+        securing: "bolted to hull wall, folded for launch"
+        deploy: "unfolds after drill extends"
+      - item: "Screw anchors (x4)"
+        position: "hull base perimeter"
+        securing: "retracted during launch"
+        deploy: "extend and screw into regolith to anchor mothership"
+
+  deck_1_processing:
+    name: "Processing Deck (lower)"
+    z_range_m: [0.3, 1.5]
+    diameter_m: 1.5
+    contents:
+      - item: "Tunnel entrance port"
+        position: "center, vertical shaft connecting to drill bore"
+        notes: "This is how ants get out. The drill bore IS the first tunnel."
+      - item: "Thermal sorter drum"
+        position: "left of center, next to tunnel entrance"
+        securing: "bolted to deck floor plate, shock-mounted"
+        notes: "First thing ants reach after descending the initial shaft"
+      - item: "Jaw crusher"
+        position: "right of center"
+        securing: "bolted to deck plate + anti-vibration mounts"
+        notes: "Heaviest single item (30 kg). Centered for balance."
+      - item: "Sealing equipment (compressor, spray, sintering head)"
+        position: "aft quarter"
+        securing: "bolted to deck plate"
+      - item: "Nitrogen cylinder"
+        position: "along hull wall"
+        securing: "strapped to hull wall with metal bands"
+      - item: "Copper rail coil (112 kg)"
+        position: "against hull wall, wound on a spool"
+        securing: "spool bolted to deck, coil strapped"
+        notes: "Heaviest single item after water. Low center of gravity."
+
+  deck_2_bio:
+    name: "Bioreactor Deck (mid-lower)"
+    z_range_m: [1.5, 2.8]
+    diameter_m: 1.5
+    contents:
+      - item: "Bioreactor vats (3x centrifuge drums)"
+        position: "120-degree spacing around center"
+        securing: "each vat bolted to deck plate + vibration isolators"
+        notes: "LAUNCHED DRY. Water added after landing from water tank above."
+      - item: "Precipitation module"
+        position: "between vats"
+        securing: "bolted to deck plate"
+      - item: "Algae photobioreactor (tubes)"
+        position: "along hull wall (curved tubes follow the cylinder)"
+        securing: "clipped to hull wall brackets"
+      - item: "CO2 kiln"
+        position: "next to algae reactor"
+        securing: "bolted to deck plate"
+      - item: "Peristaltic pumps + plumbing"
+        position: "between vats, connecting all fluid systems"
+        securing: "bracket-mounted to deck plate and vat frames"
+        notes: "All fluid connections are dry-break quick-disconnects for launch safety"
+
+  deck_3_water:
+    name: "Water Tank (mid -- also radiation shield)"
+    z_range_m: [2.0, 2.8]
+    diameter_m: 1.5
+    contents:
+      - item: "Water tank (300L)"
+        position: "toroidal, wrapping the bioreactor deck"
+        securing: "integral to hull structure (double-wall section)"
+        notes: >
+          The water tank IS part of the hull at this level.
+          Inner wall = bioreactor deck. Outer wall = hull.
+          Water between them provides radiation shielding for the bio deck.
+          Launched FULL (300 kg). Must be on the bottom half for launch CG.
+
+  deck_4_manufacturing:
+    name: "Manufacturing Deck (upper)"
+    z_range_m: [2.8, 3.3]
+    diameter_m: 1.5
+    contents:
+      - item: "Sintering furnace"
+        position: "center"
+        securing: "bolted to deck plate, insulated from hull"
+      - item: "PHB extruder + 3D printer"
+        position: "next to furnace"
+        securing: "bolted to deck plate + shock mounts"
+      - item: "Assembly jigs (x3)"
+        position: "folded, stowed against hull wall"
+        securing: "velcro + straps for launch, unfold after landing"
+      - item: "Wire drawing station"
+        position: "against hull wall"
+        securing: "bolted to wall bracket"
+      - item: "Test station"
+        position: "next to assembly jigs"
+        securing: "bolted to deck plate"
+      - item: "Spare parts bins"
+        position: "hull wall racks"
+        securing: "latched bins on wall-mounted rails"
+      - item: "Ant storage rack (108 ants in foam cradles)"
+        position: "along hull wall"
+        securing: "each ant in individual foam cutout, rack bolted to wall"
+        notes: >
+          Ants are stored powered-off in foam cradles for launch.
+          After landing, Pi4 sends wake-up signal via CAN bus.
+          Ants power on, self-test, and walk out of their cradles.
+      - item: "Tool head storage (150 heads in organizer tray)"
+        position: "next to ant rack"
+        securing: "foam-lined tray, latched shut"
+
+  deck_5_top:
+    name: "Top Deck (power, comms, cargo)"
+    z_range_m: [3.3, 4.0]
+    diameter_m: 1.5
+    contents:
+      - item: "Solar panels (4 wings, folded)"
+        position: "around the top perimeter"
+        securing: "hinge-locked in folded position, pyrotechnic release"
+        deploy: "after landing: pyro bolts fire, springs push panels open"
+      - item: "Battery bank"
+        position: "center of top deck"
+        securing: "bolted to deck plate + foam padding"
+      - item: "X-band antenna (folded)"
+        position: "top center, pointing up"
+        securing: "folded against mast, latch release after landing"
+      - item: "Power distribution unit"
+        position: "next to battery"
+        securing: "bolted to deck plate"
+      - item: "Compute module (Pi4)"
+        position: "tucked behind power distribution unit"
+        securing: "screwed to bracket"
+      - item: "Micro-pods (200, flat-packed in magazine)"
+        position: "stacked in cylindrical magazine against hull wall"
+        securing: "magazine bolted to hull, pods spring-loaded"
+
+  external:
+    name: "External (hull-mounted)"
+    contents:
+      - item: "EM launch rail"
+        position: "folded along hull exterior (3m, folded in 3 sections of 1m)"
+        securing: "strapped to hull exterior with quick-release bands"
+        deploy: "unfolds on the asteroid surface, anchored to regolith"
+      - item: "Grip rails"
+        position: "bonded to hull exterior (vertical strips)"
+        notes: "Installed at factory. No deployment needed."
+      - item: "Phase 2 cargo containers (if included)"
+        position: "ring of sealed pods clamped around the hull exterior"
+        securing: "clamp bands, released individually by surface ants"
+
+# Ant deployment sequence (how do they get from storage to the dig site?)
+ant_deployment_sequence:
+  description: >
+    After the mothership lands and the drill bores the initial shaft,
+    the ants must get from their foam cradles on Deck 4 to the
+    tunnel entrance on Deck 1, then down the drill shaft to work.
+  steps:
+    - step: 1
+      action: "Pi4 sends wake-up signal via CAN bus backbone"
+      description: >
+        The CAN bus runs through all decks (wired during assembly on Earth).
+        Each ant storage slot has a pogo-pin connector that powers the ant
+        and connects it to the CAN bus. Pi4 sends broadcast wake-up command.
+        Ants boot, run self-test, report status.
+
+    - step: 2
+      action: "Ants power on and self-test in their foam cradles"
+      description: >
+        Each ant: power on -> boot RP2040 -> servo sweep test -> radio check
+        -> report READY to Pi4 via CAN bus. Takes ~30 seconds per ant.
+        Pi4 tracks which ants pass self-test.
+
+    - step: 3
+      action: "Ants walk out of foam cradles onto Deck 4"
+      description: >
+        Foam cradles have a spring-loaded hatch. Pi4 commands release.
+        Ant pushes out and grips the deck surface. In microgravity,
+        the ant doesn't 'step out' -- it pushes against the foam
+        and drifts to the nearest surface, then grips with magnetic feet.
+        First destination: the power rail on the inter-deck ramp.
+
+    - step: 4
+      action: "Ants descend internal ramp from Deck 4 to Deck 1"
+      description: >
+        A helical ramp (like a parking garage spiral) runs along the
+        inside of the hull wall from Deck 4 down to Deck 1. The ramp
+        has a power rail installed (factory wired). Ants ride the rail
+        down the spiral. Width: 20cm (two ants can pass).
+        Distance: about 6m of ramp length for 3m of vertical drop.
+
+    - step: 5
+      action: "Ants reach Deck 1, pass through the tunnel entrance port"
+      description: >
+        The tunnel entrance port is the top of the drill shaft. It has
+        a hatch (opened by the Pi4 after the drill has completed its
+        initial bore). Ants enter the shaft and descend into the asteroid.
+        The shaft has a power rail installed by the drill module.
+        First ants down: a taskmaster + 5 workers to begin operations.
+
+    - step: 6
+      action: "First workers begin mining, sealing, and rail installation"
+      description: >
+        The three-worker convoy begins: miner, plasterer, rail layer.
+        Tunnel extends. As rail is installed, more ants can follow.
+        The mothership Pi4 coordinates the deployment rate --
+        it doesn't send all 100 workers at once (traffic jam in the shaft).
+        Wave 1: 1 taskmaster + 10 workers. Wave 2: 20 more. Wave 3: all remaining.
+
+  inter_deck_ramp:
+    type: "helical spiral along hull interior wall"
+    width_cm: 20                       # Two ants can pass
+    gradient: "15 degrees"
+    total_length_m: 6                  # Spiral distance for 3m vertical
+    power_rail: true                   # Factory-installed rail on the ramp
+    mass_kg: 5                         # Aluminum ramp + rail
+    note: >
+      This ramp is permanent infrastructure. Later, it also serves as
+      the route for moving manufactured ants from Deck 4 (manufacturing)
+      down to Deck 1 (tunnel entrance). And for moving salvaged parts
+      from the tunnel back up to the manufacturing deck.
+
+securing_for_launch:
+  design_loads:
+    axial_g: 6                         # Starship launch: up to 6g
+    lateral_g: 2                       # Vibration + steering
+    frequency_hz: [20, 2000]           # Vibration spectrum
+  methods:
+    heavy_items: "M8 bolts to deck plates with lock washers"
+    medium_items: "bracket-mounted with vibration isolators"
+    light_items: "foam cradles + velcro straps"
+    fluids: "water tank integral to hull (no sloshing). All pipes dry-break disconnected."
+    ants: "individual foam cutouts with spring-loaded latches"
+  mass_of_securing_hardware_kg: 15     # Bolts, brackets, straps, foam
+
+notes: |
+  The key insight: the drill bore IS the tunnel entrance.
+  The ants don't need a separate door. They walk down the same
+  hole the drill made. The drill shaft has a power rail installed
+  by the drill module during boring.
+
+  The helical ramp inside the hull is like a miniature parking garage
+  spiral. It connects all decks and has a power rail for ant transit.
+  This is the main circulation route inside the mothership.
+
+  The water tank wrapping the bioreactor deck serves triple duty:
+  1. Water storage for bioreactors
+  2. Radiation shielding for the biological bay
+  3. Structural element (double-wall hull section)
+
+  Phase 2 cargo is OUTSIDE the hull in sealed containers.
+  Surface ants detach them one at a time and lower them through
+  the tunnel entrance when the chamber is ready. They never
+  enter the mothership interior.
