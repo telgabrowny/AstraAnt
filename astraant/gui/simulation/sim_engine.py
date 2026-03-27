@@ -31,6 +31,8 @@ from .asteroid_grid import AsteroidGrid
 from .material_ledger import MaterialLedger
 from .game_economy import GameEconomy
 from .anomaly_detection import AnomalyDetector
+from .random_events import EventSystem
+from .tech_upgrades import UpgradeManager
 
 try:
     from ...endgame import HabitatGoal
@@ -117,7 +119,9 @@ class SimEngine:
         self.mining = MiningPriority()
         self.ledger = MaterialLedger()   # Unified material tracking
         self.economy = GameEconomy()     # Budget, revenue, cash flow
-        self.anomaly_detector = AnomalyDetector(fanciful_mode=False)  # Toggle at mission start
+        self.anomaly_detector = AnomalyDetector(fanciful_mode=False)
+        self.event_system = EventSystem()
+        self.upgrade_manager = UpgradeManager()
         self.agents: list[AntAgent] = []
         self.event_log: list[dict[str, Any]] = []
 
@@ -507,6 +511,29 @@ class SimEngine:
                 self.ledger.feed_bioreactor(dt_days * self._fleet_multiplier)
                 self._regolith_buffer_kg = self.ledger.crushed_buffer_kg
 
+        # Random events (crises and opportunities)
+        new_events_random = self.event_system.tick(self.clock.sim_time / 3600)
+        for evt in new_events_random:
+            events.append({
+                "type": "random_event",
+                "time": self.clock.sim_time,
+                "message": f"EVENT [{evt.severity.upper()}]: {evt.name} -- {evt.description[:60]}...",
+                "event_id": evt.id,
+                "severity": evt.severity,
+                "choices": len(evt.player_choices),
+            })
+
+        # Tech upgrade availability (new parts on the market)
+        game_year = self.clock.sim_time / (365.25 * 86400)
+        new_upgrades = self.upgrade_manager.check_availability(game_year)
+        for upg in new_upgrades:
+            events.append({
+                "type": "upgrade_available",
+                "time": self.clock.sim_time,
+                "message": f"NEW UPGRADE: {upg.name} -- {upg.description[:60]}... (${upg.cost_per_unit_usd}/unit)",
+                "upgrade_id": upg.id,
+            })
+
         # Process game economy (revenue arrivals from cargo pod transit)
         econ_events = self.economy.tick(self.clock.sim_time / 3600)
         for ee in econ_events:
@@ -758,6 +785,36 @@ class SimEngine:
                                f"rotating habitat ({self.habitat_goal.summary()['total_sections']} sections)",
                 })
 
+        elif cmd_type == "resolve_event":
+            event_id = command.get("event_id", "")
+            choice_idx = command.get("choice", 0)
+            result = self.event_system.resolve_event(event_id, choice_idx)
+            if "error" not in result:
+                events.append({
+                    "type": "event_resolved",
+                    "time": self.clock.sim_time,
+                    "message": f"EVENT RESOLVED: {result['event'].name} -- {result['choice']['label']}",
+                })
+
+        elif cmd_type == "buy_upgrade":
+            upgrade_id = command.get("upgrade_id", "")
+            quantity = command.get("quantity", 100)
+            result = self.upgrade_manager.purchase(
+                upgrade_id, quantity, self.economy.cash_on_hand_usd)
+            if "error" not in result:
+                self.economy.spend(result["cost"], f"upgrade: {upgrade_id}")
+                events.append({
+                    "type": "upgrade_purchased",
+                    "time": self.clock.sim_time,
+                    "message": result["message"],
+                })
+            else:
+                events.append({
+                    "type": "upgrade_failed",
+                    "time": self.clock.sim_time,
+                    "message": result["error"],
+                })
+
         elif cmd_type == "deploy_humanoids":
             count = command.get("count", 4)
             self.manufacturing.enabled = True
@@ -882,6 +939,8 @@ class SimEngine:
                     key=lambda x: -x[1]
                 )[:3] if self.mining.revenue_by_material else [],
             },
+            "events": self.event_system.summary(),
+            "upgrades": self.upgrade_manager.summary(),
             "economy": self.economy.summary(),
             "ledger": self.ledger.summary(),
             "fleet": {
