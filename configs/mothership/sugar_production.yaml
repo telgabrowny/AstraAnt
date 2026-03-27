@@ -1,0 +1,203 @@
+# Mothership Module: Sugar Production Bioreactor
+# Closes the consumables loop for Track B/C by producing sucrose on-site.
+# Eliminates the need to ship sugar from Earth after initial startup.
+
+module: sugar_production
+name: "In-Situ Sugar Production System"
+type: nutrient_production
+tracks: ["b", "c"]
+purpose: "Produce sucrose feedstock for Aspergillus niger (REE bioleaching vat)"
+
+# ── Primary: Photosynthetic Algae Bioreactor ──────────────────────────────
+
+photobioreactor:
+  organism:
+    primary:
+      species: "chlorella_vulgaris"
+      type: fungal  # Actually algal, but uses same bioreactor infrastructure
+      common_name: "Chlorella (green microalga)"
+      growth_rate_g_per_L_per_day: 1.2    # Biomass productivity (conservative)
+      carbohydrate_content_pct: 45         # Under nitrogen starvation
+      sugar_yield_g_per_L_per_day: 0.54    # 1.2 × 0.45
+      doubling_time_hours: 8
+      optimal_temp_c: 25
+      optimal_ph: 7.0
+      radiation_tolerance_gy: 3000         # Very radiation tolerant
+      space_heritage: "ISS (DLR/ESA), MELiSSA (30+ years), BIOS-3"
+    optimized:
+      species: "synechococcus_elongatus_cscB"
+      type: "engineered_cyanobacterium"
+      common_name: "Sucrose-secreting Synechococcus (GMO)"
+      sugar_secretion_g_per_L_per_day: 2.0  # Published: 0.87-2.6 g/L/day
+      mechanism: "Secretes sucrose directly into medium — no harvest/hydrolysis needed"
+      doubling_time_hours: 8
+      optimal_temp_c: 30
+      optimal_ph: 7.5
+      requires_nacl_mm: 100                 # Osmotic stress trigger for secretion
+      references:
+        - "Ducat et al. (2012) Appl. Environ. Microbiol. 78(8):2660-2668"
+        - "Lin et al. (2020) Scientific Reports 10:390"
+      note: "GMO — containment inherent in sealed asteroid tunnels"
+
+  vessel:
+    type: tubular_photobioreactor
+    volume_liters: 200
+    vessel_material: borosilicate_glass_tubes
+    vessel_mass_kg: 15                     # Including centrifuge frame
+    centrifuge: true                        # Shares centrifuge system with bioleaching vats
+    centrifuge_rpm: 10                     # Gentle — just for harvest/settling
+
+  light_source:
+    primary:
+      type: fiber_optic_solar
+      solar_concentrator:
+        area_m2: 2.0
+        mass_kg: 5                         # Parabolic dish + mount
+        location: "asteroid surface"
+      fiber_bundle:
+        type: silica_core_multimode
+        length_m: 10                       # Surface to reactor depth
+        transmission_efficiency: 0.60      # 60% light throughput
+        mass_kg: 3
+      par_delivered_umol_m2_s: 300         # More than sufficient (need 200+)
+      power_w: 0                           # Passive — no electricity needed for light!
+    backup:
+      type: led_array
+      spectrum: "red_660nm_blue_450nm"
+      par_umol_m2_s: 200
+      power_w: 130                         # Only if fiber optic fails
+      mass_kg: 2
+
+  co2_supply:
+    source: "asteroid_carbonate_pyrolysis"
+    kiln:
+      type: electric_resistance_kiln
+      temperature_c: 700                   # CaCO3 decomposition
+      power_w: 300
+      mass_kg: 8
+      throughput_g_per_hour: 200           # Regolith input
+    co2_production_g_per_day: 200          # From ~500g carbonate mineral/day
+    co2_storage:
+      type: small_pressure_vessel
+      capacity_liters: 20
+      mass_kg: 2
+    asteroid_requirement: "c_type"         # Needs carbonate minerals (Bennu, Ryugu)
+
+  nutrients:
+    nitrogen: "from asteroid amino acids / ammonium in regolith leachate"
+    phosphorus: "trace minerals from regolith"
+    trace_minerals: "dissolved from regolith — asteroids are mineral-rich"
+    note: "All nutrients available in-situ on C-type asteroids"
+
+  production:
+    sugar_output_g_per_day: 108            # 200L × 0.54 g/L/day (Chlorella)
+    sugar_output_optimized_g_per_day: 400  # 200L × 2.0 g/L/day (Synechococcus)
+    time_to_1kg_sugar_days: 9.3            # Chlorella
+    time_to_1kg_sugar_optimized_days: 2.5  # Synechococcus
+    bioleaching_cycles_supported_per_month: 3  # At 1 kg/cycle (Chlorella)
+    bioleaching_cycles_optimized_per_month: 12  # (Synechococcus)
+
+  harvest:
+    chlorella_method: "centrifuge separation, starch hydrolysis (amylase enzyme, 50C, 12hr)"
+    synechococcus_method: "direct medium collection — sucrose already in solution"
+    enzyme_source: "produced on-site by Aspergillus niger (natural amylase producer)"
+
+# ── Secondary: Chemosynthetic Backup (No Light Needed) ────────────────────
+
+chemosynthetic_backup:
+  organism:
+    species: "cupriavidus_necator"
+    common_name: "Knallgas bacterium / Ralstonia"
+    metabolism: "6H2 + 2O2 + CO2 -> biomass + 5H2O"
+    biomass_productivity_g_per_L_per_day: 2.0
+    carbohydrate_content_pct: 15           # Low — primarily protein producer
+    protein_content_pct: 60                # High — useful as nitrogen source
+    sugar_via_hydrolysis_g_per_L_per_day: 0.3
+    doubling_time_hours: 3
+    radiation_tolerance_gy: 2500
+    space_heritage: "Solar Foods Solein (industrial pilot, 2024)"
+  vessel:
+    type: gas_fermentation_reactor
+    volume_liters: 100
+    mass_kg: 10
+  h2_supply:
+    method: "PEM electrolysis of asteroid water"
+    electrolyzer_mass_kg: 5
+    power_w: 90                            # For 40g H2/day
+    water_consumption_liters_per_day: 0.4
+  primary_value: "protein/nitrogen supplement for Aspergillus, not sugar"
+  secondary_value: "PHB bioplastic production for 3D printing repair parts"
+  note: "Operates deep inside asteroid — no light dependency"
+
+# ── Tertiary: Direct Asteroid Organic Utilization ─────────────────────────
+
+organic_extraction:
+  method: "aqueous leaching of soluble organics from regolith"
+  target_compounds: ["acetic_acid", "formic_acid", "amino_acids"]
+  extraction_rate_pct: 30                  # Of soluble organic fraction
+  regolith_per_batch_kg: 50
+  organic_yield_g: 75                      # 50kg × 0.5% soluble × 30%
+  usable_as_carbon_source_pct: 50          # Acetic acid fraction
+  sugar_demand_reduction_pct: 15           # Supplements, doesn't replace
+  equipment_mass_kg: 5                     # Leaching tank + filter
+  power_w: 20
+
+# ── System Totals ─────────────────────────────────────────────────────────
+
+mass_summary:
+  photobioreactor_kg: 15
+  fiber_optic_system_kg: 8
+  co2_kiln_kg: 10
+  led_backup_kg: 2
+  chemosynthetic_reactor_kg: 15            # Including electrolyzer
+  organic_extraction_kg: 5
+  plumbing_and_control_kg: 5
+  co2_storage_kg: 2
+  total_mass_kg: 62
+
+power_summary:
+  co2_kiln_w: 300
+  photobioreactor_pumps_w: 50
+  chemosynthetic_electrolysis_w: 90
+  organic_extraction_w: 20
+  monitoring_w: 10
+  total_power_w: 470                       # Plus 130W if LED backup needed
+  note: "Fiber optic light is FREE — no power for primary illumination"
+
+economics:
+  eliminates_consumable: "sucrose feedstock from Earth"
+  earth_resupply_saved_kg_per_year: 12     # Sucrose that no longer ships
+  earth_resupply_saved_usd_per_year: 6000  # At $500/kg launch to asteroid
+  breakeven_vs_shipping_cycles: 2          # Module pays for itself in 2 mission cycles
+  self_sustaining: true                    # After initial culture inoculation
+
+readiness:
+  photobioreactor: "NEEDS_PHYSICAL_TEST"
+  fiber_optic_light: "PROVEN (published since 1996, multiple demonstrations)"
+  co2_from_carbonates: "NEEDS_PHYSICAL_TEST (with C-type asteroid simulant)"
+  chlorella_cultivation: "PROVEN (ISS, MELiSSA, BIOS-3)"
+  synechococcus_secretion: "NEEDS_PHYSICAL_TEST (lab-proven, not space-tested)"
+  chemosynthetic_backup: "PROVEN (Solar Foods industrial pilot)"
+  overall: "NEEDS_PHYSICAL_TEST"
+
+notes: |
+  This module makes Track B/C self-sustaining for sugar feedstock.
+
+  The most elegant solution: fiber optic sunlight (free energy!) feeds algae
+  that eat CO2 from asteroid rocks and produce sugar for the bioleaching fungus.
+  No electricity needed for illumination. The Sun does the work for free.
+
+  C-type asteroids (Bennu, Ryugu) are ideal because they have:
+  1. Water ice (bioreactor medium + electrolysis for H2)
+  2. Carbonate minerals (CO2 source via thermal decomposition)
+  3. Organic compounds (supplementary carbon + nitrogen sources)
+  4. Trace minerals (algae nutrients)
+
+  The chemosynthetic backup (C. necator) is valuable even without sugar crisis:
+  - Its protein-rich biomass supplements Aspergillus nitrogen needs
+  - Under stress, it produces PHB bioplastic for 3D printing repair parts
+  - Operates without light, deep inside the asteroid
+
+  S-type asteroids (Itokawa, Eros) lack water and organics, making this
+  module non-functional. Sugar must be shipped from Earth for S-type targets.
+  This is a strong argument for targeting C-type asteroids first.

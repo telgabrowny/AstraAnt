@@ -1,0 +1,76 @@
+id: chlorella_vulgaris
+name: "Chlorella vulgaris"
+common_name: "Green microalga"
+type: algal
+description: >
+  Unicellular green alga, one of the most studied photosynthetic microorganisms.
+  Produces glucose/starch via photosynthesis. Under nitrogen starvation, accumulates
+  carbohydrates up to 45-55% of dry weight. The starch is easily hydrolyzed to glucose
+  with amylase enzymes. Used in AstraAnt as the primary sugar producer for Aspergillus
+  niger feedstock, closing the consumables loop for Track B/C.
+
+growth:
+  optimal_temp_c: 25
+  temp_range_c: [15, 35]
+  optimal_ph: 7.0
+  ph_range: [6.0, 8.5]
+  doubling_time_hours: 8
+  growth_model: monod
+  monod_params:
+    mu_max_per_hour: 0.087     # ln(2)/8 hours
+    ks_g_per_liter: 0.1        # CO2 half-saturation
+  biomass_productivity_g_per_L_per_day: 1.2
+  light_requirement_umol_m2_s: 200   # PAR saturation
+  co2_fixation_rate_g_per_g_biomass: 1.8  # g CO2 per g biomass produced
+
+extraction:
+  target_product: "glucose/starch"
+  mechanism: "Photosynthesis fixes CO2 into starch granules. Nitrogen starvation triggers
+    carbohydrate accumulation. Harvest by centrifugation, then enzymatic hydrolysis
+    (amylase + glucoamylase at 50C for 12 hours) yields glucose."
+  carbohydrate_content_normal_pct: 20
+  carbohydrate_content_n_limited_pct: 45
+  sugar_yield_g_per_L_per_day: 0.54    # 1.2 g/L/day biomass × 0.45
+  extraction_efficiency: 0.90           # Starch to glucose conversion
+
+requirements:
+  light: true
+  light_par_umol_m2_s: 200
+  co2: true
+  co2_g_per_day_per_liter: 1.0
+  nutrients: ["nitrogen (NH4+ or NO3-)", "phosphorus", "trace minerals"]
+  water: true
+
+environmental:
+  radiation_tolerance: "high"
+  radiation_ld50_gray: 3000            # Very radiation-resistant
+  vacuum_survival: false                # Needs liquid medium
+  spore_forming: false
+  space_heritage:
+    - "ISS Photobioreactor experiment (DLR/ESA, 2019)"
+    - "ESA MELiSSA project (30+ years)"
+    - "Soviet BIOS-3 closed ecosystem"
+    - "Eu:CROPIS satellite (DLR, 2018)"
+
+references:
+  - "Branyikova et al. (2011). Microalgae - novel highly efficient starch producers. Biotechnol. Bioeng. 108(4):766-776"
+  - "Ho et al. (2013). Characterization and optimization of carbohydrate production from Chlorella vulgaris. Bioresource Technol. 135:157-165"
+  - "Doucha & Livansky (2006). Productivity of Chlorella vulgaris in a flat panel photobioreactor."
+
+notes: |
+  Chlorella is the workhorse for sugar production in AstraAnt.
+  Key advantages: extremely well-studied, radiation-tolerant, robust,
+  and has real space flight heritage.
+
+  The carbohydrate accumulation trick (nitrogen starvation) is standard
+  in algal biotechnology. Simply stop adding nitrogen to the medium and
+  Chlorella switches from growth to starch accumulation mode.
+
+  On C-type asteroids, all inputs are available in-situ:
+  - CO2 from carbonate mineral pyrolysis
+  - Water from asteroid ice
+  - Nitrogen from amino acids in regolith
+  - Light via fiber optics from surface solar concentrator
+
+added_date: "2026-03-27"
+last_updated: "2026-03-27"

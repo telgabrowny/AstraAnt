@@ -1,0 +1,70 @@
+id: cupriavidus_necator
+name: "Cupriavidus necator"
+common_name: "Knallgas bacterium (formerly Ralstonia eutropha)"
+type: bacteria
+description: >
+  Hydrogen-oxidizing chemolithoautotrophic bacterium. Grows on H2 + CO2 + O2
+  without light. Produces protein-rich biomass (60% protein) useful as nitrogen
+  supplement for Aspergillus niger. Under nitrogen limitation, accumulates
+  polyhydroxybutyrate (PHB) bioplastic up to 80% of dry weight.
+  Basis for Solar Foods "Solein" industrial process.
+
+growth:
+  optimal_temp_c: 30
+  temp_range_c: [20, 40]
+  optimal_ph: 7.0
+  ph_range: [6.0, 8.5]
+  doubling_time_hours: 3
+  growth_model: monod
+  monod_params:
+    mu_max_per_hour: 0.23      # ln(2)/3 hours
+    ks_g_per_liter: 0.01       # H2 half-saturation (very efficient)
+  biomass_productivity_g_per_L_per_day: 2.0
+
+extraction:
+  target_product: "protein biomass + supplementary sugars"
+  mechanism: "Fixes CO2 via Calvin cycle using energy from H2 oxidation.
+    Biomass is 60% protein, 15% carbohydrate, 10% lipid. Carbohydrate
+    fraction released as glucose via acid/enzymatic hydrolysis."
+  carbohydrate_content_pct: 15
+  protein_content_pct: 60
+  phb_content_n_limited_pct: 80  # Bioplastic under nitrogen starvation
+  sugar_yield_g_per_L_per_day: 0.3  # 2.0 × 0.15
+  extraction_efficiency: 0.85
+
+requirements:
+  light: false                          # No light needed!
+  h2: true
+  h2_g_per_day_per_liter: 0.16        # ~40g H2/day for 250L reactor
+  co2: true
+  co2_g_per_day_per_liter: 3.6
+  o2: true                             # Aerobic — needs O2 for H2 oxidation
+  nutrients: ["nitrogen (NH4+)", "phosphorus", "trace minerals"]
+
+environmental:
+  radiation_tolerance: "high"
+  radiation_ld50_gray: 2500
+  vacuum_survival: false
+  spore_forming: false
+  space_heritage:
+    - "Solar Foods Solein (industrial pilot, Singapore factory 2024)"
+    - "Extensive ground-based research at multiple institutions"
+
+references:
+  - "Ishizaki & Tanaka (1991). Production of PHB from CO2 by Alcaligenes eutrophus. J. Ferment. Bioeng. 71:254-257"
+  - "Yu (2018). Hydrogenotrophic growth of Cupriavidus necator. Review."
+
+notes: |
+  Primary value in AstraAnt: nitrogen/protein supplement for Aspergillus,
+  not sugar. But useful as backup sugar source via biomass hydrolysis.
+
+  Bonus capability: PHB bioplastic production under nitrogen limitation.
+  PHB is a thermoplastic that can be 3D-printed for replacement gaskets,
+  seals, and small structural parts — in-situ manufacturing from H2 + CO2.
+
+  Operates deep inside asteroid with zero light requirement. Only needs
+  H2 (from water electrolysis using solar power) and CO2 (from asteroid
+  carbonate pyrolysis). Fully compatible with sealed tunnel environment.
+
+added_date: "2026-03-27"
+last_updated: "2026-03-27"
