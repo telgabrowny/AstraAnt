@@ -106,18 +106,33 @@ thermal:
   mass_g: 30
   cost_usd: 20
 
-battery:
-  capacity_mah: 2000
-  mass_g: 55
-  cost_usd: 10
-
 storage_hopper:
   hopper_mass_g: 0
   capacity_g: 0
 
 power:
   source: solar
-  note: "Solar + battery. No tether — operates on surface."
+  description: >
+    Solar panel + LiFePO4 battery. NO rail or tether -- operates on surface.
+    Solar provides 1.45W at 1 AU. Battery covers the rest + eclipse periods.
+    LiFePO4 chosen over LiPo for cycle life (2000+ cycles vs 500).
+  battery:
+    type: lithium_iron_phosphate       # LiFePO4 -- longer cycle life than LiPo
+    capacity_mah: 2000
+    voltage_v: 3.7
+    energy_wh: 7.4
+    mass_g: 55
+    cost_usd: 10
+    cycle_life: 2000                   # 4x better than LiPo
+    operating_temp_c: [-20, 60]
+  solar_power_at_1au_w: 1.45
+  eclipse_endurance_hours: 2.6         # At full active power draw
+  sunlit_endurance_hours: 5.5          # Solar supplements battery
+  note: >
+    Surface ants are the only caste with a real battery.
+    They can't use rails (vacuum, no tunnel walls).
+    Solar covers ~52% of power need in sunlight.
+    LiFePO4 chosen for 2000 cycle life (lasts years, not months).
 
 physical_dimensions:
   body_length_mm: 160

@@ -88,12 +88,20 @@ storage_hopper:
   capacity_g: 0
 
 power:
-  source: tethered
-  tether_connector_mass_g: 3
-  backup_battery:
-    capacity_mah: 1000
-    mass_g: 30
-    cost_usd: 5
+  source: tunnel_power_rail
+  description: "Same rail system as workers but with larger supercapacitor for surveying"
+  rail_contact:
+    type: spring_loaded_brush
+    mass_g: 3
+    cost_usd: 0.50
+  backup_power:
+    type: supercapacitor
+    capacitance_f: 100                 # Bigger than worker -- needs more off-rail time
+    energy_wh: 0.4                     # ~11 min off-rail for surveying + spectral scans
+    charge_time_seconds: 15
+    mass_g: 20
+    cost_usd: 6.00
+    cycle_life: 1000000
 
 squad_size: 20
 
