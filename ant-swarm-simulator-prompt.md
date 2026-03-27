@@ -58,16 +58,31 @@ All tracks share the same orbital mechanics, tunnel physics, swarm logistics, an
 
 ## Ant Caste System
 
-Inspired by real ant colonies, the swarm uses three specialized castes with different hardware configurations and roles:
+Inspired by real ant colonies, the swarm uses **three castes** with a shared body plan. All castes use the same 6-leg + 2-mandible-arm chassis (8 actuated limbs total). The mandible arms serve as the universal tool interface: workers swap modular tool heads at magnetic docking stations to change roles, taskmasters carry a permanent sensor cluster, and surface ants are vacuum-hardened variants for exterior work.
 
-### Worker Ant — Cheap, Disposable Tunnel Laborer
-The majority of the swarm (~80-90%). Minimal sensors, simple MCU, follows taskmaster commands.
+Old roles (courier, sorter, plasterer, tender) are **not separate castes** — they are **roles** that workers or surface ants assume by equipping the appropriate tool head.
+
+### Shared Body Plan — All Castes
+
+```yaml
+body_plan:
+  legs: 6                             # Walking legs — standard hexapod gait
+  mandible_arms: 2                    # Articulated arms between front legs
+  total_actuated_limbs: 8
+  mandible_function: "universal tool interface"
+  tool_mount: "4mm neodymium magnetic clip between mandibles"
+  tool_swap_time_seconds: 5           # Dock, release, pick up new head
+  cad: "OpenSCAD parametric models for all body components"
+```
+
+### Worker Ant — Universal Tunnel Operator
+The majority of the swarm (~80-90%). Same body does ALL tunnel roles (mining, sorting, plastering, tending) by swapping tool heads at magnetic docking stations. Minimal sensors, simple MCU, follows taskmaster commands.
 
 ```yaml
 ant_config:
   caste: "worker"
   chassis:
-    type: "spider_6leg"
+    type: "spider_6leg_2mandible"
     mass_budget_grams: 200
   compute:
     part: "RP2040"          # Simple, cheap, low-power
@@ -75,15 +90,16 @@ ant_config:
     ram_kb: 264
     power_draw_mw: 100
   locomotion:
-    actuators: 6
-    options:                 # Catalog has both — sim finds cost-optimal
-      - part: "micro_servo_sg90"         # COTS: cheap, degrades in vacuum
+    leg_actuators: 6
+    mandible_actuators: 2              # Tool interface arms
+    options:                           # Catalog has both — sim finds cost-optimal
+      - part: "micro_servo_sg90"       # COTS: cheap, degrades in vacuum
         per_unit_mass_g: 9
         per_unit_power_mw: 600
-        mtbf_hours_sealed_tunnel: 8000   # Much better than vacuum
+        mtbf_hours_sealed_tunnel: 8000 # Much better than vacuum
         mtbf_hours_vacuum: 500
         cost_usd: 3
-      - part: "vacuum_rated_actuator"    # Space-rated: expensive, durable
+      - part: "vacuum_rated_actuator"  # Space-rated: expensive, durable
         per_unit_mass_g: 35
         per_unit_power_mw: 800
         mtbf_hours_vacuum: 50000
@@ -97,36 +113,25 @@ ant_config:
     - part: "vl53l0x_lidar"   # Proximity/collision avoidance
       power_mw: 20
   tool:
-    track_a:
-      type: "rotary_scraper"
-      part: "micro_dc_motor_n20"
-      power_mw: 500
-    track_b:
-      type: "scoop_gripper"
-      part: "micro_servo_sg90"
-      power_mw: 100
-    track_c:
-      type: "rotary_scraper"          # Same as Track A
-      part: "micro_dc_motor_n20"
-      power_mw: 500
+    type: "swappable"                  # See Tool Head Catalog below
+    mount: "4mm_neodymium_magnetic_clip"
+    current_head: "assigned_by_taskmaster"
   storage_hopper:
-    track_a_capacity_g: 200
-    track_b_capacity_g: 350          # Larger: no heavy mining tool
-    track_c_capacity_g: 200
+    capacity_g: 200                    # Varies slightly by equipped tool mass
   power:
-    source: "tethered"               # Power via cable from tunnel bus
-    backup_battery_mah: 500          # For short untethered moves
-  estimated_cost_usd: 50-100        # COTS version
+    source: "tethered"                 # Power via cable from tunnel bus
+    backup_battery_mah: 500            # For short untethered moves
+  estimated_cost_usd: 50-100          # COTS version, excluding tool heads
 ```
 
-### Taskmaster Ant — Squad Leader with Full Sensor Suite
-Commands a squad of ~20 worker ants. Rich sensors, capable MCU, handles navigation and task allocation.
+### Taskmaster Ant — Squad Leader with Permanent Sensor Cluster
+Commands a squad of ~20 worker ants. Same body plan, but ESP32-S3 for more processing power. Carries a permanent sensor cluster (no tool swapping) — mandible arms hold the sensor package at all times. Handles navigation, task allocation, and dynamic role assignment of workers.
 
 ```yaml
 ant_config:
   caste: "taskmaster"
   chassis:
-    type: "spider_6leg"
+    type: "spider_6leg_2mandible"
     mass_budget_grams: 400
   compute:
     part: "ESP32-S3"
@@ -134,221 +139,207 @@ ant_config:
     ram_kb: 512
     power_draw_mw: 250
   locomotion:
-    actuators: 6
-    part: "micro_servo_sg90"         # Or vacuum-rated — catalog option
+    leg_actuators: 6
+    mandible_actuators: 2              # Hold permanent sensor cluster
+    part: "micro_servo_sg90"           # Or vacuum-rated — catalog option
     per_unit_mass_g: 9
     per_unit_power_mw: 600
   communication:
     local:
-      part: "nrf24l01_rf"           # Short-range to workers
+      part: "nrf24l01_rf"             # Short-range to workers
       range_m: 50
       power_mw: 40
     backbone:
-      part: "wired_can_bus"          # Wired connection to tunnel backbone
+      part: "wired_can_bus"            # Wired connection to tunnel backbone
       bandwidth_kbps: 1000
-  sensors:
-    - part: "bno055_imu"             # 9-axis IMU for tunnel navigation
+  sensors:                             # Permanent sensor cluster — no tool swapping
+    - part: "bno055_imu"              # 9-axis IMU for tunnel navigation
       power_mw: 12
-    - part: "vl53l0x_lidar"          # Proximity/mapping
+    - part: "vl53l0x_lidar"           # Proximity/mapping
       power_mw: 20
-    - part: "ov7670_camera"          # Low-res visual odometry
+    - part: "ov7670_camera"           # Low-res visual odometry
       power_mw: 60
-    - part: "as7341_spectral"        # 11-channel spectral for composition
+    - part: "as7341_spectral"         # 11-channel spectral for composition
       power_mw: 15
-    - part: "ds18b20_temp_probe"     # Temperature monitoring
+    - part: "ds18b20_temp_probe"      # Temperature monitoring
       power_mw: 1
   tool:
-    type: "none"                     # Taskmasters don't mine — they command
+    type: "permanent_sensor_cluster"   # Taskmasters don't swap tools — they command
   power:
     source: "tethered"
     backup_battery_mah: 1000
-  squad_size: 20                     # Workers per taskmaster
+  squad_size: 20                       # Workers per taskmaster
+  role_assignment:                     # Taskmaster dynamically assigns worker roles
+    - role: "miner"
+      tool_head: "drill_head"
+      typical_allocation: "40-60%"
+    - role: "hauler"
+      tool_head: "scoop_head or cargo_gripper"
+      typical_allocation: "20-30%"
+    - role: "plasterer"
+      tool_head: "paste_nozzle"
+      typical_allocation: "5-10%"
+    - role: "sorter"
+      tool_head: "thermal_rake"
+      typical_allocation: "5-10%"
+    - role: "tender"
+      tool_head: "sampling_probe"
+      typical_allocation: "5-10%"
   estimated_cost_usd: 200-400
 ```
 
-### Courier Ant — Surface/Space Operations Specialist
-Handles cargo staging at tunnel entrance, return vehicle loading, and surface operations. Only caste that operates outside the tunnel.
+### Surface Ant — Vacuum-Rated Exterior Specialist
+Same body plan as tunnel castes, but ALL components are vacuum-rated. Handles exterior maintenance, cargo staging at tunnel entrance, return vehicle loading, and end-of-life return vehicle guidance. Solar powered — no tether. Replaces the old "courier" caste.
 
 ```yaml
 ant_config:
-  caste: "courier"
+  caste: "surface"
   chassis:
-    type: "spider_6leg"
+    type: "spider_6leg_2mandible"
     mass_budget_grams: 500
+    material: "aluminum"               # Vacuum-rated chassis
   compute:
     part: "ESP32-S3"
     clock_mhz: 240
     ram_kb: 512
     power_draw_mw: 250
   locomotion:
-    actuators: 6
-    part: "vacuum_rated_actuator"    # Must survive surface vacuum
+    leg_actuators: 6
+    mandible_actuators: 2
+    part: "maxon_brushless_actuator"    # Vacuum-rated Maxon motors throughout
     per_unit_mass_g: 35
     per_unit_power_mw: 800
+    mtbf_hours_vacuum: 50000
+    cost_usd: 150
   communication:
-    part: "sx1276_lora"              # Long-range for surface/orbit ops
+    part: "sx1276_lora"                # Long-range for surface/orbit ops
     range_km: 10
     power_mw: 120
   solar:
     part: "alta_devices_gaas_cell"
     area_cm2: 50
     efficiency: 0.29
-    power_output_mw_at_1au: 1450    # NOTE: scales with 1/r^2 from Sun
+    power_output_mw_at_1au: 1450      # NOTE: scales with 1/r^2 from Sun
   sail:
     type: "personal_stationkeeping"
-    area_m2: 3                       # Small sail for local maneuvering
-    mass_g: 30                       # ~7 g/m2 film + minimal structure
+    area_m2: 3                         # Small sail for local maneuvering
+    mass_g: 30                         # ~7 g/m2 film + minimal structure
     material: "cp1_polyimide"
     reflectivity: 0.9
   sensors:
     - part: "bno055_imu"
       power_mw: 12
-    - part: "sun_sensor_coarse"      # Attitude determination
+    - part: "sun_sensor_coarse"        # Attitude determination
       power_mw: 5
     - part: "vl53l0x_lidar"
       power_mw: 20
-    - part: "radiation_dosimeter"    # Track exposure for lifetime estimation
+    - part: "radiation_dosimeter"      # Track exposure for lifetime estimation
       power_mw: 2
   thermal:
-    heater_power_mw: 500             # Survive shadow side
-    mli_blanket_mass_g: 20           # Multi-layer insulation
+    heater_power_mw: 500               # Survive shadow side
+    mli_blanket_mass_g: 20             # Multi-layer insulation
+  tool:
+    type: "swappable"                  # Surface ants swap tools at exterior docking points
+    mount: "4mm_neodymium_magnetic_clip"
+    primary_heads: ["cargo_gripper", "panel_brush"]
   power:
     source: "solar"
     battery_mah: 2000
   estimated_cost_usd: 400-800
 ```
 
-### Sorter Ant — Thermal Drum Operator
-Operates the thermal sorting drum, separating water ice and volatiles from raw regolith before it enters the jaw crusher. Worker-class body with a heat-resistant ceramic scoop for handling hot material.
+---
+
+## Tool Head Catalog
+
+All tool heads mount via a **4mm neodymium magnetic clip** between the mandible arms. Workers swap heads at magnetic docking stations distributed throughout the tunnel network. All heads have OpenSCAD parametric models for 3D printing.
 
 ```yaml
-ant_config:
-  caste: "sorter"
-  chassis:
-    type: "spider_6leg"
-    mass_budget_grams: 111
-  compute:
-    part: "RP2040"
-    clock_mhz: 133
-    ram_kb: 264
-    power_draw_mw: 100
-  locomotion:
-    actuators: 6
-    part: "micro_servo_sg90"
-    per_unit_mass_g: 9
-    per_unit_power_mw: 600
-    mtbf_hours_sealed_tunnel: 8000
-    cost_usd: 3
-  communication:
-    part: "nrf24l01_rf"
-    range_m: 50
-    power_mw: 40
-    bandwidth_kbps: 250
-  sensors:
-    - part: "vl53l0x_lidar"
-      power_mw: 20
-    - part: "ds18b20_temp_probe"
-      power_mw: 1
-  tool:
-    type: "ceramic_scoop"
-    heat_rating_c: 200
-    part: "custom_ceramic_end_effector"
-    power_mw: 100
-  power:
-    source: "tethered"
-    backup_battery_mah: 500
-  estimated_cost_usd: 38
-```
+tool_heads:
+  - id: "drill_head"
+    role: "miner"
+    mass_g: 18
+    cost_usd: 8
+    motor: "micro_dc_motor_n20"
+    power_mw: 500                      # Powered — draws from tether
+    type: "powered"
+    description: "Rotary scraper/drill for excavating regolith at tunnel face"
+    tracks: ["A", "C"]
 
-### Plasterer Ant — Tunnel Wall Sealant Applicator
-Applies bioreactor waste slurry to tunnel walls as a sealant paste. Worker-class body fitted with a nozzle-and-trowel paste applicator for even coating.
+  - id: "scoop_head"
+    role: "hauler"
+    mass_g: 8
+    cost_usd: 1
+    power_mw: 0
+    type: "passive"
+    description: "Simple scoop for loading and transporting loose regolith"
+    tracks: ["A", "B", "C"]
 
-```yaml
-ant_config:
-  caste: "plasterer"
-  chassis:
-    type: "spider_6leg"
-    mass_budget_grams: 108
-  compute:
-    part: "RP2040"
-    clock_mhz: 133
-    ram_kb: 264
-    power_draw_mw: 100
-  locomotion:
-    actuators: 6
-    part: "micro_servo_sg90"
-    per_unit_mass_g: 9
-    per_unit_power_mw: 600
-    mtbf_hours_sealed_tunnel: 8000
+  - id: "paste_nozzle"
+    role: "plasterer"
+    mass_g: 20
     cost_usd: 3
-  communication:
-    part: "nrf24l01_rf"
-    range_m: 50
-    power_mw: 40
-    bandwidth_kbps: 250
-  sensors:
-    - part: "vl53l0x_lidar"
-      power_mw: 20
-  tool:
-    type: "nozzle_and_trowel"
+    power_mw: 0
+    type: "passive"                    # Mandible squeeze drives paste flow
     paste_flow_rate_ml_per_min: 50
     coverage_m2_per_hour: 2
-    part: "custom_paste_applicator"
-    power_mw: 150
-  slurry_hopper:
-    capacity_ml: 500
-  power:
-    source: "tethered"
-    backup_battery_mah: 500
-  estimated_cost_usd: 41
-```
+    slurry_hopper_ml: 500
+    description: "Nozzle-and-trowel for applying bioreactor waste slurry to tunnel walls"
+    tracks: ["B", "C"]
 
-### Tender Ant — Bioreactor Monitor
-Monitors bioreactor vats, performing spot-checks on pH and turbidity, and adjusting valves as needed. Worker-class body with a portable pH sensor and fine manipulator for valve operations.
+  - id: "thermal_rake"
+    role: "sorter"
+    mass_g: 12
+    cost_usd: 5
+    power_mw: 0
+    type: "passive"                    # Ceramic tines — heat resistant, no power
+    tine_material: "ceramic"
+    heat_rating_c: 200
+    description: "Heat-resistant rake for loading/unloading thermal sorting drum"
+    tracks: ["A", "B", "C"]
 
-```yaml
-ant_config:
-  caste: "tender"
-  chassis:
-    type: "spider_6leg"
-    mass_budget_grams: 108
-  compute:
-    part: "ESP32-S3"           # Needs more processing for sensor analysis
-    clock_mhz: 240
-    ram_kb: 512
-    power_draw_mw: 250
-  locomotion:
-    actuators: 6
-    part: "micro_servo_sg90"
-    per_unit_mass_g: 9
-    per_unit_power_mw: 600
-    mtbf_hours_sealed_tunnel: 8000
-    cost_usd: 3
-  communication:
-    part: "nrf24l01_rf"
-    range_m: 50
-    power_mw: 40
-    bandwidth_kbps: 250
-  sensors:
-    - part: "vl53l0x_lidar"
-      power_mw: 20
-    - part: "atlas_scientific_ph_probe_portable"
-      power_mw: 50
-      accuracy: 0.02
-    - part: "turbidity_sensor_tsd10"
-      power_mw: 30
-    - part: "ds18b20_temp_probe"
-      power_mw: 1
-  tool:
-    type: "fine_manipulator"
+  - id: "sampling_probe"
+    role: "tender"
+    mass_g: 15
+    cost_usd: 25
+    power_mw: 80                       # Sensors draw power from tether
+    type: "powered"
+    sensors:
+      - part: "atlas_scientific_ph_probe_portable"
+        power_mw: 50
+        accuracy: 0.02
+      - part: "turbidity_sensor_tsd10"
+        power_mw: 30
+    description: "pH + turbidity probe for bioreactor monitoring and valve adjustment"
+    tracks: ["B", "C"]
+
+  - id: "cargo_gripper"
+    role: "hauler"
+    mass_g: 10
+    cost_usd: 1.50
+    power_mw: 0
+    type: "passive"                    # Mandible squeeze provides grip force
     grip_force_n: 5
-    precision_mm: 0.5
-    part: "micro_servo_gripper"
-    power_mw: 200
-  power:
-    source: "tethered"
-    backup_battery_mah: 500
-  estimated_cost_usd: 65
+    description: "Gripper for handling cargo pods and packaged material"
+    tracks: ["A", "B", "C"]
+
+  - id: "panel_brush"
+    role: "maintenance"
+    mass_g: 8
+    cost_usd: 6
+    power_mw: 0
+    type: "passive"
+    material: "anti_static_carbon_fiber"
+    caste_restriction: "surface"       # Surface ant only — vacuum rated
+    description: "Anti-static carbon fiber brush for solar panel dust removal and hull cleaning"
+    tracks: ["A", "B", "C"]
+
+tool_docking_stations:
+  type: "magnetic_rack"
+  capacity: 6                          # Heads per station
+  spacing_m: 10                        # One station every 10m in tunnels
+  swap_time_seconds: 5                 # Dock, release old, pick up new
+  cad: "OpenSCAD parametric model"
 ```
 
 ---
@@ -377,13 +368,13 @@ ant_config:
   - 1 m (~150 g/cm2): ~50% GCR reduction
   - 2 m (~300 g/cm2): ~70-80% GCR reduction
   - 5 m (~750 g/cm2): ~95%+ GCR reduction
-- Surface physics model retained for courier ant operations (anchoring, locomotion, thermal cycling)
+- Surface physics model retained for surface ant operations (anchoring, locomotion, thermal cycling)
 - **Suggested tools:** Custom Python models initially; MuJoCo or PyBullet for detailed tunnel physics later
 
 ### Layer 3: Robot Hardware Simulation
 - Component-level robot model built from catalog parts
 - Each ant caste is defined as a configuration file listing specific components
-- **Power budget simulation:** Tethered power for workers/taskmasters, solar + battery for couriers
+- **Power budget simulation:** Tethered power for workers/taskmasters, solar + battery for surface ants
 - **Thermal simulation:** Component temperatures based on tunnel pressure environment and duty cycle
 - **Degradation modeling:** Component wear based on MTBF, operating conditions, radiation exposure
 - **Communication simulation:** Wired backbone bandwidth, RF channel capacity, message routing
@@ -485,7 +476,7 @@ mothership_module_sealing:
       requires: "active_bioreactor"    # Track B/C only
       consumable_kg_per_m2: 0          # Zero cost — uses waste stream
       seal_effectiveness: 0.75         # CaO traces act as natural cement
-      application: "plasterer_ant"     # Applied by plasterer caste
+      application: "worker_ant_with_paste_nozzle"  # Applied by worker in plasterer role
       notes: "Depleted rock fines + water + CaO traces form paste. Portland cement chemistry. Best used as bulk filler with polymer spray topcoat for 0.98 combined effectiveness."
   gasket:
     type: "inflatable_entrance_seal"
@@ -540,7 +531,7 @@ mothership_module_thermal_sort:
     method: "cold_trap"
     destination: "algae_photobioreactor" # Feeds sugar production module
   throughput_kg_per_hour: 10
-  operator: "sorter_ant"                # Sorter caste loads/unloads drum
+  operator: "worker_ant_with_thermal_rake"  # Worker in sorter role loads/unloads drum
   benefits:
     - "Prevents crusher clogging from wet material"
     - "Recovers water ice for bioreactor medium and electrolysis"
@@ -582,8 +573,8 @@ mothership_exterior_maintenance:
     - task: "thermal_radiator_cleaning"
       frequency: "biweekly"
       duration_minutes: 30
-  operator: "courier_ant"               # Only caste rated for exterior work
-  dedicated_units: 1                    # 1 courier ant assigned to maintenance
+  operator: "surface_ant"               # Only caste rated for exterior work
+  dedicated_units: 1                    # 1 surface ant assigned to maintenance
   weekly_maintenance_hours: 3
   total_infrastructure_mass_kg: 12
 ```
@@ -755,25 +746,25 @@ The full extraction pipeline from raw regolith to return cargo, showing which an
 
 ```
 Raw regolith
-  -> [Sorter ant] Thermal drum (120C: ice sublimes, CO2 captured)
+  -> [Worker w/ thermal_rake] Thermal drum (120C: ice sublimes, CO2 captured)
   -> [Taskmaster] Spectral sort by mineral type
   -> Jaw crusher (dry, sorted, <2mm)
-  -> [Worker ants] deliver to correct bioreactor vat
+  -> [Worker w/ scoop_head] deliver to correct bioreactor vat
   -> Bioleaching (bacteria extract metals into solution)
   -> Selective precipitation (metals separated by pH)
   -> Metal concentrates -> cargo pods -> return vehicle
 
-Waste slurry -> [Plasterer ant] tunnel wall sealant (zero consumable cost)
+Waste slurry -> [Worker w/ paste_nozzle] tunnel wall sealant (zero consumable cost)
 Captured water -> bioreactor medium + electrolysis for H2
 Captured CO2 -> algae photobioreactor -> sugar -> feeds Aspergillus
 ```
 
 **Key integration points:**
-- Thermal sorting (sorter ants) prevents crusher clogging and recovers volatiles *before* crushing
+- Thermal sorting (workers in sorter role with thermal_rake) prevents crusher clogging and recovers volatiles *before* crushing
 - Spectral sorting (taskmasters) ensures each bioreactor vat receives the correct mineral feedstock
-- Waste slurry recycling (plasterer ants) closes the waste loop at zero consumable cost
+- Waste slurry recycling (workers in plasterer role with paste_nozzle) closes the waste loop at zero consumable cost
 - CO2 and water recovery feed back into the bioreactor and sugar production systems
-- Tender ants provide continuous bioreactor monitoring between automated sensor readings
+- Bioreactor monitoring (workers in tender role with sampling_probe) provides continuous spot-checks between automated sensor readings
 
 #### Sugar Production Module — On-Site Nutrient Synthesis
 

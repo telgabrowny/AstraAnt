@@ -17,7 +17,7 @@ from ursina import (
 )
 
 from ..catalog import Catalog
-from .models.asteroid_model import create_asteroid_entity
+from .models.asteroid_model import create_asteroid_entity, create_tunnel_visual
 from .models.ant_model import create_ant_entity, animate_walk, CASTE_COLORS
 from .simulation.sim_engine import SimEngine
 from .simulation.ant_agent import AntState
@@ -71,7 +71,11 @@ class AstraAntApp:
         self.state_indicators: dict[int, Entity] = {}
 
         self.asteroid_entity: Entity = None
-        self._space_cooldown = 0.0  # Debounce for space key
+        self.asteroid_cutaway: Entity = None
+        self.tunnel_visual: Entity = None
+        self.cutaway_mode = False
+        self._space_cooldown = 0.0
+        self._c_cooldown = 0.0
 
     def setup_scene(self):
         """Create the 3D scene."""
@@ -87,6 +91,18 @@ class AstraAntApp:
         self.asteroid_entity = create_asteroid_entity(
             radius=self.asteroid_radius, subdivisions=4, shape=shape,
         )
+
+        # Cutaway version (hidden initially)
+        self.asteroid_cutaway = create_asteroid_entity(
+            radius=self.asteroid_radius, subdivisions=4, shape=shape, cutaway=True,
+        )
+        self.asteroid_cutaway.visible = False
+
+        # Tunnel visual (visible in cutaway mode)
+        self.tunnel_visual = create_tunnel_visual(
+            radius=self.asteroid_radius, tunnel_length=5.0, tunnel_diameter=0.4,
+        )
+        self.tunnel_visual.visible = False
 
         # Lighting
         DirectionalLight(direction=Vec3(1, -1, -0.5).normalized(),
@@ -199,7 +215,7 @@ class AstraAntApp:
         self._setup_ground_control()
 
         # Controls help
-        Text(text="[Mouse] Orbit  [Scroll] Zoom  [1-5] Speed  [Space] Pause  [G] Send Command",
+        Text(text="[Mouse] Orbit  [Scroll] Zoom  [1-5] Speed  [Space] Pause  [C] Cutaway",
              position=Vec2(-0.85, -0.47), scale=0.7, color=color.gray)
 
     def _setup_ground_control(self):
@@ -265,6 +281,15 @@ class AstraAntApp:
             self.engine.clock.toggle_pause()
             self._space_cooldown = 0.3
 
+        # Cutaway toggle
+        self._c_cooldown -= dt
+        if held_keys["c"] and self._c_cooldown <= 0:
+            self.cutaway_mode = not self.cutaway_mode
+            self.asteroid_entity.visible = not self.cutaway_mode
+            self.asteroid_cutaway.visible = self.cutaway_mode
+            self.tunnel_visual.visible = self.cutaway_mode
+            self._c_cooldown = 0.3
+
         # Tick simulation
         events = self.engine.tick(dt)
 
@@ -309,9 +334,18 @@ class AstraAntApp:
             if indicator:
                 indicator.color = STATE_COLORS.get(agent.state, color.gray)
 
-        # Rotate asteroid
-        if self.asteroid_entity and not self.engine.clock.paused:
-            self.asteroid_entity.rotation_y += 0.5 * (dt * self.engine.clock.speed)
+        # Rotate asteroid (both full and cutaway)
+        if not self.engine.clock.paused:
+            rot = 0.5 * (dt * self.engine.clock.speed)
+            if self.asteroid_entity:
+                self.asteroid_entity.rotation_y += rot
+            if self.asteroid_cutaway:
+                self.asteroid_cutaway.rotation_y += rot
+
+        # Update tunnel visual length from sim state
+        if self.tunnel_visual and self.cutaway_mode:
+            tunnel_len = max(1.0, self.engine.tunnel.total_length_m / 10.0)  # Scale factor
+            self.tunnel_visual.scale_y = tunnel_len / 2
 
         # Update UI text
         self._update_ui()
