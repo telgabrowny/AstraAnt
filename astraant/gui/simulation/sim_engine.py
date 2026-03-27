@@ -34,6 +34,9 @@ class SimStats:
     total_vat_checks: int = 0
     anomalies_detected: int = 0
     ants_failed: int = 0
+    # Bioreactor stats
+    metals_extracted_kg: float = 0.0
+    biomass_g_per_l: float = 0.1     # Current culture density
 
 
 class SimEngine:
@@ -67,6 +70,12 @@ class SimEngine:
         # Telemetry broadcast interval (sim seconds)
         self._telemetry_interval = 900.0  # Every 15 min sim-time
         self._last_telemetry_time = 0.0
+
+        # Bioreactor state (Track B/C only)
+        self._has_bioreactor = track in ("b", "c")
+        self._bioreactor_state = None
+        self._bioreactor_update_interval = 3600.0  # Update every sim-hour
+        self._last_bioreactor_update = 0.0
 
     def setup(self) -> None:
         """Initialize all agents and place them in the tunnel/surface."""
@@ -154,6 +163,21 @@ class SimEngine:
             )
             agent._target = Position(random.uniform(-8, 8), 10, random.uniform(-8, 8))
             self.agents.append(agent)
+            agent_id += 1
+
+        # Initialize bioreactor if Track B/C
+        if self._has_bioreactor:
+            try:
+                from ...bioreactor import VatState, VAT_SULFIDE
+                self._bioreactor_state = VatState(
+                    biomass_g_per_l=0.1,
+                    substrate_g_per_l=10.0,
+                    ph=VAT_SULFIDE.optimal_ph,
+                    temp_c=VAT_SULFIDE.optimal_temp_c,
+                    volume_liters=VAT_SULFIDE.volume_liters,
+                )
+            except ImportError:
+                self._has_bioreactor = False
 
     def tick(self, real_dt: float) -> list[dict[str, Any]]:
         """Advance the simulation by real_dt seconds.
@@ -220,6 +244,22 @@ class SimEngine:
                 "command": cmd.content,
             })
 
+        # Update bioreactor state (hourly in sim-time)
+        if (self._has_bioreactor and self._bioreactor_state and
+                self.clock.sim_time - self._last_bioreactor_update >= self._bioreactor_update_interval):
+            try:
+                from ...bioreactor import simulate_vat, VAT_SULFIDE
+                results = simulate_vat(VAT_SULFIDE, self._bioreactor_state, duration_hours=1.0)
+                if results:
+                    self._bioreactor_state = results[-1]
+                    # Track metals extracted
+                    new_metals = self._bioreactor_state.metal_dissolved_g_per_l * VAT_SULFIDE.volume_liters / 1000
+                    self.stats.metals_extracted_kg = new_metals
+                    self.stats.biomass_g_per_l = self._bioreactor_state.biomass_g_per_l
+            except ImportError:
+                pass
+            self._last_bioreactor_update = self.clock.sim_time
+
         # Periodic telemetry broadcast
         if self.clock.sim_time - self._last_telemetry_time >= self._telemetry_interval:
             self._broadcast_telemetry()
@@ -277,6 +317,8 @@ class SimEngine:
                 "vat_checks": self.stats.total_vat_checks,
                 "anomalies": self.stats.anomalies_detected,
                 "failures": self.stats.ants_failed,
+                "metals_extracted_kg": round(self.stats.metals_extracted_kg, 3),
+                "biomass_g_per_l": round(self.stats.biomass_g_per_l, 3),
             },
             "comms": {
                 "delay_minutes": round(self.comms.one_way_delay_minutes, 1),
