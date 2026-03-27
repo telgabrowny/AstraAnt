@@ -1,0 +1,337 @@
+# Equipment Physical Specifications
+# Every piece of equipment in the colony with exact dimensions,
+# connections, mounting, clearances, and placement constraints.
+#
+# These specs drive:
+# 1. The sim (does it fit? is there power? are fluids connected?)
+# 2. The 3D models (OpenSCAD geometry matches these dimensions)
+# 3. The mothership packing (can it all fit in the hull?)
+# 4. The game (player can't place equipment where it doesn't fit)
+
+# === BIOREACTOR DECK ===
+
+bioreactor_vat_sulfide:
+  name: "Sulfide Metal Bioreactor Vat"
+  physical:
+    shape: cylinder                    # Centrifuge drum
+    diameter_mm: 500
+    height_mm: 800
+    mass_kg: 32.5
+    wall_thickness_mm: 3
+    material: stainless_316L
+  power:
+    draw_w: 75                         # Heating + aeration + bearing + monitoring
+    voltage_v: 48                      # From main bus
+    connector: "XT60 (48V DC)"
+    circuit_breaker_a: 2
+  fluid_connections:
+    - id: water_in
+      type: quick_disconnect
+      size_mm: 12
+      connects_to: water_tank
+      flow_direction: in
+    - id: slurry_in
+      type: gravity_feed_hopper
+      size_mm: 50
+      connects_to: crusher_output
+      flow_direction: in
+    - id: leachate_out
+      type: quick_disconnect
+      size_mm: 12
+      connects_to: precipitation_module
+      flow_direction: out
+    - id: waste_out
+      type: dump_valve
+      size_mm: 25
+      connects_to: waste_paste_tank
+      flow_direction: out
+  heat:
+    output_w: 50                       # Heating element
+    max_surface_temp_c: 40
+    cooling: "passive (air convection in pressurized tunnel)"
+  monitoring:
+    sensors:
+      - type: pH
+        port: "threaded probe port, top"
+      - type: ORP
+        port: "threaded probe port, top"
+      - type: temperature
+        port: "immersion well, side"
+  mounting:
+    type: floor_bolts
+    bolt_pattern: "4x M8 on 400mm square"
+    vibration_isolation: true          # Centrifuge rotation generates vibration
+    foundation: "steel base plate, 600x600x5mm"
+  clearance:
+    top_mm: 200                        # Access for probe maintenance
+    sides_mm: 150                      # Plumbing connections
+    front_mm: 300                      # Hopper feed access
+  placement_constraints:
+    must_be_near: [crusher_output, water_tank, precipitation_module]
+    must_be_away_from: []
+    max_distance_from_water_m: 3       # Plumbing run limit
+    gravity_note: "centrifuge works in any orientation in microgravity"
+
+bioreactor_vat_ree:
+  name: "Rare Earth Element Bioreactor Vat"
+  physical:
+    shape: cylinder
+    diameter_mm: 400
+    height_mm: 600
+    mass_kg: 13
+    material: HDPE
+  power:
+    draw_w: 45
+    voltage_v: 48
+    connector: "XT60"
+    circuit_breaker_a: 1
+  fluid_connections:
+    - id: water_in
+      type: quick_disconnect
+      size_mm: 12
+      connects_to: water_tank
+    - id: nutrient_in
+      type: quick_disconnect
+      size_mm: 8
+      connects_to: sugar_production    # Sucrose feedstock from algae
+    - id: leachate_out
+      type: quick_disconnect
+      size_mm: 12
+      connects_to: precipitation_module
+  heat:
+    output_w: 30
+    max_surface_temp_c: 35
+  mounting:
+    type: floor_bolts
+    bolt_pattern: "4x M6 on 300mm square"
+    vibration_isolation: true
+  clearance:
+    top_mm: 200
+    sides_mm: 100
+  placement_constraints:
+    must_be_near: [sugar_production, water_tank]
+
+# === PROCESSING DECK ===
+
+jaw_crusher:
+  name: "Jaw Crusher (Mini)"
+  physical:
+    length_mm: 600
+    width_mm: 400
+    height_mm: 500
+    mass_kg: 30
+  power:
+    draw_w: 200
+    voltage_v: 48
+    connector: "XT60"
+    circuit_breaker_a: 5
+    note: "High inrush current on startup"
+  fluid_connections:
+    - id: regolith_in
+      type: gravity_feed_hopper
+      size_mm: 100                     # Wide feed hopper on top
+      connects_to: thermal_sorter_output
+    - id: crushed_out
+      type: chute
+      size_mm: 50
+      connects_to: bioreactor_vat_sulfide
+  heat:
+    output_w: 150                      # Friction heat from crushing
+    max_surface_temp_c: 60
+    cooling: "passive + small fan (included)"
+  mounting:
+    type: floor_bolts
+    bolt_pattern: "4x M10 on 500x350mm"
+    vibration_isolation: true          # CRITICAL -- crusher vibrates heavily
+    foundation: "10mm steel plate + rubber mounts"
+    note: "Must be isolated from sensitive equipment (bioreactors, sensors)"
+  clearance:
+    top_mm: 400                        # Feed hopper access
+    sides_mm: 200
+    front_mm: 500                      # Jaw access for clearing jams
+  placement_constraints:
+    must_be_near: [thermal_sorter]
+    must_be_away_from: [algae_photobioreactor, assembly_jigs]
+    min_distance_from_bio_m: 1         # Vibration damages cultures
+    note: "Vibration isolation is the #1 design concern for the crusher"
+
+thermal_sorter_drum:
+  name: "Thermal Separation Drum"
+  physical:
+    diameter_mm: 400
+    length_mm: 500
+    mass_kg: 8
+  power:
+    draw_w: 200                        # Heating element
+    voltage_v: 48
+    connector: "XT60"
+    circuit_breaker_a: 5
+  fluid_connections:
+    - id: regolith_in
+      type: open_feed
+      size_mm: 100
+      connects_to: tunnel_entrance     # Raw regolith from workers
+    - id: dried_out
+      type: chute
+      size_mm: 80
+      connects_to: jaw_crusher
+    - id: water_vapor_out
+      type: sealed_pipe
+      size_mm: 25
+      connects_to: condenser
+    - id: co2_out
+      type: sealed_pipe
+      size_mm: 12
+      connects_to: sugar_production    # CO2 for algae
+  heat:
+    output_w: 200
+    max_surface_temp_c: 130            # HOT -- 120C drum + housing heat
+    cooling: "insulated housing, heat directed inward"
+  mounting:
+    type: floor_bolts
+    bolt_pattern: "4x M8"
+    vibration_isolation: false         # Rotation is smooth, low vibration
+  clearance:
+    all_sides_mm: 200                  # Hot surface clearance
+  placement_constraints:
+    must_be_near: [tunnel_entrance, jaw_crusher, condenser]
+    must_be_away_from: [algae_photobioreactor, ant_storage]
+    note: "130C surface. Keep 200mm clear of everything. No PETG parts nearby."
+
+sintering_furnace:
+  name: "Metal Sintering Furnace"
+  physical:
+    length_mm: 400
+    width_mm: 300
+    height_mm: 300
+    mass_kg: 15
+    insulation_thickness_mm: 50        # Ceramic fiber blanket
+  power:
+    draw_w: 1500                       # Peak -- the biggest power consumer
+    voltage_v: 48
+    connector: "heavy duty XT90"
+    circuit_breaker_a: 35
+    duty_cycle: 0.3                    # Only on 30% of the time (batch process)
+    note: "Draws 1500W peak. Needs dedicated circuit from PDU."
+  heat:
+    output_w: 1200                     # Most of the input power becomes heat
+    max_surface_temp_c: 80             # Insulated -- but still warm
+    internal_temp_c: 1200
+    cooling: "insulation contains heat. Surface stays under 80C."
+  mounting:
+    type: floor_bolts
+    bolt_pattern: "4x M8"
+    vibration_isolation: false
+    foundation: "ceramic tile base plate (thermal break)"
+  clearance:
+    all_sides_mm: 300                  # Heat + access
+    top_mm: 500                        # Loading access + heat rise
+  placement_constraints:
+    must_be_near: [assembly_jigs]      # Parts go straight from furnace to assembly
+    must_be_away_from: [algae_photobioreactor, bioreactor_vat_ree, ant_storage, battery_bank]
+    min_distance_from_bio_m: 2         # Heat kills cultures
+    min_distance_from_battery_m: 1.5   # LiFePO4 doesn't like heat
+    note: "Hottest thing in the colony. Keep it isolated."
+
+algae_photobioreactor:
+  name: "Algae Photobioreactor (Chlorella)"
+  physical:
+    type: tubular_array               # Transparent tubes along wall
+    tube_count: 20
+    tube_diameter_mm: 50
+    tube_length_mm: 800
+    total_footprint_length_mm: 800
+    total_footprint_width_mm: 400
+    total_footprint_height_mm: 400
+    mass_kg: 15
+  power:
+    draw_w: 50                         # Pumps + monitoring only
+    voltage_v: 12                      # Low voltage for pumps
+    connector: "barrel jack"
+    circuit_breaker_a: 5
+  fluid_connections:
+    - id: co2_in
+      type: gas_fitting
+      size_mm: 6
+      connects_to: co2_kiln_output     # CO2 from carbonate pyrolysis
+    - id: water_in
+      type: quick_disconnect
+      size_mm: 8
+      connects_to: water_tank
+    - id: harvest_out
+      type: quick_disconnect
+      size_mm: 12
+      connects_to: bioreactor_vat_ree  # Sugar/biomass to REE vat
+  light:
+    source: fiber_optic_bundle
+    entry_point: "top of tube array"
+    fiber_diameter_mm: 10
+    fiber_count: 4
+    par_needed_umol_m2_s: 200
+    connects_to: solar_concentrator    # On asteroid surface
+  heat:
+    output_w: 10                       # Biological heat, minimal
+    max_temp_c: 30
+    SENSITIVE_TO_HEAT: true            # Chlorella dies above 40C
+  mounting:
+    type: wall_brackets
+    bracket_count: 4
+    note: "Tubes mount along the tunnel wall. Doesn't use floor space."
+  clearance:
+    front_mm: 200                      # Tube access for maintenance
+  placement_constraints:
+    must_be_near: [co2_kiln, water_tank]
+    must_be_away_from: [sintering_furnace, thermal_sorter, crusher]
+    max_ambient_temp_c: 35             # Culture dies above 40C
+    note: "HEAT SENSITIVE. Must be in the coolest area of the colony. Ideally on the opposite wall from the furnace and drum."
+
+# === POWER SYSTEM ===
+
+power_distribution_unit:
+  name: "Power Distribution Unit (PDU)"
+  physical:
+    length_mm: 200
+    width_mm: 150
+    height_mm: 100
+    mass_kg: 2
+  power:
+    input_voltage_v: 48                # From solar array or nuclear reactor
+    output_circuits: 8
+    circuit_breakers: [35, 10, 10, 5, 5, 5, 2, 2]  # Amps per circuit
+    total_capacity_a: 74               # Sum of all breakers
+    total_capacity_w: 3552             # At 48V
+  mounting:
+    type: wall_mount
+    bolt_pattern: "4x M6"
+  clearance:
+    front_mm: 300                      # Access for breaker panel
+  placement_constraints:
+    must_be_near: [battery_bank]
+    must_be_away_from: [water_tank]    # Electrical + water don't mix
+    note: "Central location to minimize cable runs"
+
+battery_bank:
+  name: "LiFePO4 Battery Bank (10 kWh)"
+  physical:
+    length_mm: 500
+    width_mm: 400
+    height_mm: 300
+    mass_kg: 28
+  power:
+    voltage_v: 48
+    capacity_wh: 10000
+    max_charge_rate_w: 2000
+    max_discharge_rate_w: 3000
+  heat:
+    output_w: 50                       # During charge/discharge
+    max_temp_c: 45
+    SENSITIVE_TO_HEAT: true
+  mounting:
+    type: floor_bolts
+    bolt_pattern: "4x M8"
+  clearance:
+    all_sides_mm: 100                  # Ventilation
+  placement_constraints:
+    must_be_near: [power_distribution_unit]
+    must_be_away_from: [sintering_furnace, thermal_sorter]
+    max_ambient_temp_c: 45
