@@ -30,6 +30,7 @@ except ImportError:
 from .asteroid_grid import AsteroidGrid
 from .material_ledger import MaterialLedger
 from .game_economy import GameEconomy
+from .anomaly_detection import AnomalyDetector
 
 try:
     from ...endgame import HabitatGoal
@@ -116,6 +117,7 @@ class SimEngine:
         self.mining = MiningPriority()
         self.ledger = MaterialLedger()   # Unified material tracking
         self.economy = GameEconomy()     # Budget, revenue, cash flow
+        self.anomaly_detector = AnomalyDetector(fanciful_mode=False)  # Toggle at mission start
         self.agents: list[AntAgent] = []
         self.event_log: list[dict[str, Any]] = []
 
@@ -329,8 +331,20 @@ class SimEngine:
                     if self._regolith_buffer_kg > self._buffer_capacity_kg:
                         agent_events["buffer_full"] = True
 
-                # Mine voxels from the grid and use their zone for composition
-                voxel = self.grid.mine_voxel(*[int(c) for c in self._dig_position])
+                # Mine voxels from the grid and check for anomalies
+                dig_coords = [int(c) for c in self._dig_position]
+                voxel = self.grid.mine_voxel(*dig_coords)
+
+                # Anomaly detection on freshly mined voxel
+                anomaly = self.anomaly_detector.check_voxel(
+                    *dig_coords, voxel.zone_type, self.clock.sim_time)
+                if anomaly:
+                    events.append({
+                        "type": "anomaly_found",
+                        "time": self.clock.sim_time,
+                        "message": f"ANOMALY [{anomaly.severity.upper()}]: {anomaly.description[:80]}",
+                        "anomaly": anomaly,
+                    })
                 # Advance dig position
                 if self.tunnel.dig_target and random.random() < 0.03:
                     # Dig toward target (advance every ~30 dumps)
