@@ -427,6 +427,23 @@ def economics(workers, taskmasters, surface_ants, track, asteroid,
         click.echo(reality_check(econ))
 
 
+# -- Endgame command -----------------------------------------------------------
+
+@main.command("endgame")
+@click.option("--target-radius", default=224, help="Target cylinder radius (m)")
+@click.option("--target-length", default=200, help="Target cylinder length (m)")
+@click.option("--excavated", default=0.0, help="Volume already excavated (m3)")
+def endgame(target_radius, target_length, excavated):
+    """Show endgame habitat construction progress."""
+    from .endgame import HabitatGoal, format_endgame_report
+    goal = HabitatGoal(target_radius_m=target_radius, target_length_m=target_length)
+    if excavated > 0:
+        events = goal.excavate(excavated)
+        for e in events:
+            click.echo(f"  >> {e}")
+    click.echo(format_endgame_report(goal))
+
+
 # -- Orbit commands ------------------------------------------------------------
 
 @main.command("orbit")

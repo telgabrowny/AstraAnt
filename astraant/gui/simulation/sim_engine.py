@@ -29,6 +29,11 @@ except ImportError:
 
 from .asteroid_grid import AsteroidGrid
 
+try:
+    from ...endgame import HabitatGoal
+except ImportError:
+    HabitatGoal = None
+
 
 @dataclass
 class MiningPriority:
@@ -134,7 +139,19 @@ class SimEngine:
 
         # Voxel grid (Minecraft-style asteroid interior)
         self.grid = AsteroidGrid(radius_m=50, seed=random.randint(0, 999999))
-        self._dig_position = [0, -3, 0]  # Current dig face (starts below mothership)
+        self._dig_position = [0, -3, 0]
+
+        # Endgame habitat goal
+        self.habitat_goal = None
+        if HabitatGoal is not None:
+            try:
+                self.habitat_goal = HabitatGoal()
+            except Exception:
+                pass
+
+        # Fleet scaling (more motherships = faster progress)
+        self.mothership_count = 1
+        self._fleet_multiplier = 1.0   # Scales with mothership count
 
     def setup(self) -> None:
         """Initialize all agents and place them in the tunnel/surface."""
@@ -424,6 +441,18 @@ class SimEngine:
                     "time": self.clock.sim_time,
                 })
 
+        # Feed excavation into endgame habitat goal (scaled by fleet)
+        if self.habitat_goal and self.stats.total_dump_cycles > 0:
+            # Each dump contributes volume toward the habitat
+            vol_per_dump = 0.0001 * self._fleet_multiplier  # m3 per dump cycle, scaled
+            endgame_events = self.habitat_goal.excavate(vol_per_dump)
+            for msg in endgame_events:
+                events.append({
+                    "type": "endgame_milestone",
+                    "time": self.clock.sim_time,
+                    "message": msg,
+                })
+
         # Auto-branch tunnels periodically and contribute to chamber
         if len(self.tunnel.segments) > 0:
             # Branch every ~50m of tunnel growth
@@ -621,6 +650,31 @@ class SimEngine:
                 "nearby_veins": nearby[:5],
             })
 
+        elif cmd_type == "add_motherships":
+            count = command.get("count", 4)
+            cost = count * 8_250_000
+            self.mothership_count += count
+            self._fleet_multiplier = self.mothership_count
+            events.append({
+                "type": "fleet_expanded",
+                "time": self.clock.sim_time,
+                "message": f"FLEET EXPANDED: +{count} motherships (total: {self.mothership_count}). "
+                           f"Excavation rate x{self._fleet_multiplier:.0f}. Cost: ${cost:,.0f}",
+            })
+
+        elif cmd_type == "set_endgame_target":
+            radius = command.get("radius_m", 224)
+            length = command.get("length_m", 200)
+            if HabitatGoal:
+                self.habitat_goal = HabitatGoal(
+                    target_radius_m=radius, target_length_m=length)
+                events.append({
+                    "type": "endgame_set",
+                    "time": self.clock.sim_time,
+                    "message": f"ENDGAME TARGET: {radius}m radius, {length}m long "
+                               f"rotating habitat ({self.habitat_goal.summary()['total_sections']} sections)",
+                })
+
         elif cmd_type == "deploy_humanoids":
             count = command.get("count", 4)
             self.manufacturing.enabled = True
@@ -743,6 +797,11 @@ class SimEngine:
                     key=lambda x: -x[1]
                 )[:3] if self.mining.revenue_by_material else [],
             },
+            "fleet": {
+                "motherships": self.mothership_count,
+                "multiplier": self._fleet_multiplier,
+            },
+            "endgame": self.habitat_goal.summary() if self.habitat_goal else None,
             "grid": {
                 "voxels_mined": self.grid.total_mined,
                 "voxels_revealed": self.grid.total_revealed,

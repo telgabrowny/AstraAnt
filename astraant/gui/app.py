@@ -259,6 +259,8 @@ class AstraAntApp:
             ("Dig Deep (-50m)", {"type": "dig_toward", "x": 0, "y": -50, "z": 0}),
             ("Start Chamber", {"type": "set_chamber_goal", "radius_m": 8, "purpose": "ops hub"}),
             ("Build 10 Ants", {"type": "build_ants", "count": 10}),
+            ("+4 Motherships", {"type": "add_motherships", "count": 4}),
+            ("Set Endgame", {"type": "set_endgame_target", "radius_m": 224, "length_m": 200}),
             ("Emergency Stop", {"type": "emergency_stop"}),
         ]
 
@@ -519,9 +521,23 @@ class AstraAntApp:
         chamber_line = ""
         ch = t.get("common_chamber")
         if ch:
-            chamber_line = (f"\n\nChamber Goal:\n"
-                            f"  {ch['completion_pct']:.1f}% complete\n"
-                            f"  {ch['current_radius_m']:.1f}m / {ch['target_radius_m']}m")
+            chamber_line = (f"\n\nChamber:\n"
+                            f"  {ch['completion_pct']:.1f}% ({ch['current_radius_m']:.1f}m)")
+
+        # Endgame habitat progress
+        eg = status.get("endgame")
+        endgame_line = ""
+        if eg:
+            endgame_line = (f"\n\nHabitat Goal:\n"
+                            f"  {eg['overall_progress_pct']:.3f}%\n"
+                            f"  Sections: {eg['sections_complete']}/{eg['total_sections']}\n"
+                            f"  Gravity: {eg['current_gravity_g']:.2f}g\n"
+                            f"  Radius: {eg['current_radius_m']:.0f}m")
+
+        fleet = status.get("fleet", {})
+        fleet_line = ""
+        if fleet.get("motherships", 1) > 1:
+            fleet_line = f"\n\nFleet: {fleet['motherships']} motherships (x{fleet['multiplier']:.0f})"
 
         self.stats_text.text = (
             f"Tunnels:\n"
@@ -531,7 +547,7 @@ class AstraAntApp:
             f"  Material: {s['material_kg']:.1f} kg\n"
             f"  Water:    {s['water_kg']:.1f} kg{bio_line}\n"
             f"  Ants:     {status['total_ants']}  Failed: {s['failures']}"
-            f"{mfg_line}{chamber_line}"
+            f"{mfg_line}{fleet_line}{chamber_line}{endgame_line}"
         )
 
         # Revenue and profit (gamification)
