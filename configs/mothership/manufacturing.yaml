@@ -1,0 +1,317 @@
+# Mothership Module: In-Situ Manufacturing Bay
+# Turns extracted materials into new ants, tools, pods, and infrastructure.
+# This is the self-replication module — the factory that builds copies of itself.
+
+module: manufacturing
+name: "In-Situ Manufacturing Bay"
+type: production
+prerequisite: ["bioreactor"]     # Needs extracted metals as feedstock
+
+# ============================================================================
+# COMPLETE WORKFLOW: Pile of iron powder -> Working ant
+# ============================================================================
+#
+# STEP 1: POWDER PREPARATION
+#   Input: Metal precipitate from bioreactor (wet cake of metal hydroxide)
+#   Process: Dry at 120C in thermal drum -> crush to fine powder
+#   Output: Iron/nickel/copper powder ready for sintering
+#   Equipment: Existing thermal sorting drum (shared use)
+#   Operator: Sorter-role worker (thermal_rake tool)
+#
+# STEP 2: SINTERING (powder -> solid metal parts)
+#   Input: Metal powder in a mold
+#   Process: Pack powder into mold, heat to 800-1100C for 30-60 min
+#   Output: Solid metal part (slightly porous, ~90% density)
+#   Equipment: Sintering furnace (NEW — see below)
+#   Operator: Worker with cargo_gripper (loads/unloads molds)
+#
+# STEP 3: MOLDING / SHAPING
+#   Input: PHB bioplastic or ferrocement mold patterns
+#   Process: 3D print mold from PHB, pack with metal powder, sinter,
+#            break mold, extract part
+#   Output: Shaped metal components (thorax, abdomen, head, leg segments)
+#   Equipment: PHB extruder + mold station (NEW — see below)
+#   Operator: Worker with cargo_gripper
+#
+# STEP 4: WIRE DRAWING
+#   Input: Copper from precipitation
+#   Process: Heat copper, press through progressively smaller dies
+#   Output: Copper wire (20-26 AWG) for power and signal routing
+#   Equipment: Wire drawing station (NEW — see below)
+#   Operator: Worker with cargo_gripper (feeds/pulls wire)
+#
+# STEP 5: ASSEMBLY
+#   Input: Sintered parts + wire + electronics from Earth
+#   Process: Workers assemble at the assembly jig
+#            All connections are press-fit or magnetic — NO SOLDERING
+#   Output: Complete ant, unpowered
+#   Equipment: Assembly jig (NEW — see below)
+#   Operator: Worker with cargo_gripper (mandibles do fine placement)
+#
+# STEP 6: TESTING
+#   Input: Assembled ant at test station
+#   Process: Power on, servo sweep, sensor check, radio handshake
+#   Output: Verified working ant OR flagged for rework
+#   Equipment: Test station (NEW — see below)
+#   Operator: Taskmaster (runs test sequence via radio)
+#
+# ============================================================================
+
+sintering_furnace:
+  description: >
+    Electric resistance furnace for sintering metal powder into solid parts.
+    Heating coils wrapped around a ceramic-lined chamber.
+    Can also be used for annealing, heat treating, and melting copper for casting.
+  type: electric_resistance
+  chamber_volume_liters: 5           # Fits one ant thorax mold
+  max_temperature_c: 1200            # Iron sinters at ~1100C
+  power_w: 1500                      # Significant power draw — runs during high-sun periods
+  ramp_time_minutes: 30              # Time to reach sintering temperature
+  cycle_time_minutes: 60             # Per part (including cool-down)
+  parts_per_day: 12                  # At ~2 hour cycles with cooling
+  mass_kg: 15                        # Furnace + insulation + coils
+  insulation: "ceramic fiber blanket (carried from Earth, or sintered from local silicates)"
+  heating_element: "nichrome wire coils (from Earth — 0.5 kg, lasts years)"
+  note: >
+    Alternative: repurpose the microwave sintering head from the sealing module.
+    2.45 GHz microwaves can sinter metal powders. Less uniform heating than
+    resistance furnace but zero additional equipment needed.
+  alternative_solar_furnace:
+    description: "Parabolic mirror focusing sunlight onto a crucible. Surface operation only."
+    mirror_area_m2: 1
+    focal_temperature_c: 1500
+    power_w: 0                       # Free solar energy
+    limitation: "Only works on surface (courier ant operates). Intermittent (eclipse)."
+
+mold_station:
+  description: >
+    Produces molds for sintering. Two approaches:
+
+    A) PHB BIOPLASTIC MOLDS (preferred):
+    C. necator produces PHB bioplastic from H2+CO2. Extrude into filament,
+    3D print mold pattern, pack with metal powder, sinter. PHB burns away
+    cleanly at sintering temperature (investment casting principle).
+
+    B) FERROCEMENT MOLDS (backup):
+    Pack waste paste around a 3D printed positive pattern.
+    After paste sets, remove pattern, fill cavity with metal powder, sinter.
+    Reusable for ~10 cycles before degradation.
+  phb_extruder:
+    description: "Extrudes PHB bioplastic into 1.75mm filament for 3D printing"
+    power_w: 50
+    mass_kg: 3
+    output_rate_g_per_hour: 30       # Slow but continuous
+    filament_diameter_mm: 1.75       # Standard 3D printer filament
+  printer:
+    description: "Small 3D printer for mold patterns. Existing worker ant firmware can drive it."
+    type: "simple_cartesian_fdm"
+    build_volume_mm: [100, 80, 60]   # Fits ant thorax mold
+    power_w: 100
+    mass_kg: 5
+    note: "Can also print replacement PETG parts if PETG filament available"
+  mold_set:
+    parts_in_set:
+      - thorax_left_half
+      - thorax_right_half
+      - abdomen_shell
+      - head_shell
+      - leg_upper_segment (x6)
+      - leg_lower_segment (x6)
+      - mandible_arm (x2)
+      - tool_mount_bracket
+    total_molds: 20                  # One complete set
+    reuses_per_mold: 1               # PHB molds are one-shot (burn away)
+    time_to_print_full_set_hours: 8  # One shift to print all molds
+
+wire_drawing_station:
+  description: >
+    Draws copper from extracted precipitation into usable wire.
+    Series of progressively smaller dies. Worker ant feeds copper
+    rod through die, pulls from other side with cargo_gripper.
+  dies:
+    material: "sintered iron-cobalt (hard enough for copper drawing)"
+    count: 5                         # Progressive sizes: 3mm -> 2mm -> 1mm -> 0.5mm -> 0.3mm
+    mass_each_g: 20
+    lifetime_meters: 500             # Per die before re-boring needed
+  input: "copper rod or billet from casting"
+  output: "20-26 AWG copper wire"
+  output_rate_meters_per_hour: 5
+  power_w: 50                        # Heating + pulling mechanism
+  mass_kg: 3
+  note: "Each worker ant needs ~2m of wire. 10m/day supports 5 ants/day."
+
+assembly_jig:
+  description: >
+    Fixture that holds ant parts in correct alignment during assembly.
+    Worker ants work at the jig like factory workers at a workbench.
+    All connections designed for press-fit or magnetic — NO SOLDERING.
+  design:
+    base: "ferrocement slab with alignment pins"
+    fixtures: "sintered metal clamps at each joint position"
+    stations: 3                      # 3 jigs = 3 ants under assembly simultaneously
+  assembly_sequence:
+    - step: "Place thorax halves on jig, press-fit together"
+      tool_needed: cargo_gripper
+      time_minutes: 5
+    - step: "Insert 6 leg servos into press-fit sockets"
+      tool_needed: cargo_gripper
+      time_minutes: 10
+      note: "Servos from Earth resupply — press-fit, no soldering"
+    - step: "Route power bus wire through thorax channels"
+      tool_needed: cargo_gripper
+      time_minutes: 5
+    - step: "Place head shell, insert mandible servos"
+      tool_needed: cargo_gripper
+      time_minutes: 5
+    - step: "Mount RP2040 board on snap-fit posts"
+      tool_needed: cargo_gripper
+      time_minutes: 3
+      note: "MCU from Earth — snap-fit mounting, pogo pin connectors"
+    - step: "Connect power and signal via magnetic pogo pin headers"
+      tool_needed: cargo_gripper
+      time_minutes: 5
+      note: "ALL electrical connections are magnetic pogo pins — no solder"
+    - step: "Install sensor module (VL53L0x) in head window"
+      tool_needed: cargo_gripper
+      time_minutes: 3
+    - step: "Install radio module (nRF24L01) and route antenna"
+      tool_needed: cargo_gripper
+      time_minutes: 3
+    - step: "Attach abdomen (battery bay), insert LiPo cell"
+      tool_needed: cargo_gripper
+      time_minutes: 5
+    - step: "Clip mandible tool mount magnets"
+      tool_needed: cargo_gripper
+      time_minutes: 2
+    - step: "Attach leg segments to servo horns (press-fit)"
+      tool_needed: cargo_gripper
+      time_minutes: 10
+      note: "6 legs x 2 segments each = 12 press-fit connections"
+  total_assembly_time_minutes: 56    # ~1 hour per ant
+  workers_per_jig: 2                 # Two workers cooperate on assembly
+  ants_per_day_per_jig: 8            # ~8 hour shifts
+  ants_per_day_total: 24             # 3 jigs x 8 ants/jig
+
+  critical_design_decisions:
+    soldering: >
+      ELIMINATED. All electrical connections use magnetic pogo pin headers.
+      Spring-loaded pins make contact with pads on PCB/servo boards.
+      More mass than solder joints but allows robot assembly.
+      If a connection fails: pull the module, re-seat, done.
+    fasteners: >
+      ELIMINATED. All structural connections are press-fit or snap-fit.
+      Chassis designed with interference fit tolerances.
+      Sintered metal has slight porosity that actually improves press-fit grip.
+    calibration: >
+      AUTOMATED. After power-on, the RP2040 runs self-calibration:
+      servo sweep to find limits, sensor initialization, radio handshake.
+      If any check fails, the ant signals for rework.
+
+test_station:
+  description: >
+    Newly assembled ant is placed on the test station.
+    Taskmaster sends test commands via radio. The ant must pass:
+  test_sequence:
+    - test: "power_on"
+      description: "Apply power, verify MCU boots and heartbeat"
+      pass_criteria: "heartbeat within 5 seconds"
+    - test: "servo_sweep"
+      description: "Move all 8 servos through full range"
+      pass_criteria: "all servos respond, no stalls"
+    - test: "sensor_check"
+      description: "Read VL53L0x distance sensor"
+      pass_criteria: "returns plausible distance reading"
+    - test: "radio_handshake"
+      description: "nRF24L01 two-way communication with taskmaster"
+      pass_criteria: "send + receive within 100ms"
+    - test: "walk_test"
+      description: "Execute 10 tripod gait steps"
+      pass_criteria: "stable locomotion, no servo faults"
+    - test: "mandible_test"
+      description: "Open, close, grip force check"
+      pass_criteria: "both mandibles respond, grip holds 1N load"
+    - test: "tool_mount_test"
+      description: "Attach and detach a test tool head"
+      pass_criteria: "magnetic lock engages, tool seated"
+  total_test_time_minutes: 15
+  pass_rate_expected: 0.90           # 90% pass first time
+  rework_rate: 0.10                  # 10% need re-seating a connection
+  mass_kg: 2                         # Test jig + load cell + power supply
+
+# ============================================================================
+# TOTALS
+# ============================================================================
+
+mass_summary:
+  sintering_furnace_kg: 15
+  mold_station_kg: 8                 # Extruder + printer
+  wire_drawing_kg: 3
+  assembly_jigs_kg: 6                # 3 jigs x 2 kg each
+  test_station_kg: 2
+  total_mass_kg: 34
+
+power_summary:
+  sintering_furnace_w: 1500          # Peak — runs in batches during high-sun
+  mold_station_w: 150                # Extruder + printer
+  wire_drawing_w: 50
+  assembly_jigs_w: 10                # Just lighting
+  test_station_w: 20
+  peak_power_w: 1730                 # When furnace is running
+  average_power_w: 400               # Furnace duty-cycled
+
+production_capacity:
+  ants_per_day: 24                   # With 3 assembly jigs, 2 workers each
+  parts_sintered_per_day: 12         # Furnace bottleneck
+  note: >
+    The sintering furnace is the bottleneck (12 parts/day).
+    Each ant needs ~20 sintered parts, so the furnace limits
+    production to ~0.6 fully-sintered ants per day.
+    Practical production: 1 ant every 2 days when furnace-limited.
+    Assembly itself can do 24/day — it's never the bottleneck.
+  realistic_ants_per_month: 15       # Furnace-limited
+  realistic_pods_per_day: 5          # Ferrocement — no sintering needed
+
+earth_resupply_for_100_ants:
+  servos_sg90: {count: 600, mass_kg: 5.4}            # 6 per ant
+  servos_sg51: {count: 200, mass_kg: 1.0}            # 2 per ant
+  mcu_rp2040: {count: 100, mass_kg: 0.5}
+  sensor_vl53l0x: {count: 100, mass_kg: 0.1}
+  radio_nrf24l01: {count: 100, mass_kg: 0.2}
+  battery_lipo: {count: 100, mass_kg: 1.5}
+  magnets_neodymium: {count: 400, mass_kg: 0.2}      # 4 per ant (2 tool mount + 2 spare)
+  pogo_pin_headers: {count: 100, mass_kg: 0.1}
+  total_mass_kg: 9.0
+  total_cost_usd: 2500               # At hobby pricing
+  note: >
+    Ship 9 kg from Earth. Build 100 ants on the asteroid.
+    The structural mass (chassis, legs, mandibles) is all local metal.
+    Earth provides only what requires nanometer-scale fabrication.
+
+notes: |
+  THE SELF-REPLICATION WORKFLOW:
+
+  1. Mine regolith (existing workers)
+  2. Bioleach metals (existing vats)
+  3. Precipitate iron/nickel/copper (existing precipitation module)
+  4. Dry and powder the precipitate (existing thermal drum)
+  5. Print PHB molds (manufacturing bay — PHB from C. necator)
+  6. Pack molds with metal powder, sinter in furnace (manufacturing bay)
+  7. Draw copper wire (manufacturing bay)
+  8. Assemble at jig with Earth electronics (manufacturing bay — workers do this)
+  9. Test (manufacturing bay — taskmaster runs test sequence)
+  10. NEW ANT OPERATIONAL
+
+  Steps 1-4 use existing equipment. Steps 5-9 use the manufacturing bay.
+
+  The only external input is Step 8: electronics from Earth (9 kg per 100 ants).
+  Everything else is from the asteroid.
+
+  KEY DESIGN DECISION: No soldering. All electrical connections are
+  magnetic pogo pin headers. This allows robot assembly (workers can't solder)
+  and also makes repair trivial (pull module, re-seat, done).
+
+  WORKERS DO THE ASSEMBLY. The same workers that mine and haul can
+  swap to cargo_gripper tool and work at the assembly jig. The taskmaster
+  directs the assembly sequence and runs the test station.
+  No new ant castes needed. No new tool types needed.
+  Just a workbench and some molds.
