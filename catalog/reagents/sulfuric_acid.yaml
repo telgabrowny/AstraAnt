@@ -1,0 +1,35 @@
+id: "sulfuric_acid"
+name: "Sulfuric Acid"
+formula: "H2SO4"
+category: "acid"
+
+specs:
+  density_g_per_ml: 1.84         # Concentrated (98%)
+  concentration: "98% concentrated; diluted to 1-5% for pH adjustment"
+  consumption_rate: "Small amounts for pH control in bioreactor water recovery and Track A acid maintenance; ~1-5 mL/L per pH adjustment cycle"
+
+sourcing:
+  suppliers:
+    - name: "Sigma-Aldrich"
+      price_usd_per_kg: 55
+      date_checked: "2026-03-26"
+    - name: "Fisher Scientific"
+      price_usd_per_kg: 60
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd_per_kg: 55
+      source: "Sigma-Aldrich"
+
+safety:
+  hazard_class: "Corrosive"
+  handling_notes: >
+    Concentrated H2SO4 is severely corrosive and causes exothermic reaction
+    with water. Always add acid to water, never water to acid. Requires
+    acid-resistant containment (HDPE, PTFE, or glass). PPE: acid-resistant
+    gloves, face shield, chemical splash goggles. In space deployment,
+    concentrated acid must be stored in sealed PTFE-lined containers with
+    secondary containment. Spill kit and neutralizing agent (sodium
+    bicarbonate) must be accessible.
+
+added_date: "2026-03-26"

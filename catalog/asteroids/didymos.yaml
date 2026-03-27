@@ -1,0 +1,148 @@
+id: "didymos"
+name: "65803 Didymos"
+designation: "(65803) 1996 GT"
+discovery:
+  date: "1996-04-11"
+  discoverer: "Spacewatch (Joe Montani)"
+
+physical:
+  diameter_m: 780       # primary body (Didymos)
+  mass_kg: 5.55e11      # total system mass (Didymos + Dimorphos)
+  density_kg_per_m3: 2400
+  surface_gravity_m_per_s2: 0.00036
+  rotation_period_hours: 2.2600   # very fast — near spin barrier
+  spectral_class: "S/Sq"
+  albedo: 0.15
+  shape: "spinning_top"
+  structure: "rubble_pile"
+  binary_system:
+    primary_diameter_m: 780
+    secondary_name: "Dimorphos"
+    secondary_diameter_m: 151
+    secondary_mass_kg: 4.3e9
+    orbital_separation_m: 1189
+    mutual_orbital_period_hours: 11.9215   # post-DART impact (was 11.92 hours, changed by ~33 min)
+    pre_dart_orbital_period_hours: 11.9217
+    orbital_period_change_minutes: -33
+    note: "DART impact on Dimorphos (Sep 26, 2022) shortened mutual orbital period by 33 minutes"
+
+orbit:
+  semi_major_axis_au: 1.6444
+  eccentricity: 0.3840
+  inclination_deg: 3.4078
+  perihelion_au: 1.0129
+  aphelion_au: 2.2759
+  orbital_period_years: 2.1086
+  epoch: "2025-01-01"
+  longitude_ascending_node_deg: 73.2027
+  argument_perihelion_deg: 319.3190
+  mean_anomaly_deg: 215.2400
+
+composition:
+  source: "spectral_inference"
+  confidence: "medium"
+  mission: "DART impact (NASA, September 2022) + Hera follow-up (ESA, arriving December 2026)"
+  bulk:
+    olivine: 30.0
+    pyroxene: 25.0
+    feldspar: 12.0
+    iron_nickel_metal: 5.0
+    troilite: 3.0
+    other_silicates: 20.0
+    other: 5.0
+  metals_ppm:
+    platinum: 12
+    palladium: 4
+    iridium: 2
+    copper: 85
+    nickel: 12000
+    cobalt: 550
+    iron: 230000
+    rare_earths_total: 18
+  minerals_inferred:
+    - "olivine ((Mg,Fe)2SiO4) — from S/Sq spectral classification"
+    - "pyroxene — from spectral band analysis"
+    - "plagioclase feldspar"
+    - "iron-nickel metal grains"
+    - "troilite (FeS)"
+  meteorite_analog: "L/LL ordinary chondrite (inferred from Sq-type spectrum)"
+  water_content_percent: 0.0
+  water_form: "none expected — S-type ordinary chondrite composition"
+  dart_impact_data:
+    ejecta_mass_kg: 1.0e7    # estimated 10,000 tonnes ejected
+    momentum_transfer_beta: 3.6   # momentum enhancement factor (much > 1)
+    ejecta_observations: >
+      Hubble, JWST, and ground telescopes observed extensive ejecta plume.
+      LICIACube cubesat imaged ejecta cone 3 minutes post-impact. Ejecta
+      evolved into comet-like tail lasting weeks. Boulder-sized fragments
+      observed. Ejecta spectroscopy consistent with ordinary chondrite
+      silicates — no significant volatile release detected.
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 5.1
+    estimated_transit_days_solar_sail: 800
+    launch_windows_per_year: 1
+    synodic_period_years: 1.9
+  value_assessment: >
+    Didymos is interesting for mining primarily because of its binary nature.
+    The DART impact demonstrated that kinetic impactors can efficiently
+    modify asteroid orbits (beta = 3.6), relevant for mining operations
+    that might need to redirect material. The binary system provides a
+    natural laboratory for understanding rubble pile cohesion and ejecta
+    dynamics. Dimorphos (~150m) is small enough to be a realistic early
+    mining target if composition proves favorable. The DART ejecta plume
+    excavated subsurface material, providing a preview of mining yields.
+    S-type composition means metal content (iron-nickel, trace PGMs) but
+    no water for ISRU. ESA's Hera mission arrives December 2026 and will
+    provide detailed characterization of both bodies, significantly
+    improving composition confidence. Moderate delta-v (5.1 km/s) is
+    acceptable but not exceptional.
+  water_availability: false
+  regolith_type: "rubble_pile"
+  key_resources:
+    - resource: "iron-nickel metal"
+      abundance: "moderate"
+      extraction_method: "magnetic separation from regolith"
+    - resource: "platinum group metals"
+      abundance: "trace"
+      extraction_method: "acid leaching of metal phase"
+    - resource: "silicates (construction)"
+      abundance: "high"
+      extraction_method: "regolith sintering"
+  binary_mining_advantages:
+    - "Dimorphos is small enough (~4.3e9 kg) for realistic early extraction"
+    - "DART impact data provides ground truth for ejecta mining technique"
+    - "Binary orbit provides natural debris accumulation at Lagrange points"
+    - "Hera mission (2026) will provide detailed surface/composition maps"
+
+references:
+  - "Thomas, C.A. et al. (2023). Orbital period change of Dimorphos due to the DART kinetic impact. Nature, 616, 448-451."
+  - "Daly, R.T. et al. (2023). Successful kinetic impact into an asteroid for planetary defence. Nature, 616, 443-447."
+  - "Li, J.-Y. et al. (2023). Ejecta from the DART impact on asteroid Dimorphos. Nature, 616, 452-456."
+  - "Cheng, A.F. et al. (2023). Momentum transfer from the DART mission kinetic impact on asteroid Dimorphos. Nature, 616, 457-460."
+  - "Rivkin, A.S. et al. (2021). The Double Asteroid Redirection Test (DART): Planetary Defense Investigations and Requirements. The Planetary Science Journal, 2, 173."
+  - "ESA Hera Mission: https://www.esa.int/Space_Safety/Hera"
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=didymos"
+
+notes: >
+  Didymos is a binary near-Earth asteroid system consisting of the ~780m
+  primary (Didymos) and its ~151m moonlet Dimorphos. The system was the
+  target of NASA's Double Asteroid Redirection Test (DART), which
+  deliberately impacted Dimorphos on September 26, 2022 at 6.1 km/s.
+  The impact shortened Dimorphos's orbital period around Didymos by 33
+  minutes (from 11h 55m to 11h 23m), demonstrating the viability of
+  kinetic impactor planetary defense. The momentum transfer efficiency
+  (beta = 3.6) was much higher than expected, indicating the rubble pile
+  structure ejected significant mass that enhanced the orbital change.
+  ESA's Hera mission launched in October 2024 and will arrive at the
+  Didymos system in December 2026 to conduct detailed follow-up
+  investigations including mass measurement, crater characterization,
+  and internal structure assessment using radar. Didymos itself rotates
+  extremely rapidly (2.26 hours), very near the theoretical spin barrier
+  for rubble piles, suggesting it shed material that formed Dimorphos.
+  The primary's spinning-top shape with equatorial ridge is consistent
+  with this YORP-driven formation scenario.
+
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

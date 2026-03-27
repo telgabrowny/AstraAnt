@@ -1,0 +1,61 @@
+id: "acidithiobacillus_thiooxidans"
+name: "Acidithiobacillus thiooxidans"
+common_name: "Sulfur-oxidizing acidophile"
+type: "bacteria"
+description: >
+  Gram-negative, obligately chemolithoautotrophic bacterium that oxidizes
+  elemental sulfur and reduced sulfur compounds (thiosulfate, tetrathionate)
+  to sulfuric acid. Cannot oxidize iron directly. Serves as the synergistic
+  partner to A. ferrooxidans in mixed-culture bioleaching, where it
+  maintains the low pH environment critical for iron solubility and
+  accelerates overall sulfide mineral dissolution by 20-40%.
+
+growth:
+  optimal_temp_c: 28
+  temp_range_c: [20, 33]
+  optimal_ph: 2.5
+  ph_range: [2.0, 3.0]
+  doubling_time_hours: 9        # 8-10 h range
+  growth_model: "monod"
+  monod_params:
+    mu_max_per_hour: 0.077      # Slightly faster than A. ferrooxidans on sulfur substrate
+    ks_g_per_liter: 0.3         # Half-saturation for elemental sulfur
+
+extraction:
+  target_metals: ["copper", "nickel", "cobalt", "zinc"]
+  mechanism: >
+    Indirect support role. Oxidizes elemental sulfur (a common passivation
+    product on sulfide mineral surfaces) to H2SO4, preventing sulfur buildup
+    that would otherwise inhibit A. ferrooxidans activity. The sulfuric acid
+    produced maintains solution pH in the optimal 1.5-2.5 range for ferric
+    iron solubility and mineral attack. In co-culture, enhances overall
+    metal extraction rates by 20-40% compared to A. ferrooxidans alone.
+  extraction_rate_mg_per_liter_per_day: 0     # Does not directly extract metals
+  extraction_efficiency: 0.0                   # Synergistic support organism only
+  residence_time_days: 20                      # Matches co-culture partner
+
+requirements:
+  aeration: true
+  nutrients: ["elemental_sulfur", "ammonium_sulfate", "potassium_phosphate"]
+  nutrient_consumption_g_per_liter_per_day: 0.3   # Sulfur consumption as energy source
+
+environmental:
+  radiation_tolerance: "low"
+  radiation_ld50_gray: 180
+  vacuum_survival: false
+  spore_forming: false
+
+references:
+  - "Rawlings, D.E. (2002). Heavy metal mining using microbes. Annual Review of Microbiology, 56, 65-91."
+  - "Dopson, M., Lindstrom, E.B. (1999). Potential role of Thiobacillus caldus in arsenopyrite bioleaching. Applied and Environmental Microbiology, 65(1), 36-40."
+  - "Qiu, M., et al. (2005). Community dynamics of an acidophilic mixed culture bioleaching a chalcopyrite concentrate. Hydrometallurgy, 76(3-4), 169-178."
+  - "Sand, W., Gehrke, T., Jozsa, P.G., Schippers, A. (2001). (Bio)chemistry of bacterial leaching - direct vs. indirect bioleaching. Hydrometallurgy, 59(2-3), 159-175."
+
+notes: >
+  Track A support organism. Always deployed in co-culture with
+  A. ferrooxidans, never alone. The 20-40% synergistic enhancement is
+  well-documented in stirred-tank and column leaching studies. Inoculum
+  ratio of roughly 1:1 with A. ferrooxidans is typical. Shares the same
+  low radiation tolerance, requiring shielded vessels for space deployment.
+
+added_date: "2026-03-26"

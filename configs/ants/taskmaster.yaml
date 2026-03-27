@@ -1,0 +1,95 @@
+# Taskmaster Ant — Squad leader with full sensor suite
+# Commands a squad of ~20 worker ants. Rich sensors, navigation, task allocation.
+
+caste: taskmaster
+chassis:
+  type: spider_6leg
+  base_mass_g: 25          # Slightly sturdier frame
+  mass_budget_g: 400
+
+compute:
+  part_id: esp32_s3
+  mass_g: 10               # Module on breakout board
+  power_draw_mw: 250
+  cost_usd: 5
+
+locomotion:
+  actuators: 6
+  part_id: sg90_servo       # Or vacuum_actuator_maxon — catalog option
+  per_unit_mass_g: 9
+  per_unit_power_mw: 600
+  per_unit_cost_usd: 3
+
+communication:
+  - id: local_rf
+    part_id: nrf24l01_rf
+    mass_g: 2
+    power_mw: 40
+    cost_usd: 2
+    range_m: 50
+    bandwidth_kbps: 250
+    purpose: "short-range to workers"
+  - id: backbone
+    type: wired_can_bus
+    mass_g: 5               # CAN transceiver module
+    power_mw: 10
+    cost_usd: 3
+    bandwidth_kbps: 1000
+    purpose: "wired backbone to mothership"
+
+sensors:
+  - part_id: bno055_imu
+    mass_g: 3
+    power_mw: 12
+    cost_usd: 20
+    purpose: "9-axis IMU for tunnel navigation"
+  - part_id: vl53l0x_lidar
+    mass_g: 1
+    power_mw: 20
+    cost_usd: 4
+    purpose: "proximity / tunnel mapping"
+  - part_id: ov7670_camera
+    mass_g: 3
+    power_mw: 60
+    cost_usd: 4
+    purpose: "low-res visual odometry"
+  - part_id: as7341_spectral
+    mass_g: 1
+    power_mw: 15
+    cost_usd: 12
+    purpose: "spectral composition analysis at work face"
+  - part_id: ds18b20_temp
+    mass_g: 1
+    power_mw: 1
+    cost_usd: 2
+    purpose: "temperature monitoring"
+
+tool:
+  type: none                # Taskmasters don't mine — they command
+  mass_g: 0
+  power_mw: 0
+  cost_usd: 0
+
+storage_hopper:
+  hopper_mass_g: 0          # No hopper — not a hauler
+  capacity_g: 0
+
+power:
+  source: tethered
+  tether_connector_mass_g: 3
+  backup_battery:
+    capacity_mah: 1000
+    mass_g: 30              # Larger battery for extended untethered ops
+    cost_usd: 5
+
+squad_size: 20              # Workers per taskmaster
+
+notes: |
+  Taskmasters are the brains of each squad. They navigate tunnels using IMU +
+  visual odometry, classify regolith with spectral sensors, and direct workers.
+
+  One taskmaster per ~20 workers. They connect to the tunnel wired backbone
+  for mothership communication and use short-range RF for worker commands.
+
+  More expensive per unit but far fewer needed. Critical single point of failure
+  for their squad — consider redundancy or re-assignment protocols.

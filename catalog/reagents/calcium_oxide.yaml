@@ -1,0 +1,35 @@
+id: "calcium_oxide"
+name: "Calcium Oxide"
+formula: "CaO"
+category: "precipitant"
+
+specs:
+  density_g_per_ml: 3.34
+  concentration: "Solid powder; dissolved as needed for precipitation"
+  consumption_rate: "~2-5 g/L of pregnant leach solution for copper precipitation at pH 5.3; consumption depends on solution buffering capacity"
+
+sourcing:
+  suppliers:
+    - name: "Sigma-Aldrich"
+      price_usd_per_kg: 15
+      date_checked: "2026-03-26"
+    - name: "Fisher Scientific"
+      price_usd_per_kg: 18
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd_per_kg: 15
+      source: "Sigma-Aldrich"
+
+safety:
+  hazard_class: "Corrosive"
+  handling_notes: >
+    Quicklime reacts exothermically with water, generating significant heat.
+    Produces calcium hydroxide (slaked lime) on hydration. Fine powder is a
+    respiratory irritant. Store in sealed, moisture-proof containers. PPE:
+    dust mask, chemical splash goggles, gloves. In the precipitation
+    workflow, CaO is added gradually to pregnant leach solution (PLS) to
+    raise pH to 5.3, precipitating copper as Cu(OH)2. Also useful as a
+    general pH-raising agent for bioreactor neutralization steps.
+
+added_date: "2026-03-26"

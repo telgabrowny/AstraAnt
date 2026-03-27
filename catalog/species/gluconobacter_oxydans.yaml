@@ -1,0 +1,63 @@
+id: "gluconobacter_oxydans"
+name: "Gluconobacter oxydans"
+common_name: "Gluconic acid bacterium"
+type: "bacteria"
+description: >
+  Gram-negative, obligately aerobic acetic acid bacterium known for rapid
+  incomplete oxidation of sugars and sugar alcohols. Produces gluconic acid
+  from glucose via membrane-bound glucose dehydrogenase. Serves as a
+  faster-growing bacterial alternative to Aspergillus niger for REE
+  bioleaching via organic acid chelation, though with a less diverse acid
+  profile (primarily gluconic acid only, versus citric + oxalic + gluconic
+  from Aspergillus).
+
+growth:
+  optimal_temp_c: 28
+  temp_range_c: [20, 33]
+  optimal_ph: 5.0
+  ph_range: [4.0, 6.0]
+  doubling_time_hours: 4        # 3-5 h range; significantly faster than Aspergillus
+  growth_model: "monod"
+  monod_params:
+    mu_max_per_hour: 0.18       # Fast grower on glucose
+    ks_g_per_liter: 1.5         # Half-saturation for glucose substrate
+
+extraction:
+  target_metals: ["lanthanum", "cerium", "neodymium", "yttrium"]
+  mechanism: >
+    Heterotrophic acid leaching via gluconic acid production. Oxidizes
+    glucose to gluconic acid (up to 100 g/L under optimized conditions)
+    using membrane-bound dehydrogenases. Gluconate chelates trivalent REE
+    ions (log K ~ 2-3 for La-gluconate), dissolving them from phosphate
+    and silicate mineral matrices. Less effective than citric acid
+    chelation but produced at higher rates per unit biomass.
+  extraction_rate_mg_per_liter_per_day: 20    # Lower efficiency per day but faster startup
+  extraction_efficiency: 0.40                  # 30-50% for light REE; less effective than Aspergillus
+  residence_time_days: 14                      # Shorter cycles possible due to fast growth
+
+requirements:
+  aeration: true
+  nutrients: ["glucose", "yeast_extract", "potassium_phosphate"]
+  nutrient_consumption_g_per_liter_per_day: 4.0   # Higher sugar consumption than Aspergillus per unit acid
+
+environmental:
+  radiation_tolerance: "low"
+  radiation_ld50_gray: 150
+  vacuum_survival: false
+  spore_forming: false
+
+references:
+  - "De Muynck, C., Pereira, C.S., Naessens, M., Parmentier, S., Soetaert, W., Vandamme, E.J. (2007). The genus Gluconobacter oxydans: comprehensive overview of biochemistry and biotechnological applications. Critical Reviews in Biotechnology, 27(3), 147-171."
+  - "Rasoulnia, P., Barthen, R., Hedrich, S. (2021). A critical review of bioleaching of rare earth elements: The mechanisms and effect of process parameters. Critical Reviews in Environmental Science and Technology, 51(4), 378-427."
+  - "Thompson, V.S., et al. (2018). Techno-economic and life cycle analysis for bioleaching rare-earth elements from waste materials. ACS Sustainable Chemistry & Engineering, 6(2), 1602-1609."
+
+notes: >
+  Track B alternative organism. Faster doubling time makes it attractive
+  for rapid cycling, but lower extraction efficiency and narrower acid
+  profile (gluconic only vs citric + oxalic + gluconic from Aspergillus)
+  limit overall REE recovery. Best suited as a supplementary organism or
+  for situations where fast turnaround is more important than maximum
+  extraction yield. No spore-forming capability means no dormant storage
+  advantage and lower radiation resilience than Aspergillus niger.
+
+added_date: "2026-03-26"

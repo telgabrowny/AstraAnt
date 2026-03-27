@@ -1,0 +1,64 @@
+id: "stm32l4"
+name: "STM32L476RG Low-Power Microcontroller"
+category: "compute"
+description: "STMicroelectronics ultra-low-power ARM Cortex-M4F microcontroller with FPU. 1 MB flash, 128 KB SRAM. Multiple low-power modes down to 30 nA shutdown. Excellent for battery-powered or energy-harvested systems where every milliwatt counts."
+
+specs:
+  mass_g: 1.0                            # LQFP-64 package; Nucleo-64 board ~25g
+  power_draw_mw: 30                      # Typical at 80 MHz, Run mode ~100 uA/MHz
+  cpu_cores: 1
+  cpu_freq_mhz: 80
+  architecture: "ARM Cortex-M4F"         # With hardware FPU and DSP instructions
+  sram_kb: 128
+  flash_mb: 1
+  gpio_count: 51                         # LQFP-64 package
+  adc_channels: 16                       # Three 12-bit ADCs, up to 5 Msps
+  dac_channels: 2                        # 12-bit DAC
+  interfaces: ["SPI", "I2C", "USART", "UART", "USB-OTG-FS", "CAN", "SAI", "DFSDM", "SWPMI"]
+  supply_voltage_v: 3.3                  # Operates 1.71-3.6V
+  low_power_modes:
+    stop2_ua: 1.0                        # Stop 2 mode with RTC
+    standby_ua: 0.38                     # Standby mode
+    shutdown_na: 30                      # Shutdown mode, 30 nA
+  run_mode_ua_per_mhz: 100              # ~100 uA/MHz from flash
+
+environmental:
+  temp_min_c: -40
+  temp_max_c: 85                         # Industrial grade -40 to 105C also available
+  vacuum_compatible: false               # Consumer packaging, but better than most
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "low"             # Not rad-hard but 90nm process is somewhat tolerant; SEL possible
+  mtbf_hours_vacuum: 500                 # Not rated for vacuum
+  mtbf_hours_sealed: 50000
+  mtbf_hours_earth: 200000
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/stmicroelectronics/STM32L476RGT6/5806888"
+      part_number: "STM32L476RGT6"
+      price_usd: 6.50
+      date_checked: "2026-03-26"
+    - name: "Mouser"
+      url: "https://www.mouser.com/ProductDetail/STMicroelectronics/STM32L476RGT6"
+      part_number: "511-STM32L476RGT6"
+      price_usd: 6.80
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 6.50
+      source: "DigiKey"
+
+notes: |
+  The STM32L4 series is the best commercial-grade option for ultra-low-power compute.
+  The 30 nA shutdown and 1 uA Stop2 modes make it ideal for energy-harvested systems
+  that must survive long periods between solar charging. The Cortex-M4F with FPU can
+  handle sensor fusion and PID control loops efficiently. The Nucleo-L476RG dev board
+  (~$13) includes ST-Link debugger and Arduino-compatible headers for prototyping.
+  For space applications, consider the STM32L4 as a COTS candidate with watchdog timer
+  and ECC on flash/SRAM for basic SEU mitigation. Not a replacement for rad-hard parts
+  but reasonable for short-duration or shielded missions.
+
+datasheet_url: "https://www.st.com/resource/en/datasheet/stm32l476rg.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

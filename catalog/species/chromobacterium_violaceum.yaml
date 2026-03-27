@@ -1,0 +1,68 @@
+id: "chromobacterium_violaceum"
+name: "Chromobacterium violaceum"
+common_name: "Violet chromobacterium"
+type: "bacteria"
+description: >
+  Gram-negative, facultatively anaerobic bacterium producing the
+  characteristic violet pigment violacein. Key organism for biogenic
+  cyanide (HCN) production from glycine. The cyanide complexes with
+  platinum group metals (PGMs) and gold, dissolving them into solution
+  as soluble cyanide complexes — the same chemistry as industrial
+  cyanidation but at biogenic (low) concentrations. Track C organism
+  for PGM recovery from asteroid regolith.
+
+growth:
+  optimal_temp_c: 28
+  temp_range_c: [20, 35]
+  optimal_ph: 7.5
+  ph_range: [7.0, 9.0]
+  doubling_time_hours: 3        # Fast grower on rich media
+  growth_model: "monod"
+  monod_params:
+    mu_max_per_hour: 0.23       # Fast growth rate on glycine-supplemented media
+    ks_g_per_liter: 1.0         # Half-saturation for glycine substrate
+
+extraction:
+  target_metals: ["platinum", "palladium", "gold", "rhodium"]
+  mechanism: >
+    Biogenic cyanidation. The bacterium produces hydrogen cyanide (HCN)
+    enzymatically from glycine via the HCN synthase (hcnABC) operon.
+    Biogenic HCN (5-10 mg/L/day) dissolves PGMs and gold by forming
+    soluble cyanide complexes: Au + 4CN- -> [Au(CN)2]- and similar
+    reactions for Pt and Pd. Concentrations are 100-1000x lower than
+    industrial cyanidation but sufficient for slow extraction from
+    finely ground regolith. Neutral-to-alkaline pH keeps HCN in the
+    less volatile CN- ionic form, reducing off-gassing hazard.
+  extraction_rate_mg_per_liter_per_day: 5     # Very slow; PGM bioleaching is immature
+  extraction_efficiency: 0.40                  # 30-50% range; literature is limited
+  residence_time_days: 45                      # 14-60 days; 45 as conservative midpoint
+
+requirements:
+  aeration: true                               # Aerobic for HCN production
+  nutrients: ["glycine", "tryptone", "yeast_extract"]
+  nutrient_consumption_g_per_liter_per_day: 1.5   # Glycine as primary HCN precursor
+
+environmental:
+  radiation_tolerance: "low"
+  radiation_ld50_gray: 150
+  vacuum_survival: false
+  spore_forming: false
+
+references:
+  - "Brandl, H., Bosshard, R., Wegmann, M. (2001). Computer-munching microbes: metal leaching from electronic scrap by bacteria and fungi. Hydrometallurgy, 59(2-3), 319-326."
+  - "Shin, D., Jeong, J., Lee, S., Pandey, B.D., Lee, J.C. (2013). Evaluation of bioleaching factors on gold recovery from ore by cyanide-producing bacteria. Minerals Engineering, 48, 45-52."
+  - "Faramarzi, M.A., Stagars, M., Pensini, E., Krebs, W., Brandl, H. (2004). Metal solubilization from metal-containing solid materials by cyanogenic Chromobacterium violaceum. Journal of Biotechnology, 113(1-3), 321-326."
+  - "Kaksonen, A.H., et al. (2020). Prospective directions for biohydrometallurgy. Hydrometallurgy, 195, 105376."
+  - "Reith, F., et al. (2007). Biomineralization of gold: biofilms on bacterioform gold. Science, 313(5784), 233-236."
+
+notes: >
+  Track C organism for PGM extraction. Biogenic cyanide production is the
+  only known biological pathway to dissolve PGMs. Concentrations are low
+  enough (~5-10 mg HCN/L) that biosafety risk is manageable with sealed
+  vessels and gas scrubbing, but the reactor MUST be gas-tight. Longest
+  residence time of any track (14-60 days). PGM bioleaching is the least
+  mature technology in the AstraAnt pipeline — extraction efficiencies
+  are based on limited laboratory studies and will require significant
+  optimization. Glycine feedstock is a critical consumable.
+
+added_date: "2026-03-26"

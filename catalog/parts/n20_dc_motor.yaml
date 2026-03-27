@@ -1,0 +1,79 @@
+id: "n20_dc_motor"
+name: "N20 Micro DC Gearmotor"
+category: "motor"
+description: "Generic N20-size micro DC gearmotor with metal gearbox. Available in a wide range of gear ratios (10:1 to 1000:1) and voltages (3V, 6V, 12V). The N20 form factor (12mm diameter x 10mm gearbox x 15-25mm motor body) is a de facto standard used in hobby robotics, small mechanisms, and prototyping. Brushed DC motor with spur or planetary gear reduction."
+
+specs:
+  mass_g: 12.0                           # Typical with gearbox; varies 10-15g by ratio
+  power_draw_mw: 500                     # Typical under moderate load
+  stall_current_ma: 800                  # At 6V; varies by winding
+  no_load_current_ma: 50                 # At rated voltage
+  supply_voltage_v: 6.0                  # Common 6V variant; 3V and 12V also available
+  no_load_rpm: 300                       # With 100:1 gearbox at 6V (varies by ratio)
+  stall_torque_kg_cm: 1.5               # With 100:1 gearbox at 6V
+  gear_ratio: "10:1 to 1000:1"          # Wide range available
+  gear_type: "metal spur"
+  motor_type: "brushed DC"
+  shaft_diameter_mm: 3.0                 # D-shaft, standard
+  body_diameter_mm: 12.0
+  body_length_mm: 25.0                   # Motor + gearbox (varies by ratio)
+  encoder_optional: true                 # Magnetic encoder add-ons available
+
+environmental:
+  temp_min_c: -10                        # Grease viscosity limits cold operation
+  temp_max_c: 50                         # Brush and grease thermal limits
+  vacuum_compatible: false               # Brushed motor, standard grease, open gearbox
+  sealed_tunnel_compatible: true         # Fine in pressurized environment
+  radiation_tolerance: "none"
+  mtbf_hours_vacuum: 100                 # Brushes arc, grease evaporates immediately
+  mtbf_hours_sealed: 5000               # Brush wear is the limiting factor
+  mtbf_hours_earth: 10000               # Hobby-grade; brush wear limits life
+
+sourcing:
+  suppliers:
+    - name: "Pololu"
+      url: "https://www.pololu.com/category/60/micro-metal-gearmotors"
+      part_number: "HPCB 6V 100:1"
+      price_usd: 5.95
+      date_checked: "2026-03-26"
+    - name: "Adafruit"
+      url: "https://www.adafruit.com/product/3802"
+      part_number: "3802"
+      price_usd: 4.50
+      date_checked: "2026-03-26"
+    - name: "Amazon (generic)"
+      url: "https://www.amazon.com/dp/B07FVLZQCD"
+      part_number: "N20-6V-100RPM"
+      price_usd: 3.00                    # Generic/clone pricing
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 5.95
+      source: "Pololu"
+
+notes: |
+  The N20 gearmotor is the workhorse of small robotics. Pololu's "micro metal gearmotor"
+  line is the best-characterized source, with consistent specifications and quality
+  control. Generic Chinese N20 motors from Amazon/AliExpress are 50-70% of the cost
+  but have wider spec variation and shorter lifespan.
+
+  Absolutely not vacuum compatible: the brushed DC motor will arc in vacuum (Paschen's
+  law minimum at ~1 Torr), and the gearbox grease will outgas within minutes. In a
+  sealed pressurized tunnel, they are fine but brush wear limits lifetime to ~5000 hours.
+
+  For precise positioning, add a magnetic encoder (Pololu offers matching encoder boards).
+  Without feedback, these are open-loop speed/torque actuators only.
+
+  For space/vacuum applications, replace with Maxon brushless motors (see
+  vacuum_actuator_maxon). For higher-quality ground testing, consider Pololu's
+  HP (high-power) or HPCB (high-power carbon brush) variants which have better
+  specifications and longer brush life.
+
+  Gear ratio selection guide:
+  - 10:1 to 30:1: High speed, low torque (wheel drive)
+  - 50:1 to 150:1: Balanced (general mechanisms)
+  - 200:1 to 1000:1: High torque, low speed (grippers, lifters)
+
+datasheet_url: "https://www.pololu.com/file/0J1487/pololu-micro-metal-gearmotor-hpcb-6v-datasheet.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

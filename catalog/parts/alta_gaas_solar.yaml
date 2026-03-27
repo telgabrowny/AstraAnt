@@ -1,0 +1,63 @@
+id: "alta_gaas_solar"
+name: "Alta Devices GaAs Flexible Solar Cell"
+category: "solar"
+description: "Alta Devices (now Hanergy) gallium arsenide flexible solar cell. Holds world record for single-junction solar cell efficiency at 29.1%. Epitaxial liftoff process produces extremely thin, lightweight, flexible cells ideal for aerospace applications. High specific power (~85 W/kg) enables solar sail and CubeSat power systems."
+
+specs:
+  mass_g: 4.0                            # Per 50 cm2 cell
+  power_draw_mw: 0                       # Generator, not consumer
+  power_output_mw: 1450                  # At 1 AU, AM0, per 50 cm2 cell
+  area_cm2: 50                           # Standard cell size
+  efficiency_percent: 29.1               # AM1.5G; 27-28% AM0 (space)
+  areal_density_g_per_cm2: 0.08
+  specific_power_w_per_kg: 85            # Exceptional for any solar technology
+  cell_thickness_um: 2                   # Epitaxial GaAs film
+  substrate_thickness_um: 25             # With carrier substrate
+  voc_v: 1.107                           # Open circuit voltage
+  isc_ma_per_cm2: 29.7                   # Short circuit current density
+  fill_factor: 0.87
+  degradation_percent_per_year: 1.5      # In LEO radiation environment
+  bend_radius_mm: 10                     # Minimum bend radius
+
+environmental:
+  temp_min_c: -196                       # GaAs operates at cryogenic temps
+  temp_max_c: 200                        # Degrades above ~150C long-term
+  vacuum_compatible: true                # Designed for space operation
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "moderate"        # GaAs inherently more rad-tolerant than Si
+  mtbf_hours_vacuum: 200000             # Space-designed; limited by radiation degradation
+  mtbf_hours_sealed: 200000
+  mtbf_hours_earth: 150000              # Humidity and UV degrade terrestrial lifetime
+
+sourcing:
+  suppliers:
+    - name: "Alta Devices (Hanergy)"
+      url: "https://www.altadevices.com"
+      part_number: "AnyLight"
+      price_usd: 75.00                   # Per cell, approximate; varies by volume
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 75.00
+      source: "Alta Devices"
+
+notes: |
+  Alta Devices cells are the highest-efficiency single-junction solar cells commercially
+  available. The epitaxial liftoff manufacturing process produces cells only ~2 um thick
+  that can be mounted on flexible substrates, making them ideal for solar sail integration
+  or conformal mounting on spacecraft surfaces. At ~85 W/kg specific power, they are
+  roughly 10x better than rigid silicon panels on a mass basis.
+
+  Procurement note: Alta Devices was acquired by Hanergy and availability has been
+  inconsistent. Lead times may be 8-16 weeks. For prototyping, SunPower IBC cells
+  (~24% efficiency, ~$10/cell) are a more accessible alternative at 3-4x the mass
+  penalty. For CubeSat use, SpectroLab also offers GaAs triple-junction cells at
+  ~30% efficiency but higher cost ($200+/cell) and are more rigid.
+
+  Temperature coefficient is approximately -0.1%/C, much better than silicon (-0.4%/C),
+  which is advantageous at elevated temperatures near the Sun. GaAs is also inherently
+  more radiation-tolerant than silicon, degrading ~1.5%/year in LEO vs ~3%/year for Si.
+
+datasheet_url: "https://www.altadevices.com/technology/"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

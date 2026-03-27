@@ -1,0 +1,65 @@
+id: "aspergillus_niger"
+name: "Aspergillus niger"
+common_name: "Black mold"
+type: "fungal"
+description: >
+  Filamentous fungus and prolific organic acid producer. Primary organism
+  for rare earth element (REE) bioleaching from silicate and phosphate
+  mineral matrices. Secretes citric acid, oxalic acid, and gluconic acid
+  that chelate and solubilize REE ions. Requires a sugar carbon source
+  (sucrose or glucose at ~10 g/L). Spores provide moderate radiation
+  resistance compared to vegetative bacterial cells, offering a potential
+  advantage for extraterrestrial deployment.
+
+growth:
+  optimal_temp_c: 28
+  temp_range_c: [20, 37]
+  optimal_ph: 4.0
+  ph_range: [3.0, 5.0]
+  doubling_time_hours: 7        # 6-8 h range for hyphal extension
+  growth_model: "monod"
+  monod_params:
+    mu_max_per_hour: 0.10       # Faster growth than acidithiobacilli on rich media
+    ks_g_per_liter: 2.0         # Half-saturation for sucrose/glucose substrate
+
+extraction:
+  target_metals: ["lanthanum", "cerium", "neodymium", "praseodymium", "europium", "yttrium"]
+  mechanism: >
+    Heterotrophic acid leaching. Aspergillus niger metabolizes sugars and
+    secretes organic acids — primarily citric acid (up to 50 g/L) and
+    oxalic acid (up to 10 g/L). These acids chelate trivalent REE ions
+    from mineral lattices through a combination of proton attack and
+    ligand-promoted dissolution. Citrate forms stable complexes with La3+,
+    Ce3+, and Nd3+ (log K ~ 8-9), extracting them into solution. One-step
+    and two-step (spent medium) processes are both viable.
+  extraction_rate_mg_per_liter_per_day: 30    # Variable; 15-50 mg REE/L/day depending on mineral type
+  extraction_efficiency: 0.55                  # 40-70% for light REE; 55% as midpoint
+  residence_time_days: 21                      # 14-30 days typical
+
+requirements:
+  aeration: true
+  nutrients: ["sucrose", "ammonium_nitrate", "potassium_phosphate"]
+  nutrient_consumption_g_per_liter_per_day: 3.0   # ~10 g/L sucrose per cycle over ~3-4 days active growth
+
+environmental:
+  radiation_tolerance: "moderate"
+  radiation_ld50_gray: 500       # Spores are significantly more resistant than vegetative cells
+  vacuum_survival: false         # Vegetative hyphae die; spores may survive brief exposure
+  spore_forming: true
+
+references:
+  - "Qu, Y., Lian, B. (2013). Bioleaching of rare earth and radioactive elements from red mud using Penicillium tricolor RM-10. Bioresource Technology, 136, 16-23."
+  - "Brisson, V.L., Zhuang, W.Q., Alvarez-Cohen, L. (2016). Bioleaching of rare earth elements from monazite sand. Biotechnology and Bioengineering, 113(2), 339-348."
+  - "Hassanien, W.A.G., et al. (2014). Bioleaching of some rare earth elements from Egyptian monazite using Aspergillus ficuum and Pseudomonas aeruginosa. Walailak Journal of Science and Technology, 11(9), 809-823."
+  - "Shin, D., Kim, J., Kim, B.S., Jeong, J., Lee, J.C. (2015). Use of phosphate solubilizing bacteria to leach rare earth elements from monazite-bearing ore. Minerals, 5(2), 189-202."
+  - "Reed, D.W., Fujita, Y., Daubaras, D.L., Jiao, Y., Thompson, V.S. (2016). Bioleaching of rare earth elements from waste phosphors and cracking catalysts. Hydrometallurgy, 166, 34-40."
+
+notes: >
+  Track B primary organism for REE extraction. The critical consumable
+  dependency is sucrose feedstock (~10 g/L per cycle). Two-step process
+  (grow fungus, then apply spent medium to ore) may be preferable in
+  space to avoid fungal contamination of mineral slurry. Spore bank can
+  serve as long-duration inoculum reserve. Moderate radiation tolerance
+  of spores is a meaningful advantage over Track A bacteria.
+
+added_date: "2026-03-26"

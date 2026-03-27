@@ -1,0 +1,125 @@
+id: "eros"
+name: "433 Eros"
+designation: "(433) Eros"
+discovery:
+  date: "1898-08-13"
+  discoverer: "Carl Gustav Witt (Berlin) and Auguste Charlois (Nice)"
+
+physical:
+  diameter_m: 16840    # mean diameter; dimensions 34.4 x 11.2 x 11.2 km
+  dimensions_m: [34400, 11200, 11200]
+  mass_kg: 6.687e15
+  density_kg_per_m3: 2670
+  surface_gravity_m_per_s2: 0.0059
+  rotation_period_hours: 5.2703
+  spectral_class: "S"
+  albedo: 0.25
+  shape: "elongated_irregular"
+  structure: "monolithic_fractured"
+
+orbit:
+  semi_major_axis_au: 1.4583
+  eccentricity: 0.2229
+  inclination_deg: 10.8290
+  perihelion_au: 1.1334
+  aphelion_au: 1.7833
+  orbital_period_years: 1.7600
+  epoch: "2025-01-01"
+  longitude_ascending_node_deg: 304.3221
+  argument_perihelion_deg: 178.8165
+  mean_anomaly_deg: 320.5776
+
+composition:
+  source: "orbiter"
+  confidence: "medium"
+  mission: "NEAR Shoemaker (NASA, orbited 2000-2001, landed February 2001)"
+  bulk:
+    olivine: 30.0
+    pyroxene: 25.0
+    feldspar: 15.0
+    iron_nickel_metal: 5.0
+    troilite: 3.0
+    regolith_soil: 15.0
+    other: 7.0
+  metals_ppm:
+    platinum: 25
+    palladium: 8
+    iridium: 5
+    copper: 100
+    nickel: 20000
+    cobalt: 700
+    iron: 230000
+    rare_earths_total: 20
+    gold: 1
+  minerals_identified:
+    - "olivine (Mg,Fe)2SiO4"
+    - "orthopyroxene"
+    - "clinopyroxene"
+    - "plagioclase feldspar"
+    - "iron-nickel metal (kamacite/taenite)"
+    - "troilite (FeS)"
+  meteorite_analog: "L/LL ordinary chondrite (debated — possible space weathering effects)"
+  water_content_percent: 0.0
+  water_form: "none detected — anhydrous ordinary chondrite composition"
+  xrs_notes: >
+    NEAR Shoemaker X-ray spectrometer measured elemental ratios (Mg/Si, Al/Si,
+    Ca/Si, Fe/Si, S/Si) consistent with ordinary chondrite but with anomalously
+    low sulfur-to-silicon ratio, possibly due to space weathering or partial
+    differentiation. Gamma-ray spectrometer confirmed chondritic Fe, Si, K
+    abundances.
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 5.6
+    estimated_transit_days_solar_sail: 900
+    launch_windows_per_year: 1
+    synodic_period_years: 2.3
+  value_assessment: >
+    Eros is one of the largest near-Earth asteroids and contains an enormous
+    quantity of material. At 6.687e15 kg, even modest metal fractions represent
+    colossal resource volumes: approximately 1.3e12 kg of iron-nickel metal
+    and potentially 170 tonnes of platinum group metals. However, the higher
+    delta-v (5.6 km/s) makes it more expensive to reach than smaller NEAs.
+    The monolithic/fractured structure (not rubble pile) means mining would
+    require drilling or blasting rather than simple regolith scooping. Surface
+    gravity of 0.006 m/s2 is enough for a person to walk very slowly, enabling
+    surface operations with anchoring. No water means no in-situ propellant
+    production. Best suited for large-scale industrial mining operations rather
+    than early prospecting missions.
+  water_availability: false
+  regolith_type: "monolithic_fractured"
+  estimated_metal_mass_kg: 1.3e12
+  key_resources:
+    - resource: "iron-nickel metal"
+      abundance: "very_high"
+      extraction_method: "drilling/blasting of consolidated material; magnetic separation"
+    - resource: "platinum group metals"
+      abundance: "low"
+      extraction_method: "concentrated in metal phase; requires refining infrastructure"
+    - resource: "silicates (construction)"
+      abundance: "very_high"
+      extraction_method: "sintering regolith for large-scale construction"
+
+references:
+  - "Zuber, M.T. et al. (2000). The shape of 433 Eros from the NEAR-Shoemaker Laser Rangefinder. Science, 289, 2097-2101."
+  - "Nittler, L.R. et al. (2001). X-ray fluorescence measurements of the surface elemental composition of asteroid 433 Eros. Meteoritics & Planetary Science, 36, 1673-1695."
+  - "Trombka, J.I. et al. (2000). The elemental composition of asteroid 433 Eros: Results of the NEAR-Shoemaker X-ray spectrometer. Science, 289, 2101-2105."
+  - "Veverka, J. et al. (2001). The landing of the NEAR-Shoemaker spacecraft on asteroid 433 Eros. Nature, 413, 390-393."
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=eros"
+
+notes: >
+  Eros was the first asteroid to be orbited by a spacecraft (NEAR Shoemaker,
+  2000-2001) and the first on which a spacecraft landed (February 12, 2001).
+  It is an S-type asteroid with ordinary chondrite composition, similar to
+  Itokawa but vastly larger. The elongated shape creates a complex gravity
+  field where surface gravity varies significantly (from ~0.002 to ~0.006
+  m/s2). The surface shows a thick regolith layer with degraded craters,
+  large boulders, and a distinctive system of grooves/ridges suggesting
+  internal fractures. Unlike Bennu and Ryugu, Eros is not a rubble pile;
+  it is a single coherent but fractured body. The Himeros depression (~10 km
+  across) dominates one end. Eros was the first known near-Earth asteroid,
+  discovered in 1898, and its close approaches to Earth were historically
+  used to measure the astronomical unit.
+
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

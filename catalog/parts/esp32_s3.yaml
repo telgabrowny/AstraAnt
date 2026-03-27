@@ -1,0 +1,59 @@
+id: "esp32_s3"
+name: "ESP32-S3-WROOM-1 Module"
+category: "compute"
+description: "Espressif ESP32-S3 dual-core Xtensa LX7 wireless MCU module with WiFi 802.11 b/g/n and Bluetooth 5 LE. Includes 512 KB SRAM, 384 KB ROM, and support for external PSRAM/flash. AI acceleration instructions for edge ML inference."
+
+specs:
+  mass_g: 10.0
+  power_draw_mw: 250
+  cpu_cores: 2
+  cpu_freq_mhz: 240
+  architecture: "Xtensa LX7"
+  sram_kb: 512
+  rom_kb: 384
+  flash_mb: 8                            # Typical module configuration (up to 16 MB)
+  psram_mb: 2                            # Optional, OPI PSRAM supported up to 8 MB
+  gpio_count: 36
+  adc_channels: 20                       # Two 12-bit SAR ADCs
+  interfaces: ["SPI", "I2C", "I2S", "UART", "USB-OTG", "SDIO", "TWAI", "LCD", "Camera"]
+  wireless: ["WiFi 802.11b/g/n", "Bluetooth 5 LE"]
+  supply_voltage_v: 3.3
+  deep_sleep_ua: 7                       # Deep sleep current in microamps
+
+environmental:
+  temp_min_c: -40
+  temp_max_c: 85
+  vacuum_compatible: false               # Consumer-grade packaging, electrolytic caps may bulge
+  sealed_tunnel_compatible: true         # Fine in low-pressure sealed environments
+  radiation_tolerance: "none"            # No radiation hardening; consumer silicon
+  mtbf_hours_vacuum: 200                 # Packaging not designed for vacuum, rapid degradation
+  mtbf_hours_sealed: 30000              # Reliable in sealed low-pressure tunnel
+  mtbf_hours_earth: 100000              # Standard consumer electronics reliability
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/espressif-systems/ESP32-S3-WROOM-1-N8R2/16162639"
+      part_number: "ESP32-S3-WROOM-1-N8R2"
+      price_usd: 3.90
+      date_checked: "2026-03-26"
+    - name: "Mouser"
+      url: "https://www.mouser.com/ProductDetail/Espressif-Systems/ESP32-S3-WROOM-1-N8R2"
+      part_number: "356-ESP32S3WRM1N8R2"
+      price_usd: 3.90
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 3.90
+      source: "DigiKey"
+
+notes: |
+  The ESP32-S3 is overkill for simple I/O tasks but excellent as a wireless hub or
+  edge-ML node. WiFi and BLE are useful for ground testing but irrelevant in space.
+  Not vacuum compatible due to consumer-grade packaging — use only in sealed pressurized
+  environments. The vector instructions make it attractive for lightweight onboard inference.
+  Consider the ESP32-S3-DevKitC-1 (~$10) for prototyping before committing to bare modules.
+
+datasheet_url: "https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

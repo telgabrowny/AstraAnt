@@ -1,0 +1,117 @@
+id: "ryugu"
+name: "162173 Ryugu"
+designation: "(162173) 1999 JU3"
+discovery:
+  date: "1999-05-10"
+  discoverer: "LINEAR (Lincoln Near-Earth Asteroid Research)"
+
+physical:
+  diameter_m: 896
+  mass_kg: 4.50e11
+  density_kg_per_m3: 1190
+  surface_gravity_m_per_s2: 0.00011
+  rotation_period_hours: 7.6272
+  spectral_class: "Cb"
+  albedo: 0.045
+  shape: "spinning_top"
+  structure: "rubble_pile"
+
+orbit:
+  semi_major_axis_au: 1.1896
+  eccentricity: 0.1903
+  inclination_deg: 5.8837
+  perihelion_au: 0.9633
+  aphelion_au: 1.4159
+  orbital_period_years: 1.2976
+  epoch: "2025-01-01"
+  longitude_ascending_node_deg: 251.6140
+  argument_perihelion_deg: 211.4316
+  mean_anomaly_deg: 30.3208
+
+composition:
+  source: "sample_return"
+  confidence: "high"
+  mission: "Hayabusa2 (JAXA, sample returned December 2020)"
+  bulk:
+    hydrated_silicates: 40.0
+    magnetite: 7.0
+    sulfides: 6.0
+    carbon_organics: 5.0
+    iron_nickel: 2.5
+    water_hydrated: 5.0
+    clay_minerals: 18.0
+    carbonates: 5.0
+    other: 11.5
+  metals_ppm:
+    platinum: 15
+    palladium: 4
+    iridium: 2
+    copper: 100
+    nickel: 11000
+    cobalt: 450
+    iron: 180000
+    rare_earths_total: 35
+  minerals_identified:
+    - "phyllosilicates (serpentine, saponite)"
+    - "magnetite (Fe3O4)"
+    - "pyrrhotite (Fe1-xS)"
+    - "dolomite (CaMg(CO3)2)"
+    - "breunnerite ((Mg,Fe)CO3)"
+    - "amino acids (23 types detected including uracil)"
+    - "polycyclic aromatic hydrocarbons"
+    - "aliphatic amines"
+  water_content_percent: 5.0
+  water_form: "bound in hydrated phyllosilicates"
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 4.7
+    estimated_transit_days_solar_sail: 650
+    launch_windows_per_year: 1
+    synodic_period_years: 5.3
+  value_assessment: >
+    Excellent ISRU target with well-characterized composition from Hayabusa2
+    sample return. Similar to Bennu but larger (900m vs 500m), providing
+    significantly more total material. Water content (5%) lower than Bennu
+    but total water mass is higher due to larger size. Rich organic chemistry
+    including amino acids makes it scientifically invaluable. Carbon content
+    useful for life support and material synthesis. Slightly better delta-v
+    than Bennu (4.7 vs 5.0 km/s) improves accessibility. Rubble pile
+    structure facilitates regolith collection.
+  water_availability: true
+  regolith_type: "rubble_pile"
+  estimated_total_water_kg: 2.25e10
+  key_resources:
+    - resource: "water"
+      abundance: "moderate"
+      extraction_method: "thermal desorption at 400-700C"
+    - resource: "carbon/organics"
+      abundance: "moderate"
+      extraction_method: "pyrolysis at 500-800C"
+    - resource: "iron"
+      abundance: "moderate"
+      extraction_method: "magnetic separation of magnetite"
+    - resource: "sulfur"
+      abundance: "moderate"
+      extraction_method: "thermal extraction from sulfides"
+
+references:
+  - "Yokoyama, T. et al. (2023). Samples returned from the asteroid Ryugu are similar to Ivuna-type carbonaceous meteorites. Science, 379, eabn7850."
+  - "Oba, Y. et al. (2023). Uracil in the carbonaceous asteroid (162173) Ryugu. Nature Communications, 14, 1292."
+  - "Nakamura, T. et al. (2023). Formation and evolution of carbonaceous asteroid Ryugu: Direct evidence from returned samples. Science, 379, eabn8671."
+  - "Watanabe, S. et al. (2019). Hayabusa2 arrives at the carbonaceous asteroid 162173 Ryugu. Science, 364, 268-272."
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=ryugu"
+
+notes: >
+  Ryugu was explored by JAXA's Hayabusa2 mission from June 2018 to
+  November 2019. The spacecraft collected 5.4g of surface and subsurface
+  samples returned to Earth in December 2020. Analysis revealed CI
+  chondrite-like composition with abundant hydrated minerals, carbonates,
+  and a rich inventory of organic molecules including amino acids and the
+  nucleobase uracil. The spinning-top shape (equatorial ridge) is common
+  among small rubble pile asteroids and results from YORP spin-up. Surface
+  is covered in boulders with very few smooth areas, similar to Bennu.
+  Ryugu likely formed from the breakup of a larger, water-rich parent body.
+
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

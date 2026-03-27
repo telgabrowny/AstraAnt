@@ -1,0 +1,129 @@
+id: "psyche"
+name: "16 Psyche"
+designation: "(16) Psyche"
+discovery:
+  date: "1852-03-17"
+  discoverer: "Annibale de Gasparis (Naples)"
+
+physical:
+  diameter_m: 226000   # mean diameter ~226 km; dimensions 279 x 232 x 189 km
+  dimensions_m: [279000, 232000, 189000]
+  mass_kg: 2.29e19
+  density_kg_per_m3: 3780
+  surface_gravity_m_per_s2: 0.06
+  rotation_period_hours: 4.1959
+  spectral_class: "M"
+  albedo: 0.15
+  shape: "irregular_ellipsoid"
+  structure: "unknown_possibly_differentiated_core"
+
+orbit:
+  semi_major_axis_au: 2.9219
+  eccentricity: 0.1339
+  inclination_deg: 3.0946
+  perihelion_au: 2.5307
+  aphelion_au: 3.3132
+  orbital_period_years: 4.9955
+  epoch: "2025-01-01"
+  longitude_ascending_node_deg: 150.3526
+  argument_perihelion_deg: 228.0479
+  mean_anomaly_deg: 180.6534
+  note: "Main belt asteroid — NOT a near-Earth asteroid"
+
+composition:
+  source: "spectral_inference"
+  confidence: "low"
+  mission: "NASA Psyche mission (launched October 2023, arriving August 2029)"
+  bulk:
+    iron_nickel_metal: 50.0
+    silicates: 30.0
+    sulfides: 10.0
+    other: 10.0
+  metals_ppm:
+    platinum: 50
+    palladium: 15
+    iridium: 10
+    copper: 200
+    nickel: 50000
+    cobalt: 2000
+    iron: 400000
+    gold: 5
+    rare_earths_total: 30
+  minerals_inferred:
+    - "iron-nickel alloy (kamacite/taenite — inferred from radar albedo)"
+    - "orthopyroxene (inferred from spectral features)"
+    - "troilite or other iron sulfides"
+    - "possible exsolved metal/silicate mixture"
+  water_content_percent: 0.0
+  water_form: "none expected — metallic/igneous composition"
+  composition_notes: >
+    Psyche's composition is inferred from radar albedo (very high, consistent
+    with metal), thermal inertia, density, and spectral data. Recent studies
+    suggest it may not be purely metallic but rather a mixture of metal and
+    silicates (30-60% metal by volume). The NASA Psyche mission arriving in
+    2029 will provide definitive answers. All bulk percentages are estimates
+    and should be treated as highly uncertain until mission data is available.
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 9.4
+    estimated_transit_days_solar_sail: 2500
+    launch_windows_per_year: 1
+    synodic_period_years: 1.3
+    note: "Main belt location makes Psyche much harder to reach than NEAs"
+  value_assessment: >
+    Psyche is potentially the most valuable single object in the solar system
+    for metal extraction. If composition estimates are correct, it contains
+    approximately 1.1e16 kg of iron-nickel metal — enough iron to supply
+    Earth's needs for millions of years. Theoretical total metal value has
+    been estimated at $10,000 quadrillion, though this is economically
+    meaningless (market saturation). The real value is as an orbital
+    construction material source for large-scale space infrastructure.
+    However, its main belt location (2.9 AU, delta-v ~9.4 km/s) makes it
+    extremely expensive to reach compared to NEAs. Surface gravity of 0.06
+    m/s2 is substantial enough for meaningful surface operations. Not a
+    realistic early mining target but potentially transformative for
+    long-term space industrialization. Awaiting Psyche mission data (2029)
+    for definitive composition assessment.
+  water_availability: false
+  regolith_type: "unknown"
+  estimated_metal_mass_kg: 1.1e16
+  key_resources:
+    - resource: "iron-nickel metal"
+      abundance: "extreme"
+      extraction_method: "unknown — depends on surface conditions; possibly direct cutting/excavation of metallic surface"
+    - resource: "platinum group metals"
+      abundance: "potentially_significant"
+      extraction_method: "co-extracted with bulk iron-nickel; requires refining"
+    - resource: "cobalt"
+      abundance: "high"
+      extraction_method: "co-extracted with iron-nickel"
+    - resource: "gold"
+      abundance: "trace"
+      extraction_method: "concentrated in metal phase"
+
+references:
+  - "Elkins-Tanton, L.T. et al. (2020). Observations, meteorites, and models: A preflight assessment of the composition and formation of (16) Psyche. JGR Planets, 125, e2019JE006296."
+  - "Shepard, M.K. et al. (2017). Radar observations and shape model of asteroid 16 Psyche. Icarus, 281, 388-403."
+  - "Ferrais, M. et al. (2020). Asteroid (16) Psyche's primordial shape: A possible Jacobi ellipsoid. Astronomy & Astrophysics, 638, L15."
+  - "NASA Psyche Mission: https://psyche.asu.edu/"
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=psyche"
+
+notes: >
+  Psyche is hypothesized to be the exposed iron-nickel core of a
+  protoplanet that was stripped of its rocky mantle by collisions during
+  the early solar system. If confirmed, it would be the only known example
+  of a planetary core accessible for direct study. However, recent density
+  estimates (~3780 kg/m3) are lower than expected for solid metal (~7800
+  kg/m3), suggesting either high porosity, significant silicate content,
+  or both. The NASA Psyche spacecraft launched October 13, 2023, performed
+  a Mars gravity assist in May 2026, and is expected to arrive at the
+  asteroid in August 2029 for a 26-month orbital investigation. The mission
+  carries a magnetometer, multispectral imager, gamma-ray/neutron
+  spectrometer, and a Deep Space Optical Communications (DSOC) technology
+  demonstrator. Until mission data arrives, all composition estimates should
+  be considered preliminary. Psyche is by far the largest M-type asteroid
+  and the 14th largest main belt asteroid overall.
+
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

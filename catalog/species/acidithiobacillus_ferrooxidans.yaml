@@ -1,0 +1,65 @@
+id: "acidithiobacillus_ferrooxidans"
+name: "Acidithiobacillus ferrooxidans"
+common_name: "Iron-oxidizing acidophile"
+type: "bacteria"
+description: >
+  Gram-negative, rod-shaped, chemolithoautotrophic bacterium and the
+  primary workhorse organism for sulfide mineral bioleaching. Oxidizes
+  ferrous iron (Fe2+) to ferric iron (Fe3+) and elemental sulfur to
+  sulfuric acid, generating the chemical attack agents that dissolve
+  copper, nickel, cobalt, and zinc from sulfide ore matrices. Widely
+  deployed in industrial heap-leach and stirred-tank operations on Earth;
+  extensively characterized kinetics make it the highest-confidence
+  organism in the AstraAnt bioleaching pipeline.
+
+growth:
+  optimal_temp_c: 30
+  temp_range_c: [20, 37]
+  optimal_ph: 2.0
+  ph_range: [1.5, 2.5]
+  doubling_time_hours: 10       # 8-12 h range; 10 h is a conservative midpoint
+  growth_model: "monod"
+  monod_params:
+    mu_max_per_hour: 0.065      # ~0.05-0.08 /hr reported range
+    ks_g_per_liter: 0.5         # Half-saturation for Fe2+ substrate
+
+extraction:
+  target_metals: ["copper", "nickel", "cobalt", "zinc"]
+  mechanism: >
+    Indirect leaching via the ferric/ferrous iron cycle. The bacterium
+    oxidizes Fe2+ to Fe3+, which chemically attacks sulfide minerals
+    (e.g. chalcopyrite CuFeS2). The resulting Fe2+ is re-oxidized by the
+    bacterium, closing the catalytic loop. Simultaneously oxidizes
+    elemental sulfur to H2SO4, maintaining the low pH required for iron
+    solubility and mineral attack.
+  extraction_rate_mg_per_liter_per_day: 120   # 50-200 mg Cu/L/day; 120 is a mid-estimate for chalcopyrite
+  extraction_efficiency: 0.85                  # 80-90% for copper from chalcopyrite under optimized conditions
+  residence_time_days: 20                      # 15-30 days typical for stirred-tank bioleaching
+
+requirements:
+  aeration: true
+  nutrients: ["ferrous_sulfate", "ammonium_sulfate", "potassium_phosphate"]
+  nutrient_consumption_g_per_liter_per_day: 0.5   # Fe2+ consumption as primary energy source
+
+environmental:
+  radiation_tolerance: "low"
+  radiation_ld50_gray: 200
+  vacuum_survival: false
+  spore_forming: false
+
+references:
+  - "Rawlings, D.E. (2002). Heavy metal mining using microbes. Annual Review of Microbiology, 56, 65-91."
+  - "Watling, H.R. (2006). The bioleaching of sulphide minerals with emphasis on copper sulphides - A review. Hydrometallurgy, 84(1-2), 81-108."
+  - "Mousavi, S.M., et al. (2006). Bioleaching of low-grade sphalerite using a column reactor. Hydrometallurgy, 82(1-2), 75-82."
+  - "Nemati, M., Harrison, S.T.L., Hansford, G.S., Webb, C. (1998). Biological oxidation of ferrous sulphate by Thiobacillus ferrooxidans: a review on the kinetic aspects. Biochemical Engineering Journal, 1(3), 171-190."
+  - "Pradhan, N., et al. (2008). Heap bioleaching of chalcopyrite: A review. Minerals Engineering, 21(5), 355-365."
+
+notes: >
+  Track A primary organism. Well-characterized industrial pedigree with
+  decades of heap-leach deployment data. Kinetics are the most predictable
+  of any bioleaching organism. Co-culture with A. thiooxidans recommended
+  for optimal sulfur cycling and pH maintenance. Low radiation tolerance
+  means shielded bioreactor vessels are mandatory for any extraterrestrial
+  deployment.
+
+added_date: "2026-03-26"

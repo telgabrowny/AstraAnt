@@ -1,0 +1,84 @@
+id: "ov7670_camera"
+name: "OmniVision OV7670 Camera Module"
+category: "sensor"
+description: "OmniVision OV7670 VGA (640x480) CMOS image sensor module. Outputs raw Bayer, RGB565, RGB555, or YCbCr422 image data over an 8-bit parallel interface. Includes automatic exposure control, gain control, white balance, and color matrix. One of the cheapest camera sensors available, widely used in embedded vision projects."
+
+specs:
+  mass_g: 3.0                            # Module with lens holder; bare sensor ~0.5g
+  power_draw_mw: 60                      # Active imaging
+  standby_power_ua: 20                   # Standby mode
+  resolution_pixels: [640, 480]          # VGA
+  frame_rate_fps: 30                     # At VGA; up to 60 fps at QVGA (320x240)
+  pixel_size_um: 3.6
+  sensor_format: "1/6 inch"
+  lens_focal_length_mm: 3.6              # Standard module lens
+  field_of_view_deg: 25                  # With standard 3.6mm lens
+  output_format: ["RAW Bayer", "RGB565", "RGB555", "YCbCr422"]
+  interface: "8-bit parallel + SCCB (I2C-like)"
+  supply_voltage_v: 3.3                  # Core 1.8V, I/O 2.5-3.0V
+  dynamic_range_db: 52
+  snr_db: 46
+  module_dimensions_mm: [21, 21, 15]     # Typical module with lens
+
+environmental:
+  temp_min_c: -30
+  temp_max_c: 70
+  vacuum_compatible: false               # Plastic lens, adhesives, consumer packaging
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "none"            # CMOS sensor susceptible to displacement damage
+  mtbf_hours_vacuum: 100                 # Plastic lens may warp, adhesives outgas
+  mtbf_hours_sealed: 30000
+  mtbf_hours_earth: 100000
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/sparkfun-electronics/SEN-17290/14825110"
+      part_number: "SEN-17290"
+      price_usd: 7.50
+      date_checked: "2026-03-26"
+    - name: "Amazon (module)"
+      url: "https://www.amazon.com/dp/B07S66Y3ZQ"
+      part_number: "OV7670-module"
+      price_usd: 3.50                    # Generic module with lens and FIFO buffer
+      date_checked: "2026-03-26"
+    - name: "AliExpress (module)"
+      url: "https://www.aliexpress.com"
+      part_number: "OV7670-AL422B"
+      price_usd: 2.50                    # Module with FIFO (AL422B SRAM buffer)
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 3.50
+      source: "Amazon"
+
+notes: |
+  The OV7670 is the cheapest path to machine vision for embedded systems. At VGA
+  resolution it is adequate for obstacle detection, landmark recognition, and basic
+  visual inspection. The 8-bit parallel interface requires many GPIO pins or a
+  dedicated camera interface (DCMI on STM32, PIO on RP2040, or camera peripheral on
+  ESP32-S3).
+
+  Key limitations:
+  - VGA resolution is very low by modern standards; fine detail is lost
+  - No onboard JPEG compression; raw frames are ~600 KB each (RGB565)
+  - The parallel interface is challenging to drive without hardware support
+  - Module with FIFO buffer (AL422B) recommended for MCUs without camera DMA
+
+  The OV7670 with FIFO buffer is recommended: the AL422B SRAM buffers a full frame,
+  allowing the MCU to read at its own pace. Without FIFO, you must read pixels in
+  real-time at the pixel clock rate, which requires DMA or PIO.
+
+  For the AstraAnt, the ESP32-S3 has native camera interface support and can drive
+  the OV7670 directly without a FIFO. The RP2040 can use PIO for camera capture.
+  The STM32L4 has DCMI but the L476 does not — check the specific variant.
+
+  For better image quality, consider the OV2640 (2MP, JPEG output, ~$5) or OV5640
+  (5MP, autofocus, ~$15). These are drop-in upgrades with similar interfaces.
+
+  Not vacuum compatible due to plastic lens assembly and adhesives. For space imaging,
+  glass optics and conformal coating would be needed.
+
+datasheet_url: "https://www.voti.nl/docs/OV7670.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

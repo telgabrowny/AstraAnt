@@ -1,0 +1,85 @@
+id: "as7341_spectral"
+name: "AMS AS7341 11-Channel Spectral Sensor"
+category: "sensor"
+description: "ams-OSRAM AS7341 11-channel multi-spectral sensor covering visible to near-infrared (350-1000 nm). Eight channels in the visible range, one clear channel, one near-IR channel, and one flicker detection channel. Integrated LED driver for active illumination. I2C interface. Useful for material identification, colorimetry, and basic spectroscopy."
+
+specs:
+  mass_g: 1.0                            # On breakout board; bare chip negligible
+  power_draw_mw: 15                      # Active sensing with LED off
+  led_drive_power_mw: 100               # When integrated LED driver is active
+  spectral_channels: 11
+  channel_wavelengths_nm:                # Center wavelengths with ~40-60nm FWHM
+    F1: 415                              # Violet
+    F2: 445                              # Blue
+    F3: 480                              # Cyan
+    F4: 515                              # Green
+    F5: 555                              # Yellow-Green
+    F6: 590                              # Orange
+    F7: 630                              # Red
+    F8: 680                              # Deep Red
+    clear: "broadband"
+    nir: 910                             # Near-infrared
+    flicker: "flicker detection"
+  spectral_range_nm: [350, 1000]
+  adc_resolution_bits: 16               # Per channel, with programmable gain
+  integration_time_us: [2780, 712000]   # Configurable range
+  gain_steps: [0.5, 512]                # 0.5x to 512x programmable gain
+  interface: "I2C"
+  i2c_address: "0x39"
+  supply_voltage_v: 1.8                  # 1.71-2.0V (I2C is 3.3V tolerant)
+  package_mm: [3.1, 2.0, 1.0]           # LGA-8
+
+environmental:
+  temp_min_c: -30
+  temp_max_c: 85
+  vacuum_compatible: false               # Not characterized; optical filter adhesives may outgas
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "none"            # Photodiode array sensitive to displacement damage
+  mtbf_hours_vacuum: 200                 # Filter stack adhesives may degrade
+  mtbf_hours_sealed: 40000
+  mtbf_hours_earth: 100000
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/ams-osram-usa-inc/AS7341-DLGM/11200461"
+      part_number: "AS7341-DLGM"
+      price_usd: 8.09
+      date_checked: "2026-03-26"
+    - name: "Mouser"
+      url: "https://www.mouser.com/ProductDetail/ams-OSRAM/AS7341-DLGM"
+      part_number: "985-AS7341-DLGM"
+      price_usd: 8.09
+      date_checked: "2026-03-26"
+    - name: "Adafruit"
+      url: "https://www.adafruit.com/product/4698"
+      part_number: "4698"
+      price_usd: 15.95                   # Breakout board with STEMMA QT
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 8.09
+      source: "DigiKey"
+
+notes: |
+  The AS7341 is the cheapest path to multi-spectral sensing. With 11 channels spanning
+  violet to NIR, it can do basic mineral/material identification, distinguish between
+  rock types, and detect certain compounds by their spectral signatures. This is not a
+  spectrometer (no continuous spectrum), but the discrete channels can classify many
+  materials of interest for asteroid mining.
+
+  For asteroid surface analysis, the NIR channel at 910 nm is particularly useful for
+  detecting hydrated minerals (water content). The flicker detection channel can be
+  repurposed for rapid signal detection.
+
+  The sensor requires an external light source for reflectance spectroscopy. The
+  onboard LED driver can power a white LED for close-range measurements (<50mm).
+  For longer range, pair with a focused light source.
+
+  Multiplexing note: only 6 of the 11 channels can be read simultaneously due to the
+  internal ADC architecture. Full 11-channel reads require two sequential measurements
+  with different SMUX configurations. The Adafruit library handles this transparently.
+
+datasheet_url: "https://ams-osram.com/products/sensor-solutions/spectral-sensors/ams-as7341-11-channel-multi-spectral-sensor"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

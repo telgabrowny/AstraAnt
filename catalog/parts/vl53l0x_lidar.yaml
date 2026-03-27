@@ -1,0 +1,70 @@
+id: "vl53l0x_lidar"
+name: "STMicro VL53L0X Time-of-Flight Ranging Sensor"
+category: "sensor"
+description: "STMicroelectronics VL53L0X fully integrated miniature Time-of-Flight ranging and gesture detection sensor. Uses a 940 nm VCSEL (vertical-cavity surface-emitting laser) and SPAD (single-photon avalanche diode) array to measure distance up to 2 meters with millimeter resolution. I2C interface."
+
+specs:
+  mass_g: 1.0                            # Bare module; breakout board ~2g
+  power_draw_mw: 20                      # Typical during ranging
+  standby_power_ua: 5                    # Hardware standby
+  range_max_m: 2.0                       # Absolute maximum; typical useful range ~1.2m
+  range_min_mm: 30
+  accuracy_mm: 3                         # At <1.2m in good conditions (typical +/- 3%)
+  ranging_time_ms: 33                    # Default; configurable 20-200 ms
+  field_of_view_deg: 25                  # Full cone angle
+  laser_wavelength_nm: 940               # Class 1 VCSEL (eye-safe)
+  interface: "I2C"
+  i2c_address: "0x29"                    # Default; can be changed in software
+  supply_voltage_v: 2.8                  # 2.6-3.5V operating range
+  package_mm: [4.4, 2.4, 1.0]           # L x W x H (optical LGA-12)
+
+environmental:
+  temp_min_c: -20
+  temp_max_c: 70
+  vacuum_compatible: false               # VCSEL and SPAD not characterized for vacuum
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "none"            # SPAD array is radiation-sensitive
+  mtbf_hours_vacuum: 200                 # Unknown behavior; VCSEL may degrade
+  mtbf_hours_sealed: 40000
+  mtbf_hours_earth: 100000
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/stmicroelectronics/VL53L0CXV0DH-1/6183532"
+      part_number: "VL53L0CXV0DH/1"
+      price_usd: 3.28
+      date_checked: "2026-03-26"
+    - name: "Mouser"
+      url: "https://www.mouser.com/ProductDetail/STMicroelectronics/VL53L0CXV0DH-1"
+      part_number: "511-VL53L0CXV0DH/1"
+      price_usd: 3.28
+      date_checked: "2026-03-26"
+    - name: "Adafruit"
+      url: "https://www.adafruit.com/product/3317"
+      part_number: "3317"
+      price_usd: 14.95                   # Breakout board with voltage regulator and level shifters
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 3.28
+      source: "DigiKey"
+
+notes: |
+  The VL53L0X is the simplest way to get millimeter-resolution distance measurements
+  in a tiny package. The 25-degree field of view means it measures a cone, not a point,
+  so at 1m range you are averaging over a ~44cm diameter area. For tighter FOV, consider
+  the VL53L1X (successor) which offers programmable ROI and up to 4m range.
+
+  The sensor works by measuring photon time-of-flight from the VCSEL laser to the
+  target and back. Ambient light rejection is good but performance degrades in direct
+  sunlight. In a dark tunnel or on an asteroid surface (no atmosphere, no ambient IR),
+  performance should be excellent for the sensor's rated range.
+
+  Not vacuum-tested. The VCSEL may behave differently in vacuum (thermal dissipation
+  changes). The cover glass adhesive may outgas. Use with caution in unsealed
+  environments and conduct vacuum bake-out testing before relying on it.
+
+datasheet_url: "https://www.st.com/resource/en/datasheet/vl53l0x.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

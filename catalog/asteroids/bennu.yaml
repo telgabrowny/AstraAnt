@@ -1,0 +1,113 @@
+id: "bennu"
+name: "101955 Bennu"
+designation: "(101955) 1999 RQ36"
+discovery:
+  date: "1999-09-11"
+  discoverer: "LINEAR (Lincoln Near-Earth Asteroid Research)"
+
+physical:
+  diameter_m: 492
+  mass_kg: 7.329e10
+  density_kg_per_m3: 1190
+  surface_gravity_m_per_s2: 0.0000058
+  rotation_period_hours: 4.2905
+  spectral_class: "B"
+  albedo: 0.044
+  shape: "spinning_top"
+  structure: "rubble_pile"
+
+orbit:
+  semi_major_axis_au: 1.1264
+  eccentricity: 0.2037
+  inclination_deg: 6.0349
+  perihelion_au: 0.8969
+  aphelion_au: 1.3559
+  orbital_period_years: 1.1955
+  epoch: "2025-01-01"
+  longitude_ascending_node_deg: 2.0609
+  argument_perihelion_deg: 66.2231
+  mean_anomaly_deg: 101.7039
+
+composition:
+  source: "sample_return"
+  confidence: "high"
+  mission: "OSIRIS-REx (NASA, sample returned September 2023)"
+  bulk:
+    hydrated_silicates: 45.0
+    magnetite: 8.0
+    sulfides: 5.0
+    carbon_organics: 5.0
+    iron_nickel: 3.0
+    water_hydrated: 8.0
+    clay_minerals: 20.0
+    other_silicates: 6.0
+  metals_ppm:
+    platinum: 20
+    palladium: 5
+    iridium: 3
+    copper: 120
+    nickel: 13000
+    cobalt: 500
+    iron: 200000
+    rare_earths_total: 40
+  minerals_identified:
+    - "phyllosilicates (serpentine, saponite)"
+    - "magnetite (Fe3O4)"
+    - "sulfides (troilite, pyrrhotite)"
+    - "carbonates (dolomite, breunnerite)"
+    - "organics (amino acids, nucleobases)"
+    - "phosphates"
+  water_content_percent: 8.0
+  water_form: "bound in hydrated clay minerals (phyllosilicates)"
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 5.0
+    estimated_transit_days_solar_sail: 700
+    launch_windows_per_year: 1
+    synodic_period_years: 6.0
+  value_assessment: >
+    Extremely well-characterized thanks to OSIRIS-REx sample return.
+    Primary value is water (8% by mass in hydrated minerals) for propellant
+    production (ISRU). Carbon and organics useful for life support.
+    Modest metal content (iron, nickel) but not a primary metal target.
+    Rubble pile structure means easy regolith collection but challenging
+    anchoring. Excellent pathfinder target due to high-confidence composition data.
+  water_availability: true
+  regolith_type: "rubble_pile"
+  estimated_total_water_kg: 5.86e9
+  key_resources:
+    - resource: "water"
+      abundance: "high"
+      extraction_method: "thermal desorption of hydrated minerals at 400-700C"
+    - resource: "carbon/organics"
+      abundance: "moderate"
+      extraction_method: "pyrolysis"
+    - resource: "iron"
+      abundance: "moderate"
+      extraction_method: "magnetic separation from regolith"
+    - resource: "nickel"
+      abundance: "low"
+      extraction_method: "acid leaching or bioleaching"
+
+references:
+  - "Lauretta, D.S. et al. (2019). The unexpected surface of asteroid (101955) Bennu. Nature, 568, 55-60."
+  - "Hamilton, V.E. et al. (2019). Evidence for widespread hydrated minerals on asteroid (101955) Bennu. Nature Astronomy, 3, 332-340."
+  - "Lauretta, D.S. et al. (2024). Asteroid (101955) Bennu in the laboratory: Properties of the sample collected by OSIRIS-REx. Meteoritics & Planetary Science."
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=bennu"
+  - "OSIRIS-REx Mission: https://science.nasa.gov/mission/osiris-rex/"
+
+notes: >
+  Bennu is the best-characterized asteroid in existence thanks to the
+  OSIRIS-REx mission, which orbited from December 2018 to May 2021 and
+  returned a 121.6g sample in September 2023. Sample analysis confirmed
+  abundant hydrated minerals, organics including amino acids, and magnetite.
+  Bennu is also a potentially hazardous asteroid with a cumulative 1-in-2700
+  chance of Earth impact between 2178-2290. The rubble pile structure with
+  very low cohesion (surface particles loosely bound) means regolith
+  collection is straightforward but spacecraft anchoring requires care.
+  Surface is extremely rough with large boulders, complicating landing
+  site selection.
+
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

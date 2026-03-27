@@ -1,0 +1,75 @@
+id: "bno055_imu"
+name: "Bosch BNO055 9-Axis Absolute Orientation IMU"
+category: "sensor"
+description: "Bosch Sensortec BNO055 intelligent 9-axis absolute orientation sensor. Integrates a 3-axis accelerometer, 3-axis gyroscope, and 3-axis magnetometer with an onboard ARM Cortex-M0 running Bosch's proprietary sensor fusion algorithm. Outputs quaternions, Euler angles, linear acceleration, and gravity vector directly over I2C/UART."
+
+specs:
+  mass_g: 3.0                            # On breakout board; bare chip ~0.1g (3.8x5.2mm LGA)
+  power_draw_mw: 12.3                    # Normal mode, all sensors active
+  suspend_power_ua: 40
+  accelerometer_range_g: 16              # Configurable: +/-2, 4, 8, 16g
+  accelerometer_resolution: "14-bit"
+  gyroscope_range_dps: 2000              # Configurable: 125, 250, 500, 1000, 2000 dps
+  gyroscope_resolution: "16-bit"
+  magnetometer_range_ut: 1300            # +/-1300 uT (x,y), +/-2500 uT (z)
+  magnetometer_resolution: "0.3 uT"
+  fusion_output: ["quaternion", "euler_angles", "linear_acceleration", "gravity_vector", "rotation_vector"]
+  fusion_processor: "ARM Cortex-M0"
+  data_rate_hz: 100                      # Fusion output rate
+  interface: "I2C / UART"
+  i2c_address: "0x28 or 0x29"           # Selectable via pin
+  supply_voltage_v: 3.3                  # 2.4-3.6V operating range
+  package_mm: [5.2, 3.8, 1.1]           # LGA-28
+
+environmental:
+  temp_min_c: -40
+  temp_max_c: 85
+  vacuum_compatible: false               # Consumer MEMS packaging
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "none"            # MEMS and consumer ARM processor
+  mtbf_hours_vacuum: 300                 # MEMS may behave differently; not characterized
+  mtbf_hours_sealed: 50000
+  mtbf_hours_earth: 200000
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/bosch-sensortec/BNO055/6136301"
+      part_number: "BNO055"
+      price_usd: 10.55
+      date_checked: "2026-03-26"
+    - name: "Mouser"
+      url: "https://www.mouser.com/ProductDetail/Bosch-Sensortec/BNO055"
+      part_number: "262-BNO055"
+      price_usd: 10.55
+      date_checked: "2026-03-26"
+    - name: "Adafruit"
+      url: "https://www.adafruit.com/product/2472"
+      part_number: "2472"
+      price_usd: 29.95                   # Breakout board with regulator and logic level shifting
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 10.55
+      source: "DigiKey"
+
+notes: |
+  The BNO055's killer feature is the onboard sensor fusion — it outputs ready-to-use
+  quaternions and Euler angles without requiring the host MCU to run Kalman filters or
+  complementary filters. This saves significant CPU time and development effort compared
+  to raw IMUs like the MPU-6050 or ICM-20948.
+
+  Limitations: The magnetometer is sensitive to nearby ferrous materials and needs
+  calibration (figure-8 motion). In space (no magnetic field reference), the
+  magnetometer is useless and fusion degrades to 6-DOF (accel+gyro only). Gyroscope
+  drift is ~0.5 deg/s; for long-duration orientation hold without magnetic reference,
+  a star tracker or sun sensor is needed for absolute reference.
+
+  The MEMS elements are consumer-grade and not characterized for vacuum or radiation.
+  MEMS accelerometers have been flown on CubeSats with success, but the BNO055's
+  onboard Cortex-M0 is more radiation-sensitive than the MEMS elements themselves.
+  For space-grade IMUs, consider Honeywell HG4930 or Sensonor STIM300 (10-100x cost).
+
+datasheet_url: "https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bno055-ds000.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

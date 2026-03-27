@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astraant"
+version = "0.1.0"
+description = "Ant swarm asteroid mining simulator and feasibility tracker"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+    "rich>=13.0",
+    "click>=8.0",
+    "tabulate>=0.9",
+]
+
+[project.optional-dependencies]
+sim = [
+    "scipy>=1.11",
+    "numpy>=1.24",
+    "mesa>=2.0",
+]
+viz = [
+    "plotly>=5.0",
+    "dash>=2.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+astraant = "astraant.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,80 @@
+# Worker Ant — Cheap, disposable tunnel laborer
+# The majority of the swarm (80-90%). Minimal sensors, follows taskmaster commands.
+
+caste: worker
+chassis:
+  type: spider_6leg
+  base_mass_g: 20          # Frame structure (3D printed PETG)
+  mass_budget_g: 200
+
+compute:
+  part_id: rp2040
+  mass_g: 5                # Pico board
+  power_draw_mw: 100
+  cost_usd: 4
+
+locomotion:
+  actuators: 6
+  # Default to COTS — catalog has vacuum-rated alternative
+  part_id: sg90_servo
+  per_unit_mass_g: 9
+  per_unit_power_mw: 600
+  per_unit_cost_usd: 3
+
+communication:
+  part_id: nrf24l01_rf
+  mass_g: 2
+  power_mw: 40
+  cost_usd: 2
+  range_m: 50
+  bandwidth_kbps: 250
+
+sensors:
+  - part_id: vl53l0x_lidar
+    mass_g: 1
+    power_mw: 20
+    cost_usd: 4
+    purpose: "proximity / collision avoidance"
+
+tool:
+  # Tool varies by track — this is the Track A default
+  track_a:
+    type: rotary_scraper
+    part_id: n20_dc_motor
+    mass_g: 12
+    power_mw: 500
+    cost_usd: 5
+  track_b:
+    type: scoop_gripper
+    part_id: sg90_servo
+    mass_g: 9
+    power_mw: 100
+    cost_usd: 3
+  track_c:
+    type: rotary_scraper
+    part_id: n20_dc_motor
+    mass_g: 12
+    power_mw: 500
+    cost_usd: 5
+
+storage_hopper:
+  hopper_mass_g: 8         # Thin-wall 3D printed
+  track_a_capacity_g: 200
+  track_b_capacity_g: 350  # Larger — no heavy mining tool
+  track_c_capacity_g: 200
+
+power:
+  source: tethered          # Power via cable from tunnel bus
+  tether_connector_mass_g: 3
+  backup_battery:
+    capacity_mah: 500
+    mass_g: 15              # Small LiPo for untethered moves
+    cost_usd: 3
+
+notes: |
+  Worker ants are the cheapest, simplest units. They follow taskmaster commands
+  and perform repetitive dig/haul/dump cycles. Designed to be disposable —
+  high attrition is acceptable if per-unit cost stays low.
+
+  In sealed tunnels (1-10 kPa), COTS SG90 servos have extended MTBF (~8000 hrs).
+  In vacuum, MTBF drops to ~500 hrs. The sim should model this based on environment.

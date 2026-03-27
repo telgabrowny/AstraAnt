@@ -1,0 +1,114 @@
+id: "itokawa"
+name: "25143 Itokawa"
+designation: "(25143) 1998 SF36"
+discovery:
+  date: "1998-09-26"
+  discoverer: "LINEAR (Lincoln Near-Earth Asteroid Research)"
+
+physical:
+  diameter_m: 535       # longest axis; dimensions 535 x 294 x 209 m
+  dimensions_m: [535, 294, 209]
+  mass_kg: 3.51e10
+  density_kg_per_m3: 1900
+  surface_gravity_m_per_s2: 0.0000086
+  rotation_period_hours: 12.1324
+  spectral_class: "S"
+  albedo: 0.53
+  shape: "elongated_bilobate"
+  structure: "rubble_pile"
+
+orbit:
+  semi_major_axis_au: 1.3241
+  eccentricity: 0.2801
+  inclination_deg: 1.6214
+  perihelion_au: 0.9531
+  aphelion_au: 1.6952
+  orbital_period_years: 1.5234
+  epoch: "2025-01-01"
+  longitude_ascending_node_deg: 69.0953
+  argument_perihelion_deg: 162.7594
+  mean_anomaly_deg: 229.8310
+
+composition:
+  source: "sample_return"
+  confidence: "high"
+  mission: "Hayabusa (JAXA, sample returned June 2010)"
+  bulk:
+    olivine: 35.0
+    pyroxene: 30.0
+    feldspar: 12.0
+    iron_nickel_metal: 8.0
+    troilite: 5.0
+    chromite: 1.0
+    other_silicates: 9.0
+  metals_ppm:
+    platinum: 10
+    palladium: 3
+    iridium: 2
+    copper: 80
+    nickel: 12000
+    cobalt: 600
+    iron: 250000
+    rare_earths_total: 15
+  minerals_identified:
+    - "olivine ((Mg,Fe)2SiO4) — Fa28 composition"
+    - "low-Ca pyroxene (enstatite-ferrosilite)"
+    - "high-Ca pyroxene (diopside-augite)"
+    - "plagioclase feldspar"
+    - "kamacite (alpha Fe-Ni)"
+    - "taenite (gamma Fe-Ni)"
+    - "troilite (FeS)"
+    - "chromite (FeCr2O4)"
+  meteorite_analog: "LL5-LL6 ordinary chondrite"
+  water_content_percent: 0.0
+  water_form: "none — anhydrous silicate composition"
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 4.6
+    estimated_transit_days_solar_sail: 600
+    launch_windows_per_year: 1
+    synodic_period_years: 3.2
+  value_assessment: >
+    Well-characterized S-type asteroid with LL chondrite composition confirmed
+    by Hayabusa sample return. Primary value is in metals: iron-nickel alloy
+    grains (~8% bulk) with trace platinum group metals. No water content makes
+    it unsuitable for propellant ISRU. The elongated bilobate shape suggests
+    two bodies in contact, with a distinct neck region (the "Muses Sea" smooth
+    area). Low delta-v (4.6 km/s) makes it one of the most accessible NEAs.
+    Good target for metal extraction technology demonstration but lacks the
+    water resources needed for sustained operations.
+  water_availability: false
+  regolith_type: "rubble_pile"
+  key_resources:
+    - resource: "iron-nickel metal"
+      abundance: "moderate"
+      extraction_method: "magnetic separation from regolith grains"
+    - resource: "platinum group metals"
+      abundance: "trace"
+      extraction_method: "concentrated in metal phase; acid leaching after magnetic separation"
+    - resource: "silicates (construction)"
+      abundance: "high"
+      extraction_method: "sintering regolith for structural materials"
+
+references:
+  - "Nakamura, T. et al. (2011). Itokawa dust particles: A direct link between S-type asteroids and ordinary chondrites. Science, 333, 1113-1116."
+  - "Fujiwara, A. et al. (2006). The rubble-pile asteroid Itokawa as observed by Hayabusa. Science, 312, 1330-1334."
+  - "Tsuchiyama, A. et al. (2011). Three-dimensional structure of Hayabusa samples: Origin and evolution of Itokawa regolith. Science, 333, 1125-1128."
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=itokawa"
+
+notes: >
+  Itokawa was the first asteroid from which samples were returned to Earth
+  (Hayabusa mission, JAXA, 2010). Despite severe spacecraft malfunctions
+  during the mission, approximately 1500 microscopic grains were recovered.
+  Analysis confirmed S-type asteroids are the parent bodies of LL ordinary
+  chondrite meteorites, resolving a long-standing debate. The asteroid has
+  a distinctive bilobate "sea otter" shape with a smooth region (Muses Sea)
+  between two rougher lobes. Internal structure is highly porous (~40%
+  porosity) consistent with a rubble pile formed from catastrophic disruption
+  and gravitational reaccumulation. Surface gravity is extremely low, making
+  operations challenging. The high albedo (0.53) is typical of S-type asteroids
+  with fresh silicate surfaces.
+
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

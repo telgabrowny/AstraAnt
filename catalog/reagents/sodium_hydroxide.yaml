@@ -1,0 +1,35 @@
+id: "sodium_hydroxide"
+name: "Sodium Hydroxide"
+formula: "NaOH"
+category: "precipitant"
+
+specs:
+  density_g_per_ml: 2.13         # Solid pellets
+  concentration: "Solid pellets; dissolved to 10-50% w/v for precipitation"
+  consumption_rate: "~3-8 g/L of pregnant leach solution for nickel/cobalt precipitation at pH 7.5-8.1"
+
+sourcing:
+  suppliers:
+    - name: "Sigma-Aldrich"
+      price_usd_per_kg: 22
+      date_checked: "2026-03-26"
+    - name: "Fisher Scientific"
+      price_usd_per_kg: 28
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd_per_kg: 22
+      source: "Sigma-Aldrich"
+
+safety:
+  hazard_class: "Corrosive"
+  handling_notes: >
+    Strongly alkaline. Dissolving pellets in water is exothermic. Causes
+    severe chemical burns on skin and eye contact. Hygroscopic — absorbs
+    moisture and CO2 from air, degrading to Na2CO3 over time if not sealed.
+    Store in airtight HDPE containers. PPE: chemical-resistant gloves, face
+    shield, splash goggles. In the precipitation workflow, NaOH solution is
+    added to copper-depleted PLS to raise pH to 7.5-8.1, selectively
+    precipitating nickel as Ni(OH)2 and cobalt as Co(OH)2.
+
+added_date: "2026-03-26"

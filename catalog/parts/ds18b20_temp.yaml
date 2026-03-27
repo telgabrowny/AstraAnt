@@ -1,0 +1,80 @@
+id: "ds18b20_temp"
+name: "Dallas DS18B20 Digital Temperature Sensor"
+category: "sensor"
+description: "Maxim Integrated (formerly Dallas Semiconductor) DS18B20 programmable-resolution 1-Wire digital temperature sensor. Provides 9-bit to 12-bit Celsius temperature measurements. Each device has a unique 64-bit serial code allowing multiple sensors on a single 1-Wire bus. Parasitic power mode allows operation with only data and ground (no VDD)."
+
+specs:
+  mass_g: 0.5                            # TO-92 package; waterproof probe variant ~5g
+  power_draw_mw: 1.0                     # Active conversion at 3.3V
+  standby_power_ua: 1.0                  # Standby current
+  temperature_min_c: -55
+  temperature_max_c: 125
+  accuracy_c: 0.5                        # +/- 0.5C over -10C to +85C range
+  accuracy_full_range_c: 2.0             # +/- 2C over full -55C to +125C range
+  resolution_bits: [9, 10, 11, 12]       # Programmable; 12-bit = 0.0625C
+  conversion_time_ms: 750                # At 12-bit resolution; 94ms at 9-bit
+  interface: "1-Wire"
+  supply_voltage_v: 3.3                  # 3.0-5.5V operating range
+  parasitic_power: true                  # Can operate from data line power
+  package: "TO-92"                       # Also available in MSOP-8 (DS18B20Z)
+  unique_id: true                        # Each device has unique 64-bit ROM code
+
+environmental:
+  temp_min_c: -55                        # Operating and sensing range
+  temp_max_c: 125
+  vacuum_compatible: false               # TO-92 package not vacuum-rated
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "none"
+  mtbf_hours_vacuum: 500                 # Package may crack; not characterized
+  mtbf_hours_sealed: 80000
+  mtbf_hours_earth: 200000              # Extremely reliable; simple design
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/analog-devices-inc-maxim-integrated/DS18B20/956983"
+      part_number: "DS18B20+"
+      price_usd: 2.95
+      date_checked: "2026-03-26"
+    - name: "Mouser"
+      url: "https://www.mouser.com/ProductDetail/Analog-Devices-Maxim-Integrated/DS18B20+"
+      part_number: "700-DS18B20+"
+      price_usd: 2.95
+      date_checked: "2026-03-26"
+    - name: "Adafruit"
+      url: "https://www.adafruit.com/product/374"
+      part_number: "374"
+      price_usd: 3.95                    # Waterproof version with cable
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 2.95
+      source: "DigiKey"
+
+notes: |
+  The DS18B20 is the simplest and most reliable digital temperature sensor available.
+  The 1-Wire interface requires only a single GPIO pin plus a 4.7k pull-up resistor,
+  and multiple sensors can share the same bus (each has a unique 64-bit address).
+  This makes it trivial to add dozens of temperature monitoring points.
+
+  For the AstraAnt, temperature monitoring is critical for:
+  - Battery thermal management (Li-ion cells must stay 0-45C for charging)
+  - Motor/actuator thermal limits
+  - Electronics thermal monitoring
+  - Bioreactor temperature control (for bioleaching species)
+
+  The parasitic power mode is useful for reducing wiring (2 wires instead of 3) but
+  increases conversion time and requires a strong pull-up during temperature conversion.
+
+  Limitations: the 750ms conversion time at 12-bit resolution means this is not
+  suitable for rapid thermal transient measurement. For faster thermal response,
+  consider analog thermistors or the TMP117 (which offers similar accuracy with
+  I2C interface and faster reads).
+
+  The -55C to +125C range covers most robotics applications but does not extend to
+  deep space temperatures (-270C). For cryogenic monitoring, consider platinum RTDs
+  (PT100/PT1000) or silicon diode sensors.
+
+datasheet_url: "https://www.analog.com/media/en/technical-documentation/data-sheets/DS18B20.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

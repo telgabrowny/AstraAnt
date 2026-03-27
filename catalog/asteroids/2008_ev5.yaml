@@ -1,0 +1,130 @@
+id: "2008_ev5"
+name: "(341843) 2008 EV5"
+designation: "(341843) 2008 EV5"
+discovery:
+  date: "2008-03-04"
+  discoverer: "CSS (Catalina Sky Survey)"
+
+physical:
+  diameter_m: 400
+  mass_kg: 4.0e10      # estimated from diameter and assumed density
+  density_kg_per_m3: 1500   # estimated, poorly constrained
+  surface_gravity_m_per_s2: 0.000014
+  rotation_period_hours: 3.7254
+  spectral_class: "C"
+  albedo: 0.086
+  shape: "spinning_top"
+  structure: "rubble_pile"
+
+orbit:
+  semi_major_axis_au: 0.9582
+  eccentricity: 0.0834
+  inclination_deg: 7.4367
+  perihelion_au: 0.8783
+  aphelion_au: 1.0381
+  orbital_period_years: 0.9383
+  epoch: "2025-01-01"
+  longitude_ascending_node_deg: 93.3855
+  argument_perihelion_deg: 234.4910
+  mean_anomaly_deg: 301.7850
+  note: "Aten-class asteroid — semi-major axis < 1 AU"
+
+composition:
+  source: "spectral_inference"
+  confidence: "low"
+  mission: "none — characterized by ground-based and radar observations only"
+  bulk:
+    hydrated_silicates: 40.0
+    carbon_organics: 3.0
+    iron_nickel: 3.0
+    water_hydrated: 5.0
+    clay_minerals: 15.0
+    other_silicates: 30.0
+    other: 4.0
+  metals_ppm:
+    platinum: 15
+    palladium: 4
+    iridium: 2
+    copper: 90
+    nickel: 10000
+    cobalt: 400
+    iron: 180000
+    rare_earths_total: 25
+  minerals_inferred:
+    - "hydrated silicates (spectral 3-micron absorption feature)"
+    - "phyllosilicates (likely serpentine/smectite based on C-type analog)"
+    - "magnetite (inferred from low albedo and C-type classification)"
+    - "possible organics (C-type analog)"
+  meteorite_analog: "CI or CM carbonaceous chondrite (inferred from spectral class)"
+  water_content_percent: 5.0
+  water_form: "inferred bound in hydrated minerals from spectral absorption feature"
+  composition_notes: >
+    Composition is entirely inferred from spectral classification (C-type)
+    and comparison with meteorite analogs. The 3-micron absorption feature
+    in infrared spectroscopy suggests hydrated minerals. No sample return
+    or close-approach mission data exists. All bulk percentages are rough
+    estimates based on CI/CM chondrite averages and should be treated as
+    uncertain. Was a candidate target for NASA's Asteroid Redirect Mission
+    (ARM, cancelled 2017) and has been identified by multiple studies as
+    a high-priority target for asteroid mining due to exceptional
+    accessibility.
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 4.5
+    estimated_transit_days_solar_sail: 500
+    launch_windows_per_year: 2
+    synodic_period_years: 16.0  # near 1:1 resonance with Earth
+    note: "One of the most accessible asteroids known — very low delta-v, frequent launch windows"
+  value_assessment: >
+    2008 EV5 is one of the highest-priority targets for asteroid mining due
+    to its exceptional orbital accessibility. At delta-v of only 4.5 km/s
+    from LEO, it is among the easiest asteroids to reach in the entire NEA
+    population. Its near-Earth orbit (semi-major axis 0.958 AU) means short
+    transit times and frequent launch opportunities. Spectral evidence for
+    hydrated minerals suggests 3-5% water content, making it attractive for
+    in-situ propellant production. The C-type classification implies
+    carbonaceous chondrite composition with useful volatiles and metals.
+    However, composition confidence is LOW — no mission has visited this
+    asteroid. It was selected as the target for the cancelled ARM mission,
+    which would have provided detailed characterization. An excellent
+    candidate for an early prospecting/sample-return mission to validate
+    mining potential. The spinning-top rubble pile structure (similar to
+    Bennu and Ryugu) would facilitate regolith collection.
+  water_availability: true
+  regolith_type: "rubble_pile"
+  estimated_total_water_kg: 2.0e9
+  key_resources:
+    - resource: "water"
+      abundance: "moderate"
+      extraction_method: "thermal desorption of hydrated minerals"
+    - resource: "carbon/organics"
+      abundance: "low_to_moderate"
+      extraction_method: "pyrolysis"
+    - resource: "iron"
+      abundance: "moderate"
+      extraction_method: "magnetic separation"
+
+references:
+  - "Busch, M.W. et al. (2011). Radar observations and the shape of near-Earth asteroid 2008 EV5. Icarus, 212, 649-660."
+  - "Reddy, V. et al. (2012). Composition of near-Earth asteroid (341843) 2008 EV5: Potential target for robotic and human exploration. Icarus, 221, 678-681."
+  - "Abell, P.A. et al. (2015). The Near-Earth Object Human Space Flight Accessible Targets Study (NHATS). NASA Technical Report."
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=2008+EV5"
+
+notes: >
+  2008 EV5 is an Aten-class asteroid with a semi-major axis slightly less
+  than 1 AU, making it one of the most accessible NEAs. Radar observations
+  by Arecibo and Goldstone in 2008 revealed a spinning-top shape similar
+  to Bennu and Ryugu, with a prominent equatorial ridge and an estimated
+  400m diameter. A concavity on one side may indicate a large impact crater.
+  The asteroid was the leading candidate target for NASA's Asteroid Redirect
+  Mission (ARM) before that program was cancelled in 2017. Multiple asteroid
+  mining companies (Planetary Resources, Deep Space Industries) identified
+  2008 EV5 as a high-value target. The near-1:1 orbital resonance with
+  Earth means the synodic period is very long (~16 years), but the similar
+  orbit provides frequent low-energy transfer opportunities. Its rapid
+  rotation (3.7 hours) is near but below the spin-barrier limit for rubble
+  piles (~2.2 hours), consistent with a cohesionless aggregate structure.
+
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

@@ -1,0 +1,64 @@
+id: "vacuum_actuator_maxon"
+name: "Maxon EC-max 22 Brushless DC Motor (Vacuum-Rated)"
+category: "actuator"
+description: "Maxon EC-max 22 electronically commutated brushless DC motor in vacuum-compatible configuration. Ceramic bearings, vacuum-rated lubricant, no outgassing adhesives. Representative of space-rated BLDC actuators used in satellite mechanisms, antenna positioners, and robotic joints."
+
+specs:
+  mass_g: 35.0                           # Motor body only; with gearhead ~55-70g
+  power_draw_mw: 800                     # Nominal continuous; max ~6W
+  nominal_voltage_v: 12.0
+  nominal_torque_mn_m: 9.75              # Millinewton-meters continuous
+  stall_torque_mn_m: 83.0
+  no_load_speed_rpm: 10800
+  nominal_speed_rpm: 8560
+  efficiency_percent: 79
+  motor_diameter_mm: 22.0
+  motor_length_mm: 32.5
+  bearing_type: "ceramic ball bearings"
+  commutation: "electronic (brushless)"
+  encoder_optional: true                 # Incremental encoder available as add-on
+  gearhead_optional: true                # GP 22 planetary gearhead available
+
+environmental:
+  temp_min_c: -55                        # Vacuum lubricant rated range
+  temp_max_c: 100                        # Continuous; intermittent to 125C
+  vacuum_compatible: true                # Specifically configured for vacuum operation
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "low"             # Electronics are COTS; magnets are tolerant
+  mtbf_hours_vacuum: 50000              # Ceramic bearings + vacuum lubricant designed for this
+  mtbf_hours_sealed: 60000
+  mtbf_hours_earth: 80000
+
+sourcing:
+  suppliers:
+    - name: "Maxon Group"
+      url: "https://www.maxongroup.com/maxon/view/product/motor/ecmotor/ecmax/ecmax22/283828"
+      part_number: "283828"
+      price_usd: 180.00                  # Standard; vacuum config is custom order ~$250-300
+      date_checked: "2026-03-26"
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/maxon/283828/12323410"
+      part_number: "283828"
+      price_usd: 195.00
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 180.00
+      source: "Maxon Group"
+
+notes: |
+  Maxon motors are the de facto standard for space mechanisms. The EC-max 22 vacuum
+  configuration uses ceramic bearings (no outgassing steel lubricant), Braycote 601EF
+  or equivalent vacuum grease, and adhesives selected for low outgassing per
+  ASTM E595 (TML <1%, CVCM <0.1%). The standard catalog motor is NOT vacuum rated —
+  you must order the vacuum-compatible configuration directly from Maxon, which adds
+  $50-100 to the price and 4-8 weeks lead time. Pair with the GP 22 planetary gearhead
+  for high-torque low-speed applications. For position control, add the ENX 16 EASY
+  encoder. The motor electronics (driver board) are a separate concern and must also
+  be vacuum-rated or located in a sealed electronics enclosure. Total actuator mass
+  with gearhead and encoder is typically 55-70g. This is 20-40x the cost of an SG90
+  but the only responsible choice for vacuum or space applications.
+
+datasheet_url: "https://www.maxongroup.com/medias/sys_master/root/8882563743774/EN-21-148.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

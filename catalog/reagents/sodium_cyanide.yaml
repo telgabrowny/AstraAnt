@@ -1,0 +1,41 @@
+id: "sodium_cyanide"
+name: "Sodium Cyanide"
+formula: "NaCN"
+category: "backup_leach"
+
+specs:
+  density_g_per_ml: 1.60         # Solid
+  concentration: "2 g/L working solution for PGM leaching"
+  consumption_rate: "~0.5 kg per vat cycle; consumed by complexation with target metals and oxidative decomposition"
+
+sourcing:
+  suppliers:
+    - name: "Sigma-Aldrich"
+      price_usd_per_kg: 150
+      date_checked: "2026-03-26"
+    - name: "Cyanco (industrial)"
+      price_usd_per_kg: 120
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd_per_kg: 150
+      source: "Sigma-Aldrich"
+
+safety:
+  hazard_class: "Extremely Toxic"
+  handling_notes: >
+    HIGHLY TOXIC — lethal dose for humans is 1-3 mg/kg body weight.
+    Generates hydrogen cyanide (HCN) gas if contacted with acid (pH < 10.5).
+    ALL handling requires: full-face respirator with cyanide cartridge,
+    chemical-resistant gloves (nitrile + neoprene), full body coverage, and
+    buddy system with cyanide antidote kit (hydroxocobalamin or amyl nitrite)
+    immediately accessible. Storage: locked, ventilated cabinet, segregated
+    from all acids. Solutions must be maintained at pH > 11 at all times to
+    prevent HCN gas evolution. Spent solutions require alkaline chlorination
+    (NaOCl at pH > 11) to destroy cyanide before disposal. Restricted
+    purchase — may require end-use declaration and hazmat shipping.
+    For space deployment this is the backup option ONLY if biogenic cyanide
+    from C. violaceum proves insufficient. The sealed bioreactor must have
+    HCN gas monitoring and emergency scrubbing capability.
+
+added_date: "2026-03-26"

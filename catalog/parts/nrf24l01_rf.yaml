@@ -1,0 +1,81 @@
+id: "nrf24l01_rf"
+name: "Nordic nRF24L01+ 2.4 GHz Transceiver"
+category: "communication"
+description: "Nordic Semiconductor nRF24L01+ ultra-low-power 2.4 GHz ISM band transceiver. Supports 250 kbps, 1 Mbps, and 2 Mbps air data rates with built-in packet handling, CRC, auto-acknowledge, and auto-retransmit. SPI interface. The PA+LNA variant (nRF24L01+PA+LNA) extends range to ~1 km line of sight."
+
+specs:
+  mass_g: 2.0                            # Standard module; PA+LNA variant ~8g with antenna
+  power_draw_mw: 40                      # TX at 0 dBm
+  power_draw_mw_max: 45                  # TX at 0 dBm (2 Mbps)
+  rx_power_mw: 39                        # Receive mode at 2 Mbps
+  power_down_ua: 0.9                     # Power down mode
+  standby_ua: 26                         # Standby-I mode
+  tx_power_dbm: 0                        # Standard module; PA+LNA variant +20 dBm
+  sensitivity_dbm: -82                   # At 2 Mbps; -85 dBm at 1 Mbps; -94 dBm at 250 kbps
+  frequency_mhz: [2400, 2525]           # 2.4 GHz ISM band, 126 channels
+  data_rates_kbps: [250, 1000, 2000]
+  range_m_standard: 50                   # Standard module, indoor
+  range_m_pa_lna: 1000                   # PA+LNA variant, line of sight
+  payload_bytes: 32                      # Max payload per packet
+  pipe_count: 6                          # Simultaneous RX data pipes (multiceiver)
+  interface: "SPI"
+  supply_voltage_v: 3.3                  # 1.9-3.6V; 5V tolerant inputs
+  module_dimensions_mm: [15, 29]         # Standard module
+
+environmental:
+  temp_min_c: -40
+  temp_max_c: 85
+  vacuum_compatible: false               # Consumer module with crystal and capacitors
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "none"
+  mtbf_hours_vacuum: 300                 # Not characterized
+  mtbf_hours_sealed: 40000
+  mtbf_hours_earth: 150000
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/nordic-semiconductor/NRF24L01P-R/2401171"
+      part_number: "NRF24L01+"
+      price_usd: 3.12
+      date_checked: "2026-03-26"
+    - name: "Mouser"
+      url: "https://www.mouser.com/ProductDetail/Nordic-Semiconductor/nRF24L01P-R"
+      part_number: "949-NRF24L01P-R"
+      price_usd: 3.12
+      date_checked: "2026-03-26"
+    - name: "Amazon (module)"
+      url: "https://www.amazon.com/dp/B00O9O868G"
+      part_number: "nRF24L01+ module"
+      price_usd: 1.50                    # Module with PCB antenna; clones available <$1
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 1.50
+      source: "Amazon"
+
+notes: |
+  The nRF24L01+ is the cheapest high-bandwidth short-range radio available. At <$1.50
+  per module, it is essentially disposable. The 6-pipe multiceiver feature is useful for
+  star-topology networks where a central coordinator talks to multiple ants.
+
+  Compared to LoRa (SX1276): the nRF24L01 offers 40-60x higher data rates but 10-100x
+  shorter range. Use LoRa for long-range telemetry and commands; use nRF24L01 for
+  short-range bulk data transfer (images, spectral data, firmware updates).
+
+  The 2.4 GHz band penetrates rock/regolith poorly (~1-10 cm depending on material).
+  For through-rock communication in a mining tunnel, sub-GHz frequencies (LoRa) are
+  significantly better. The nRF24L01 is best suited for line-of-sight swarm
+  communication on the surface.
+
+  The built-in auto-acknowledge and auto-retransmit features simplify protocol design
+  considerably. However, there is no frequency hopping or spread spectrum — the 2.4 GHz
+  ISM band is crowded on Earth but empty in space.
+
+  For prototyping, the cheap Chinese modules work fine but have poor RF layout. For
+  flight hardware, use the bare Nordic chip with a proper RF design or the PA+LNA
+  variant for extended range.
+
+datasheet_url: "https://www.nordicsemi.com/Products/nRF24-series"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

@@ -1,0 +1,65 @@
+id: "sg90_servo"
+name: "Tower Pro SG90 Micro Servo"
+category: "actuator"
+description: "Ubiquitous 9g micro servo with 180-degree rotation and plastic gears. Standard PWM control (50 Hz, 1-2 ms pulse). Widely used in hobby robotics. NOT suitable for vacuum — lubricant outgasses and plastic gears become brittle at cryogenic temperatures."
+
+specs:
+  mass_g: 9.0
+  power_draw_mw: 600                     # Under load; stall current ~750 mA at 4.8V
+  idle_power_mw: 10                      # Holding position, no load
+  stall_current_ma: 750
+  supply_voltage_v: 4.8                  # 4.8-6.0V operating range
+  torque_kg_cm: 1.8                      # At 4.8V
+  torque_kg_cm_6v: 2.2                   # At 6.0V
+  rotation_deg: 180
+  speed_sec_per_60deg: 0.12              # At 4.8V, no load
+  gear_material: "plastic (nylon)"
+  control: "PWM 50 Hz, 1-2 ms pulse width"
+  dimensions_mm: [22.2, 11.8, 31.0]     # L x W x H
+  wire_length_mm: 150
+
+environmental:
+  temp_min_c: -10                        # Grease viscosity and plastic embrittlement limit
+  temp_max_c: 55                         # Plastic gears and grease breakdown
+  vacuum_compatible: false               # Grease outgasses severely; plastic gears brittle at cryo
+  sealed_tunnel_compatible: true         # Acceptable in pressurized sealed environment
+  radiation_tolerance: "none"            # Plastic gears and consumer electronics
+  mtbf_hours_vacuum: 500                 # Rapid grease loss, gear embrittlement, motor brush wear
+  mtbf_hours_sealed: 8000               # Reasonable in sealed tunnel at moderate temps
+  mtbf_hours_earth: 20000               # Hobby-grade reliability
+
+sourcing:
+  suppliers:
+    - name: "Adafruit"
+      url: "https://www.adafruit.com/product/169"
+      part_number: "169"
+      price_usd: 5.95
+      date_checked: "2026-03-26"
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/dfrobot/SER0006/7597226"
+      part_number: "SER0006"
+      price_usd: 2.90
+      date_checked: "2026-03-26"
+    - name: "Amazon (generic)"
+      url: "https://www.amazon.com/dp/B07MLR1498"
+      part_number: "SG90"
+      price_usd: 1.50                    # Bulk/clone pricing
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 2.90
+      source: "DigiKey"
+
+notes: |
+  The SG90 is the cheapest path to mechanical motion for prototyping. Plastic gears
+  limit durability and precision; expect gear slop of 2-3 degrees. No position feedback
+  (open loop). In vacuum, the grease will outgas within hours and the plastic gears will
+  become brittle below -40C, leading to catastrophic gear failure. In a sealed
+  pressurized tunnel at moderate temperatures, these are surprisingly long-lived.
+  For space applications, replace with vacuum-rated brushless actuators (see
+  vacuum_actuator_maxon). Metal-gear variants (MG90S) are marginally better but
+  still not vacuum compatible. Use SG90 for ground testing and concept validation only.
+
+datasheet_url: "http://www.ee.ic.ac.uk/pcheung/teaching/DE1_EE/stores/sg90_datasheet.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

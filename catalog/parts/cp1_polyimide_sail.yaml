@@ -1,0 +1,69 @@
+id: "cp1_polyimide_sail"
+name: "CP1 Colorless Polyimide Solar Sail Material"
+category: "sail"
+description: "Colorless Polyimide (CP1) film developed by NASA Langley and manufactured by ManTech SRS Technologies (now NeXolve). The primary solar sail material used in NASA's NanoSail-D2 and NEA Scout missions. Extremely thin (~2.5 um), lightweight (~7 g/m2), and space-qualified with aluminum or chromium reflective coatings. Survives extreme temperature cycling and UV exposure."
+
+specs:
+  mass_g: 0.0                            # Per-area material; see areal_density
+  power_draw_mw: 0                       # Passive material
+  areal_density_g_per_m2: 7.0            # At ~2.5 um thickness with aluminum coating
+  film_thickness_um: 2.5                 # Bare CP1 film
+  coating_thickness_nm: 100              # Typical aluminum coating
+  reflectivity: 0.90                     # With aluminum coating; 0.88-0.92 range
+  absorptivity: 0.06                     # At aluminum-coated surface
+  emissivity_front: 0.05                 # Aluminum-coated side
+  emissivity_back: 0.55                  # Bare CP1 side
+  tensile_strength_mpa: 120              # CP1 film
+  elongation_at_break_percent: 12
+  solar_pressure_force_n_per_m2: 0.0000091  # At 1 AU, perfectly reflective: 2*P = 9.08 uN/m2
+  characteristic_acceleration_mm_per_s2: 1.3  # Typical for 7 g/m2 sail at 1 AU
+
+environmental:
+  temp_min_c: -269                       # Tested to liquid helium temperatures
+  temp_max_c: 260                        # Short-term; long-term limit ~200C
+  vacuum_compatible: true                # Space-qualified; extensively tested in vacuum
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "high"            # Designed for space UV and particle exposure
+  mtbf_hours_vacuum: 500000             # Space-qualified; degradation is gradual
+  mtbf_hours_sealed: 500000
+  mtbf_hours_earth: 100000              # Humidity can degrade adhesion of metallic coatings
+
+sourcing:
+  suppliers:
+    - name: "NeXolve (ManTech SRS)"
+      url: "https://www.nexolve.com"
+      part_number: "CP1-SAIL"
+      price_usd: 750.00                  # Per m2, approximate; highly volume-dependent
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 750.00
+      source: "NeXolve"
+
+notes: |
+  CP1 is the gold standard for solar sail material. It was developed specifically for
+  solar sailing by NASA Langley Research Center and is the most flight-proven sail
+  material available. Key advantages over Kapton (standard polyimide):
+  - Colorless/transparent (hence "CP1") allowing back-side thermal emission
+  - Lower areal density (~7 g/m2 vs ~12 g/m2 for Kapton at similar thickness)
+  - Better UV stability (no darkening/embrittlement over time)
+  - Wider temperature range (-269C to +260C)
+
+  Procurement is challenging: NeXolve (formerly ManTech SRS Technologies, now part of
+  Huntsville operations) is essentially the sole manufacturer. They primarily serve
+  NASA and DoD contracts. Small quantities for academic/commercial use may require
+  6-12 month lead times and minimum order quantities. Pricing varies enormously
+  with quantity — the $500-1000/m2 estimate is for small research quantities; large
+  orders (100+ m2) may be $100-200/m2.
+
+  For prototyping and ground testing, aluminized Mylar (~12 g/m2, ~$5/m2) is a
+  reasonable stand-in. It is heavier and less thermally stable but orders of magnitude
+  cheaper and readily available.
+
+  For the AstraAnt solar sail, consider: at 7 g/m2, a 10 m2 sail masses only 70g.
+  At 1 AU, this produces ~91 uN of thrust — tiny, but continuous and propellant-free.
+  Sail area trades directly against transit time to target asteroids.
+
+datasheet_url: "https://ntrs.nasa.gov/citations/20040086262"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

@@ -1,0 +1,79 @@
+id: "sx1276_lora"
+name: "Semtech SX1276 LoRa Transceiver Module"
+category: "communication"
+description: "Semtech SX1276 long-range low-power wireless transceiver using LoRa spread-spectrum modulation. Operates in sub-GHz ISM bands (137-1020 MHz, typically 433/868/915 MHz). Achieves 10+ km line-of-sight range at very low data rates. Also supports FSK/OOK modulation for higher bandwidth applications."
+
+specs:
+  mass_g: 5.0                            # Typical module (e.g., RFM95W or HopeRF)
+  power_draw_mw: 120                     # TX at +17 dBm
+  rx_power_mw: 33                        # Receive mode
+  sleep_power_ua: 0.2                    # Sleep mode current
+  tx_power_dbm: 17                       # Configurable up to +20 dBm (PA_BOOST)
+  sensitivity_dbm: -148                  # At SF12, 125 kHz BW (LoRa mode)
+  frequency_mhz: [137, 1020]            # Programmable range; common: 433, 868, 915
+  modulation: ["LoRa", "FSK", "OOK"]
+  lora_bandwidth_kbps: [0.3, 50]        # LoRa mode depending on SF and BW settings
+  fsk_bandwidth_kbps: 300                # FSK mode maximum
+  spreading_factor: [6, 12]              # SF6 to SF12; higher = longer range, lower rate
+  range_km_los: 15                       # Line of sight at SF12; urban ~2-5 km
+  interface: "SPI"
+  supply_voltage_v: 3.3                  # 1.8-3.7V operating range
+  module_dimensions_mm: [16, 16, 3]      # Typical RFM95W module
+
+environmental:
+  temp_min_c: -40
+  temp_max_c: 85
+  vacuum_compatible: false               # RF module packaging not vacuum-rated
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "none"            # Consumer silicon
+  mtbf_hours_vacuum: 300                 # Crystal oscillator may fail; not characterized
+  mtbf_hours_sealed: 40000
+  mtbf_hours_earth: 150000
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/seeed-technology-co-ltd/109990165/7044848"
+      part_number: "RFM95W-915S2"
+      price_usd: 6.50
+      date_checked: "2026-03-26"
+    - name: "Mouser"
+      url: "https://www.mouser.com/ProductDetail/HopeRF/RFM95W-915S2"
+      part_number: "RFM95W-915S2"
+      price_usd: 5.90
+      date_checked: "2026-03-26"
+    - name: "Adafruit"
+      url: "https://www.adafruit.com/product/3072"
+      part_number: "3072"
+      price_usd: 19.95                   # LoRa Radio FeatherWing (includes antenna and logic)
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 5.90
+      source: "Mouser"
+
+notes: |
+  LoRa is the most promising COTS radio technology for swarm coordination in the
+  AstraAnt context. The extreme sensitivity (-148 dBm) and low power consumption make
+  it ideal for ant-to-ant and ant-to-base communication over kilometer-scale distances.
+
+  In vacuum/space: radio propagation is actually better (no atmospheric absorption),
+  but the module hardware is not vacuum-rated. The crystal oscillator, solder joints,
+  and PCB substrate would need vacuum bake-out testing. For a sealed pressurized
+  tunnel, this is fine as-is.
+
+  Data rate tradeoff: at SF12/125kHz BW you get ~300 bps but 15+ km range. At
+  SF7/500kHz BW you get ~21 kbps but range drops to ~2-3 km. For telemetry and
+  commands, the low data rate is usually sufficient. For bulk data transfer
+  (images, spectra), consider the nRF24L01 or a higher-bandwidth radio.
+
+  Antenna is critical: a well-matched quarter-wave whip or helical antenna is required.
+  Module without antenna is nearly useless. On an asteroid surface with no atmosphere,
+  the antenna geometry may need adjustment (no ground plane interaction).
+
+  Note: SX1276 is succeeded by SX1262 with improved performance and lower power.
+  Consider upgrading for new designs.
+
+datasheet_url: "https://semtech.my.salesforce.com/sfc/p/E0000000JelG/a/2R000000HT76/7Nka9W5WgugoZe.xwIHJy6ebj1hW8B4t8UrKV0j_udI"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"

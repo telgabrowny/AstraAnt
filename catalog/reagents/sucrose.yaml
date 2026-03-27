@@ -1,0 +1,36 @@
+id: "sucrose"
+name: "Sucrose"
+formula: "C12H22O11"
+category: "nutrient"
+
+specs:
+  density_g_per_ml: 1.587        # Crystalline solid
+  concentration: "Solid crystals; dissolved at ~10 g/L working concentration in bioreactor medium"
+  consumption_rate: "~10 g/L of bioreactor volume per growth cycle (3-5 day cycles); critical consumable for Track B REE extraction with Aspergillus niger"
+
+sourcing:
+  suppliers:
+    - name: "Sigma-Aldrich"
+      price_usd_per_kg: 35
+      date_checked: "2026-03-26"
+    - name: "Grocery/food grade"
+      price_usd_per_kg: 3
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd_per_kg: 3
+      source: "Food grade (sufficient purity for bioleaching)"
+
+safety:
+  hazard_class: "Non-hazardous"
+  handling_notes: >
+    Food-grade sucrose is sufficient for bioleaching applications; lab-grade
+    is not required. Store in sealed containers to prevent moisture
+    absorption and microbial contamination. No special PPE required.
+    Sucrose is the single largest consumable mass requirement for Track B
+    REE extraction — at 10 g/L per cycle with 14-30 day residence times,
+    a 10L bioreactor consumes ~100g per cycle. For space deployment,
+    sucrose mass budget is a critical mission parameter. Glucose can
+    substitute at equivalent concentration if sucrose is unavailable.
+
+added_date: "2026-03-26"

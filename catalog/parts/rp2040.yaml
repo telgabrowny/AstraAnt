@@ -1,0 +1,63 @@
+id: "rp2040"
+name: "Raspberry Pi RP2040 Microcontroller"
+category: "compute"
+description: "Raspberry Pi dual-core ARM Cortex-M0+ microcontroller. 264 KB SRAM, flexible I/O via PIO state machines. Available as bare chip (QFN-56) or on the Raspberry Pi Pico board with 2 MB flash, USB, and regulators."
+
+specs:
+  mass_g: 1.0                            # Bare QFN-56 chip; Pico board ~5g
+  power_draw_mw: 100                     # Typical at 133 MHz, both cores active
+  cpu_cores: 2
+  cpu_freq_mhz: 133
+  architecture: "ARM Cortex-M0+"
+  sram_kb: 264
+  flash_mb: 0                            # No onboard flash; external QSPI required
+  gpio_count: 30
+  adc_channels: 4                        # 12-bit SAR ADC, 500 ksps
+  pio_state_machines: 8                  # 2 PIO blocks x 4 state machines each
+  interfaces: ["SPI", "I2C", "UART", "USB 1.1", "PWM"]
+  supply_voltage_v: 3.3                  # Core voltage 1.1V (internal regulator)
+  dormant_mode_ua: 180                   # Dormant mode current
+
+environmental:
+  temp_min_c: -20                        # Commercial grade
+  temp_max_c: 85
+  vacuum_compatible: false               # Consumer packaging, no outgassing characterization
+  sealed_tunnel_compatible: true
+  radiation_tolerance: "none"            # 40 nm process, no radiation hardening
+  mtbf_hours_vacuum: 300                 # Not characterized for vacuum
+  mtbf_hours_sealed: 40000
+  mtbf_hours_earth: 200000              # Simple design, very reliable
+
+sourcing:
+  suppliers:
+    - name: "DigiKey"
+      url: "https://www.digikey.com/en/products/detail/raspberry-pi/SC0914/16608263"
+      part_number: "SC0914"
+      price_usd: 0.80
+      date_checked: "2026-03-26"
+    - name: "Mouser"
+      url: "https://www.mouser.com/ProductDetail/Raspberry-Pi/SC0914"
+      part_number: "358-SC0914"
+      price_usd: 0.80
+      date_checked: "2026-03-26"
+    - name: "Adafruit"
+      url: "https://www.adafruit.com/product/5525"
+      part_number: "5525"
+      price_usd: 0.80
+      date_checked: "2026-03-26"
+  price_history:
+    - date: "2026-03-26"
+      price_usd: 0.80
+      source: "DigiKey"
+
+notes: |
+  The RP2040's PIO state machines are extremely useful for custom I/O protocols —
+  bit-banging serial, driving LED strips, or emulating SPI/I2C peripherals in parallel.
+  At $0.80 per chip it is essentially disposable. The Pico board (~$4) adds 2 MB flash,
+  USB connector, and 3.3V regulator, and is a better starting point for prototyping.
+  No wireless capability; pair with an SX1276 or nRF24L01 for comms.
+  The -20C min temp is a limitation for deep space; extended temp versions not available.
+
+datasheet_url: "https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf"
+added_date: "2026-03-26"
+last_updated: "2026-03-26"
