@@ -23,7 +23,7 @@ def test_track_b_includes_water_mass():
     )
     report = analyze_mission(mission)
     assert report.mass_budget.water_mass_kg == 300
-    assert report.mission.include_bioreactor is True
+    assert "bioreactor" in report.mission.mothership_modules
 
 
 def test_track_a_no_water():

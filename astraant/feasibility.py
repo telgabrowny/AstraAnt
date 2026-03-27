@@ -73,11 +73,30 @@ MATERIAL_VALUES = {
 
 @dataclass
 class SwarmConfig:
-    """Define a swarm composition."""
+    """Define a swarm composition — all 6 castes."""
     workers: int = 100
     taskmasters: int = 5
     couriers: int = 3
+    sorters: int = 2
+    plasterers: int = 3
+    tenders: int = 2
     track: str = "a"  # a, b, or c
+
+    @property
+    def total_ants(self) -> int:
+        return (self.workers + self.taskmasters + self.couriers +
+                self.sorters + self.plasterers + self.tenders)
+
+
+# Default mothership modules per track
+TRACK_MODULES = {
+    "a": ["drill", "power", "comms", "sealing", "cargo", "thermal_sorter",
+          "exterior_maintenance"],
+    "b": ["drill", "power", "comms", "sealing", "cargo", "thermal_sorter",
+          "exterior_maintenance", "bioreactor", "sugar_production"],
+    "c": ["drill", "power", "comms", "sealing", "cargo", "thermal_sorter",
+          "exterior_maintenance", "bioreactor", "sugar_production"],
+}
 
 
 @dataclass
@@ -87,10 +106,7 @@ class MissionConfig:
     asteroid_id: str = "bennu"
     destination: str = "lunar_orbit"
     launch_vehicle: str = "starship_conservative"
-    mothership_modules: list[str] = field(
-        default_factory=lambda: ["drill", "power", "comms", "sealing", "cargo"]
-    )
-    include_bioreactor: bool = False  # Auto-set for Track B/C
+    mothership_modules: list[str] | None = None  # Auto-set from track if None
     mission_cycles: int = 3
 
 
@@ -145,6 +161,15 @@ class FeasibilityReport:
     notes: list[str] = field(default_factory=list)
 
 
+def _get_module_mass(mod: dict[str, Any]) -> float:
+    """Extract mass from a mothership module config (handles various key names)."""
+    return (mod.get("total_mass_kg")
+            or mod.get("total_mass_with_consumables_kg")
+            or mod.get("mass_summary", {}).get("total_mass_kg")
+            or mod.get("mass_summary", {}).get("total_dry_mass_kg")
+            or 0)
+
+
 def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> FeasibilityReport:
     """Run a complete feasibility analysis for a mission configuration."""
     if catalog is None:
@@ -152,74 +177,96 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
 
     report = FeasibilityReport(mission=mission)
 
+    # Auto-set mothership modules from track if not explicitly provided
+    if mission.mothership_modules is None:
+        mission.mothership_modules = list(TRACK_MODULES.get(mission.swarm.track,
+                                                            TRACK_MODULES["a"]))
+
     # Load configs
     ant_configs = load_all_ant_configs()
-
-    # Auto-enable bioreactor for Track B/C
-    if mission.swarm.track in ("b", "c"):
-        mission.include_bioreactor = True
+    has_bioreactor = "bioreactor" in mission.mothership_modules
+    has_sugar_production = "sugar_production" in mission.mothership_modules
 
     # --- Mass Budget ---
     mass = report.mass_budget
 
-    # Worker mass
-    if "worker" in ant_configs:
-        worker_cfg = ant_configs["worker"]
-        mass.worker_mass_g = compute_ant_mass(worker_cfg)
-        mass.swarm_mass_kg += (mass.worker_mass_g * mission.swarm.workers) / 1000
+    # All ant castes with their counts
+    caste_counts = {
+        "worker": mission.swarm.workers,
+        "taskmaster": mission.swarm.taskmasters,
+        "courier": mission.swarm.couriers,
+        "sorter": mission.swarm.sorters,
+        "plasterer": mission.swarm.plasterers,
+        "tender": mission.swarm.tenders,
+    }
 
-    # Taskmaster mass
-    if "taskmaster" in ant_configs:
-        tm_cfg = ant_configs["taskmaster"]
-        mass.taskmaster_mass_g = compute_ant_mass(tm_cfg)
-        mass.swarm_mass_kg += (mass.taskmaster_mass_g * mission.swarm.taskmasters) / 1000
+    # Per-caste mass and total swarm mass
+    caste_masses: dict[str, float] = {}
+    for caste, count in caste_counts.items():
+        if caste in ant_configs and count > 0:
+            caste_mass_g = compute_ant_mass(ant_configs[caste])
+            caste_masses[caste] = caste_mass_g
+            mass.swarm_mass_kg += (caste_mass_g * count) / 1000
 
-    # Courier mass
-    if "courier" in ant_configs:
-        courier_cfg = ant_configs["courier"]
-        mass.courier_mass_g = compute_ant_mass(courier_cfg)
-        mass.swarm_mass_kg += (mass.courier_mass_g * mission.swarm.couriers) / 1000
+    # Store primary caste masses for report display
+    mass.worker_mass_g = caste_masses.get("worker", 0)
+    mass.taskmaster_mass_g = caste_masses.get("taskmaster", 0)
+    mass.courier_mass_g = caste_masses.get("courier", 0)
 
-    # Mothership modules
+    # Mothership modules (excluding bioreactor which is handled separately)
     modules = load_all_mothership_modules()
     for mod_name in mission.mothership_modules:
+        if mod_name == "bioreactor":
+            continue  # Handled below with wet mass
         if mod_name in modules:
-            mod = modules[mod_name]
-            # Try multiple keys for mass — configs use different names
-            mod_mass = (mod.get("total_mass_kg")
-                        or mod.get("total_mass_with_consumables_kg")
-                        or mod.get("mass_summary", {}).get("total_dry_mass_kg")
-                        or 0)
-            mass.mothership_dry_mass_kg += mod_mass
+            mass.mothership_dry_mass_kg += _get_module_mass(modules[mod_name])
 
-    # Bioreactor (read from module config if available, otherwise use defaults)
-    if mission.include_bioreactor:
+    # Bioreactor wet mass (water dominates)
+    if has_bioreactor:
         bio_mod = modules.get("bioreactor", {})
         bio_summary = bio_mod.get("mass_summary", {})
         mass.bioreactor_dry_mass_kg = bio_summary.get("total_dry_mass_kg", 110)
         mass.water_mass_kg = bio_summary.get("water_mass_kg", 300)
-        mass.consumables_mass_kg = 25  # Per year
         report.notes.append(
             "CRITICAL: Bioreactor wet mass includes 300 kg water. "
             "Total bioprocessing: 410 kg (not 110 kg dry)."
         )
 
-    # Return vehicles (5 per cycle, ~6.5 kg each empty)
-    mass.return_vehicles_mass_kg = 5 * 6.5
+    # Consumables — Track B/C with sugar production are nearly self-sustaining
+    if has_bioreactor and has_sugar_production:
+        # Sugar produced on-site from asteroid CO2 + sunlight — no resupply needed
+        # Only consumables: precipitation reagents (~8 kg/yr) + filter replacements
+        mass.consumables_mass_kg = 10  # First year reagents only
+        report.notes.append(
+            "Sugar production on-site (algae photobioreactor). "
+            "Bacteria self-replicate. Only precipitation reagents need resupply."
+        )
+    elif has_bioreactor:
+        mass.consumables_mass_kg = 25  # Includes sucrose from Earth
+    else:
+        mass.consumables_mass_kg = 5  # Track A: minimal (replacement drill bits)
+
+    # Return vehicles (from cargo module config if available)
+    cargo_mod = modules.get("cargo", {})
+    rv_count = cargo_mod.get("return_vehicle_inventory", {}).get("vehicles_per_mission", 10)
+    rv_mass = cargo_mod.get("return_vehicle_inventory", {}).get("vehicle_empty_mass_kg", 6.5)
+    mass.return_vehicles_mass_kg = rv_count * rv_mass
 
     # --- Cost Estimate ---
     cost = report.cost_estimate
 
-    # Swarm hardware
-    if "worker" in ant_configs:
-        cost.swarm_hardware_usd += compute_ant_cost(ant_configs["worker"]) * mission.swarm.workers
-    if "taskmaster" in ant_configs:
-        cost.swarm_hardware_usd += compute_ant_cost(ant_configs["taskmaster"]) * mission.swarm.taskmasters
-    if "courier" in ant_configs:
-        cost.swarm_hardware_usd += compute_ant_cost(ant_configs["courier"]) * mission.swarm.couriers
+    # Swarm hardware — all castes
+    for caste, count in caste_counts.items():
+        if caste in ant_configs and count > 0:
+            cost.swarm_hardware_usd += compute_ant_cost(ant_configs[caste]) * count
 
-    # Mothership hardware (rough estimate --detailed costing comes later)
-    cost.mothership_hardware_usd = mass.mothership_dry_mass_kg * 5000  # $5k/kg estimate
+    # Mothership hardware (rough: $5k/kg for custom space hardware)
+    total_mothership_dry = mass.mothership_dry_mass_kg + mass.bioreactor_dry_mass_kg
+    cost.mothership_hardware_usd = total_mothership_dry * 5000
+
+    # Return vehicles
+    rv_cost_each = cargo_mod.get("return_vehicle_inventory", {}).get("vehicle_cost_usd", 1500)
+    cost.mothership_hardware_usd += rv_count * rv_cost_each
 
     # Launch cost
     vehicle = LAUNCH_VEHICLES.get(mission.launch_vehicle, LAUNCH_VEHICLES["starship_conservative"])
@@ -227,11 +274,18 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     effective_mass = mass.total_with_margin_kg * dest_multiplier
     cost.launch_cost_usd = effective_mass * vehicle["cost_per_kg_usd"]
 
-    # Consumables per cycle
-    if mission.include_bioreactor:
-        cost.consumables_per_cycle_usd = 25 * 200  # 25 kg x$200/kg launch to destination
+    # Consumables cost per cycle
+    if has_bioreactor and has_sugar_production:
+        # Self-sustaining biology — only reagent resupply
+        cost.consumables_per_cycle_usd = 500  # Minimal reagent cost
+        report.notes.append(
+            "Near-zero consumables: bacteria self-replicate, sugar grown on-site, "
+            "water recovered at 95%, waste becomes tunnel sealant."
+        )
+    elif has_bioreactor:
+        cost.consumables_per_cycle_usd = 25 * 200  # Sucrose from Earth at $200/kg delivered
     else:
-        cost.consumables_per_cycle_usd = 1000  # Minimal for Track A
+        cost.consumables_per_cycle_usd = 1000  # Track A: drill bit replacement
 
     cost.total_first_cycle_usd = (
         cost.swarm_hardware_usd +
@@ -246,47 +300,63 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
         power[caste] = compute_ant_power(cfg)
     report.power_budget = power
 
-    # --- Revenue Estimate (very rough) ---
-    # This will be refined significantly in later phases
+    # --- Revenue Estimate ---
     material_values = MATERIAL_VALUES.get(mission.destination, MATERIAL_VALUES["lunar_orbit"])
 
-    # Rough extraction rate: workers xcapacity xcycles per day xdays per cycle
     swarm = mission.swarm
-    if swarm.track == "a":
-        # Track A: mechanical --200g/load, ~10 loads/day per worker
-        kg_per_cycle = swarm.workers * 0.2 * 10 * 30 / 1000  # 30-day cycle
-        # Assume mix of metals (mostly iron/nickel with traces of valuable metals)
-        revenue_per_kg = material_values.get("nickel", 25000) * 0.05  # 5% nickel by mass
-        revenue_per_kg += material_values.get("iron", 20000) * 0.20  # 20% iron
-    elif swarm.track == "b":
-        # Track B: bioleaching --350g/load, ~8 loads/day, but bioreactor is the bottleneck
-        # Bioreactor throughput: ~5 kg/hr crusher x24 hr = 120 kg/day
-        kg_per_cycle = min(
-            swarm.workers * 0.35 * 8 * 30 / 1000,
-            120 * 30  # Bioreactor max
-        )
-        # Higher purity output from bioleaching
-        revenue_per_kg = material_values.get("copper", 22000) * 0.10
-        revenue_per_kg += material_values.get("nickel", 25000) * 0.05
-        revenue_per_kg += material_values.get("rare_earths", 30000) * 0.01
-    else:  # Track C
-        # Track C: hybrid --mechanical throughput, bioleaching purity
-        kg_per_cycle = min(
-            swarm.workers * 0.2 * 10 * 30 / 1000,
-            120 * 30
-        )
-        revenue_per_kg = material_values.get("copper", 22000) * 0.12
-        revenue_per_kg += material_values.get("nickel", 25000) * 0.06
-        revenue_per_kg += material_values.get("rare_earths", 30000) * 0.015
+    cycle_days = 30
 
-    report.revenue_per_cycle_usd = kg_per_cycle * revenue_per_kg
+    if swarm.track == "a":
+        # Track A: mechanical mining
+        # Workers dig 200g/load, ~10 loads/day
+        regolith_kg_per_day = swarm.workers * 0.2 * 10 / 1000
+        kg_per_cycle = regolith_kg_per_day * cycle_days
+        # Mechanical sorting — lower purity, mostly bulk metals
+        revenue_per_kg = (material_values.get("nickel", 25000) * 0.05 +
+                          material_values.get("iron", 20000) * 0.20)
+    elif swarm.track == "b":
+        # Track B: bioleaching — worker hauling rate vs bioreactor throughput
+        hauling_kg_per_day = swarm.workers * 0.35 * 8 / 1000
+        bioreactor_max_kg_per_day = 120  # Crusher throughput limit
+        effective_kg_per_day = min(hauling_kg_per_day, bioreactor_max_kg_per_day)
+        kg_per_cycle = effective_kg_per_day * cycle_days
+        # Higher purity from bioleaching — dissolved metals precipitated as concentrates
+        revenue_per_kg = (material_values.get("copper", 22000) * 0.10 +
+                          material_values.get("nickel", 25000) * 0.05 +
+                          material_values.get("rare_earths", 30000) * 0.01 +
+                          material_values.get("cobalt", 25000) * 0.02)
+    else:  # Track C — hybrid
+        # Mechanical mining speed + bioleaching purity
+        hauling_kg_per_day = swarm.workers * 0.2 * 10 / 1000
+        bioreactor_max_kg_per_day = 120
+        effective_kg_per_day = min(hauling_kg_per_day, bioreactor_max_kg_per_day)
+        kg_per_cycle = effective_kg_per_day * cycle_days
+        # Best purity: mechanical pre-crushing + biological extraction
+        revenue_per_kg = (material_values.get("copper", 22000) * 0.12 +
+                          material_values.get("nickel", 25000) * 0.06 +
+                          material_values.get("rare_earths", 30000) * 0.015 +
+                          material_values.get("cobalt", 25000) * 0.025)
+
+    # Water recovery value (C-type asteroids with thermal sorter)
+    if "thermal_sorter" in mission.mothership_modules:
+        # ~8.6 L/day water recovered on Bennu = ~258 kg/cycle
+        water_kg_per_cycle = 8.6 * cycle_days
+        water_value = water_kg_per_cycle * material_values.get("water", 0)
+        report.revenue_per_cycle_usd = kg_per_cycle * revenue_per_kg + water_value
+        if water_value > 0:
+            report.notes.append(
+                f"Water recovery: {water_kg_per_cycle:.0f} kg/cycle "
+                f"(${water_value:,.0f} at {mission.destination})."
+            )
+    else:
+        report.revenue_per_cycle_usd = kg_per_cycle * revenue_per_kg
 
     # Break-even
     if report.revenue_per_cycle_usd > cost.consumables_per_cycle_usd:
         net_per_cycle = report.revenue_per_cycle_usd - cost.consumables_per_cycle_usd
         report.break_even_cycles = max(1, int(cost.total_first_cycle_usd / net_per_cycle) + 1)
     else:
-        report.break_even_cycles = -1  # Never breaks even
+        report.break_even_cycles = -1
         report.notes.append("WARNING: Revenue per cycle does not cover consumables. Not viable at this scale.")
 
     return report
@@ -303,20 +373,34 @@ def format_report(report: FeasibilityReport) -> str:
     lines.append("ASTRAANT FEASIBILITY REPORT")
     lines.append("=" * 70)
 
-    lines.append(f"\nMission: {m.swarm.workers}W + {m.swarm.taskmasters}T + {m.swarm.couriers}C"
-                 f" ->{m.asteroid_id} ->{m.destination}")
+    s = m.swarm
+    lines.append(f"\nSwarm: {s.workers}W + {s.taskmasters}T + {s.couriers}C"
+                 f" + {s.sorters}So + {s.plasterers}P + {s.tenders}Te"
+                 f" = {s.total_ants} ants")
+    lines.append(f"Target: {m.asteroid_id} -> {m.destination}")
     lines.append(f"Track: {m.swarm.track.upper()} | Vehicle: {m.launch_vehicle}")
+    lines.append(f"Modules: {', '.join(m.mothership_modules or [])}")
 
     lines.append(f"\n--- MASS BUDGET ---")
-    lines.append(f"  Worker ant:      {mb.worker_mass_g:.0f} g x{m.swarm.workers} = "
-                 f"{mb.worker_mass_g * m.swarm.workers / 1000:.1f} kg")
-    lines.append(f"  Taskmaster ant:  {mb.taskmaster_mass_g:.0f} g x{m.swarm.taskmasters} = "
-                 f"{mb.taskmaster_mass_g * m.swarm.taskmasters / 1000:.1f} kg")
-    lines.append(f"  Courier ant:     {mb.courier_mass_g:.0f} g x{m.swarm.couriers} = "
-                 f"{mb.courier_mass_g * m.swarm.couriers / 1000:.1f} kg")
+    caste_info = [
+        ("Worker", mb.worker_mass_g, s.workers),
+        ("Taskmaster", mb.taskmaster_mass_g, s.taskmasters),
+        ("Courier", mb.courier_mass_g, s.couriers),
+    ]
+    for name, mass_g, count in caste_info:
+        if count > 0:
+            lines.append(f"  {name:14s} {mass_g:.0f}g x{count} = "
+                         f"{mass_g * count / 1000:.1f} kg")
+    # Specialized castes (use swarm total minus primaries)
+    specialist_mass = mb.swarm_mass_kg - sum(m * c / 1000 for _, m, c in caste_info)
+    specialist_count = s.sorters + s.plasterers + s.tenders
+    if specialist_count > 0:
+        lines.append(f"  {'Specialists':14s} ({s.sorters}So+{s.plasterers}P+{s.tenders}Te)"
+                     f" = {specialist_mass:.1f} kg")
     lines.append(f"  Swarm total:     {mb.swarm_mass_kg:.1f} kg")
     lines.append(f"  Mothership dry:  {mb.mothership_dry_mass_kg:.1f} kg")
-    if m.include_bioreactor:
+    has_bioreactor = "bioreactor" in (m.mothership_modules or [])
+    if has_bioreactor:
         lines.append(f"  Bioreactor dry:  {mb.bioreactor_dry_mass_kg:.1f} kg")
         lines.append(f"  Water:           {mb.water_mass_kg:.0f} kg  *** DOMINATES TRACK B/C LAUNCH MASS ***")
     lines.append(f"  Consumables:     {mb.consumables_mass_kg:.0f} kg")
