@@ -27,6 +27,8 @@ except ImportError:
     sample_regolith = None
     get_zones_for_asteroid = None
 
+from .asteroid_grid import AsteroidGrid
+
 
 @dataclass
 class MiningPriority:
@@ -128,7 +130,11 @@ class SimEngine:
         self._comp_zones = None
         self._bulk_metals = {}
         self._bulk_water_pct = 0.0
-        self._zone_hits: dict[str, int] = {}  # Count of batches per zone
+        self._zone_hits: dict[str, int] = {}
+
+        # Voxel grid (Minecraft-style asteroid interior)
+        self.grid = AsteroidGrid(radius_m=50, seed=random.randint(0, 999999))
+        self._dig_position = [0, -3, 0]  # Current dig face (starts below mothership)
 
     def setup(self) -> None:
         """Initialize all agents and place them in the tunnel/surface."""
@@ -288,15 +294,36 @@ class SimEngine:
                 self.stats.total_material_extracted_kg += kg
                 self.stats.total_dump_cycles += 1
 
-                # Sample composition variability for this batch
+                # Mine voxels from the grid and use their zone for composition
+                voxel = self.grid.mine_voxel(*[int(c) for c in self._dig_position])
+                # Advance dig position
+                if self.tunnel.dig_target and random.random() < 0.03:
+                    # Dig toward target (advance every ~30 dumps)
+                    dt_pos = self.tunnel.dig_target
+                    dx = 1 if dt_pos.x > self._dig_position[0] else (-1 if dt_pos.x < self._dig_position[0] else 0)
+                    dy = -1  # Generally dig deeper
+                    dz = 1 if dt_pos.z > self._dig_position[2] else (-1 if dt_pos.z < self._dig_position[2] else 0)
+                    self._dig_position[0] += dx * random.choice([0, 0, 1])
+                    self._dig_position[1] += dy
+                    self._dig_position[2] += dz * random.choice([0, 0, 1])
+                else:
+                    # Random exploration with downward bias (advance every ~30 dumps)
+                    if random.random() < 0.03:
+                        self._dig_position[0] += random.choice([-1, 0, 0, 0, 1])
+                        self._dig_position[1] -= 1
+                        self._dig_position[2] += random.choice([-1, 0, 0, 0, 1])
+
+                # Sample composition using the voxel's zone type
                 if self._comp_zones and sample_regolith and self._bulk_metals:
-                    # If mining priority targets a specific zone, bias toward it
                     zones = self._comp_zones
                     sample = sample_regolith(
                         self._bulk_metals, self._bulk_water_pct,
                         kg, zones,
-                        depth_m=self.tunnel.total_length_m,
+                        depth_m=abs(self._dig_position[1]),
                     )
+                    # Override zone with the actual voxel zone
+                    sample = sample._replace(zone=voxel.zone_type) if hasattr(sample, '_replace') else sample
+                    sample.zone = voxel.zone_type
                     self._zone_hits[sample.zone] = self._zone_hits.get(sample.zone, 0) + 1
 
                     # Assign zone to current tunnel segment
@@ -579,6 +606,21 @@ class SimEngine:
                 "message": f"MINING PRIORITY: {metal if metal else 'none (balanced)'}",
             })
 
+        elif cmd_type == "scan_area":
+            # Taskmaster reveals nearby voxels
+            x, y, z = self._dig_position
+            revealed = self.grid.reveal_area(int(x), int(y), int(z), radius=5)
+            nearby = self.grid.get_nearby_veins(int(x), int(y), int(z), scan_radius=15)
+            msg_parts = [f"SCAN: revealed {len(revealed)} voxels"]
+            for v in nearby[:3]:
+                msg_parts.append(f"  {v['zone']} at {v['distance_m']:.0f}m ({v['richness']:.1f}x)")
+            events.append({
+                "type": "scan_result",
+                "time": self.clock.sim_time,
+                "message": "\n".join(msg_parts),
+                "nearby_veins": nearby[:5],
+            })
+
         elif cmd_type == "emergency_stop":
             # Stop all workers
             for agent in self.agents:
@@ -674,6 +716,12 @@ class SimEngine:
                     self.mining.revenue_by_material.items(),
                     key=lambda x: -x[1]
                 )[:3] if self.mining.revenue_by_material else [],
+            },
+            "grid": {
+                "voxels_mined": self.grid.total_mined,
+                "voxels_revealed": self.grid.total_revealed,
+                "veins": len(self.grid._veins),
+                "dig_position": list(self._dig_position),
             },
             "manufacturing": {
                 "enabled": self.manufacturing.enabled,

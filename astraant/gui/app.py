@@ -254,6 +254,7 @@ class AstraAntApp:
             ("Prioritize Water", {"type": "prioritize", "metal": "water"}),
             ("Prioritize Copper", {"type": "prioritize", "metal": "copper"}),
             ("Prioritize PGMs", {"type": "prioritize", "metal": "platinum"}),
+            ("Scan Area", {"type": "scan_area"}),
             ("Branch Tunnel", {"type": "branch_tunnel"}),
             ("Dig Deep (-50m)", {"type": "dig_toward", "x": 0, "y": -50, "z": 0}),
             ("Start Chamber", {"type": "set_chamber_goal", "radius_m": 8, "purpose": "ops hub"}),
