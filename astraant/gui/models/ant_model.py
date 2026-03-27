@@ -1,10 +1,20 @@
-"""Procedural 6-legged spider ant model built from Ursina primitives."""
+"""Ant model builder — uses CAD-derived .obj models when available,
+falls back to procedural primitives from Ursina when not.
+
+This means the ants in the sim look exactly like what you'd 3D print,
+using the same OpenSCAD source files.
+"""
 
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 from ursina import Entity, Vec3, color, destroy
+
+# Try to find compiled CAD models
+_CAD_MODELS_DIR = Path(__file__).parent.parent.parent.parent / "models"
+_USE_CAD_MODELS = _CAD_MODELS_DIR.exists() and (_CAD_MODELS_DIR / "worker_chassis.obj").exists()
 
 
 # Caste visual properties
@@ -32,16 +42,20 @@ CASTE_SCALES = {
 
 
 def create_ant_entity(caste: str = "worker", parent: Entity = None) -> Entity:
-    """Create a procedural 6-legged spider ant entity.
+    """Create an ant entity, using CAD-derived models when available.
 
-    The ant is built from primitives:
-    - Body: two ellipsoids (thorax + abdomen)
-    - Head: small sphere with sensor protrusions
-    - Legs: 6 legs, each made of 2 cylinder segments with a knee joint
-    - Tool: caste-specific attachment
+    If compiled .obj models exist (from OpenSCAD -> STL -> OBJ pipeline),
+    uses those for accurate visual representation matching 3D-printable designs.
+    Otherwise falls back to procedural primitives.
 
     Returns the root Entity. All parts are children.
     """
+    # Try CAD model first
+    cad_entity = _try_load_cad_model(caste, parent)
+    if cad_entity is not None:
+        return cad_entity
+
+    # Fall back to procedural primitives
     scale = CASTE_SCALES.get(caste, 1.0)
     ant_color = CASTE_COLORS.get(caste, color.orange)
     body_length = 0.4 * scale  # Scene units
@@ -233,3 +247,49 @@ def animate_walk(ant: Entity, dt: float, speed: float = 1.0) -> None:
         swing = math.sin(phase) * 15  # Degrees of rotation
 
         leg["upper"].rotation_z = leg["side"] * 30 + swing
+
+
+def _try_load_cad_model(caste: str, parent: Entity = None) -> Entity | None:
+    """Try to load a CAD-derived .obj model for this caste.
+
+    Returns an Entity if successful, None to fall back to procedural.
+    """
+    if not _USE_CAD_MODELS:
+        return None
+
+    # Map caste to CAD model file
+    model_map = {
+        "worker": "worker_chassis",
+        "sorter": "worker_chassis",       # Same body, different color
+        "plasterer": "worker_chassis",
+        "tender": "worker_chassis",
+        "taskmaster": "worker_chassis",    # Same body with sensor cluster
+        "surface_ant": "worker_chassis",   # Same body, different materials
+        "courier": "worker_chassis",
+    }
+
+    model_name = model_map.get(caste, "worker_chassis")
+    obj_path = _CAD_MODELS_DIR / f"{model_name}.obj"
+
+    if not obj_path.exists():
+        return None
+
+    try:
+        ant_color = CASTE_COLORS.get(caste, color.orange)
+        scale = CASTE_SCALES.get(caste, 1.0)
+
+        root = Entity(
+            parent=parent,
+            model=str(obj_path),
+            color=ant_color,
+            scale=0.01 * scale,  # OpenSCAD outputs in mm, Ursina in scene units
+        )
+        root._caste = caste
+        root._walk_time = 0.0
+        root._legs = []  # CAD models don't have animatable legs (yet)
+        root._from_cad = True
+
+        return root
+    except Exception as e:
+        print(f"Failed to load CAD model {obj_path}: {e}")
+        return None

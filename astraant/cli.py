@@ -541,6 +541,26 @@ def build_scad(tool_id: str | None, gen_all: bool, output_dir: str | None):
             click.echo(code)
 
 
+@build.command("models")
+@click.option("--model", default=None, help="Specific model name (or all)")
+def build_models(model: str | None):
+    """Compile OpenSCAD designs to visual models (.scad -> .stl -> .obj)."""
+    from .model_builder import build_all_models, build_model
+    if model:
+        result = build_model(model)
+        if result:
+            click.echo(f"Built: {result}")
+        else:
+            click.echo(f"Failed to build model: {model}")
+    else:
+        results = build_all_models()
+        click.echo(f"Built {len(results)} models:")
+        for r in results:
+            click.echo(f"  {r}")
+        if not results:
+            click.echo("No models built. Is OpenSCAD installed?")
+
+
 @build.command("wiring")
 @click.argument("caste")
 @click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")

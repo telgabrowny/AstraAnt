@@ -28,6 +28,9 @@ desktop.ini
 # Output (generated reports, BOMs, etc.)
 output/
 
+# Compiled 3D models (generated from .scad sources via `astraant build models`)
+/models/
+
 # Large files
 *.stl
 *.FCStd
