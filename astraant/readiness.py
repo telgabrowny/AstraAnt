@@ -414,45 +414,50 @@ def assess_subsystems() -> list[ReadinessItem]:
             blockers=["Requires completed bioleaching test first (waste material needed)"],
         ),
 
-        # -- Specialized Ant Castes --
+        # -- Modular Tool System --
         ReadinessItem(
             category="subsystem",
-            name="Sorter Ant -- Thermal Drum Operation",
+            name="Modular Tool System -- Magnetic Mount",
             level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
-            description="Specialized worker ant that loads/unloads thermal separation drum.",
-            rationale="Same base body as worker ant. Heat-resistant scoop tool is the "
-                      "only novel element. Main risk is thermal exposure of the ant near "
-                      "the 120C drum.",
-            test_plan="1) Build worker ant prototype with ceramic-tipped scoop. "
-                      "2) Test loading/unloading at drum operating temperature. "
-                      "3) Verify ant electronics stay within thermal limits.",
-            estimated_cost_usd=200,
+            description="Universal magnetic clip tool mount between mandible arms. "
+                        "4mm neodymium magnets, 3N pull force.",
+            rationale="Magnetic tool attachment is common in manufacturing jigs. "
+                      "But reliable attach/detach by a small robot in dusty conditions "
+                      "needs validation. Regolith dust on magnets could reduce grip.",
+            test_plan="1) 3D print mount + tool heads. 2) Test attach/detach cycles (1000x). "
+                      "3) Test with simulated regolith dust contamination. "
+                      "4) Measure grip force degradation over time.",
+            estimated_cost_usd=100,
             estimated_time_weeks=2,
         ),
         ReadinessItem(
             category="subsystem",
-            name="Plasterer Ant -- Paste Application",
+            name="Modular Tool System -- Tool Heads (6 types)",
             level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
-            description="Specialized worker ant with nozzle-and-trowel for wall sealing.",
-            rationale="Novel tool attachment. Paste extrusion in low gravity may behave "
-                      "differently than on Earth. Coating uniformity needs validation.",
-            test_plan="1) Build paste applicator tool prototype. "
-                      "2) Test paste extrusion on vertical surfaces (simulates low-g). "
-                      "3) Measure coating uniformity and thickness consistency.",
-            estimated_cost_usd=300,
-            estimated_time_weeks=3,
+            description="3D-printable tool heads: drill, scoop, paste nozzle, "
+                        "thermal rake, sampling probe, cargo gripper.",
+            rationale="Each tool head has been designed with printable dimensions "
+                      "and OpenSCAD parametric models. Physical testing needed to "
+                      "validate fit, function, and durability.",
+            test_plan="1) Print all 6 tool heads. 2) Test each on worker ant prototype. "
+                      "3) Validate drill excavation rate, scoop capacity, paste flow, "
+                      "rake heat resistance, probe sensor readings, gripper hold strength.",
+            estimated_cost_usd=200,
+            estimated_time_weeks=4,
         ),
         ReadinessItem(
             category="subsystem",
-            name="Tender Ant -- Bioreactor Monitoring",
-            level=ReadinessLevel.NEEDS_SIM_VALIDATION,
-            description="Specialized worker ant with portable pH/turbidity sensors for vat patrol.",
-            rationale="Sensor package is COTS hardware. The value proposition (mobile "
-                      "spot-checking vs. fixed sensors only) needs simulation to quantify "
-                      "how much earlier contamination is detected.",
-            test_plan="Simulate bioreactor failure scenarios with and without tender ant patrol. "
-                      "Measure detection time improvement.",
-            estimated_cost_usd=0,
+            name="Mandible Arms -- 2-DOF Manipulation",
+            level=ReadinessLevel.NEEDS_PHYSICAL_TEST,
+            description="Two SG51R micro servos as mandible arms for tool operation.",
+            rationale="Small micro servos for manipulation are common in hobby robotics. "
+                      "Key unknown: can 1.5N grip force reliably hold tools during "
+                      "vibration (drilling) and thermal exposure (sorting)?",
+            test_plan="1) Build mandible arm prototype on worker chassis. "
+                      "2) Test tool grip during drill motor vibration. "
+                      "3) Test grip with paste nozzle squeeze operation. "
+                      "4) Measure mandible servo lifetime under load.",
+            estimated_cost_usd=50,
             estimated_time_weeks=2,
         ),
 

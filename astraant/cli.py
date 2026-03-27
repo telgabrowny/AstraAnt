@@ -373,6 +373,34 @@ def build_bom(caste: str, track: str, output: str | None):
         click.echo(text)
 
 
+@build.command("scad")
+@click.argument("tool_id", required=False, default=None)
+@click.option("--all", "gen_all", is_flag=True, help="Generate all tool models")
+@click.option("--output-dir", "-o", default=None, help="Output directory")
+def build_scad(tool_id: str | None, gen_all: bool, output_dir: str | None):
+    """Generate OpenSCAD 3D-printable models for tool heads."""
+    from .scad_generator import generate_tool_scad, generate_all_tools, TOOL_GENERATORS
+
+    if gen_all or tool_id is None:
+        out = Path(output_dir) if output_dir else None
+        files = generate_all_tools(out)
+        click.echo(f"Generated {len(files)} OpenSCAD tool models:")
+        for f in files:
+            click.echo(f"  {f}")
+    else:
+        if tool_id not in TOOL_GENERATORS:
+            click.echo(f"Unknown tool '{tool_id}'. Available: {', '.join(TOOL_GENERATORS.keys())}")
+            return
+        code = generate_tool_scad(tool_id)
+        if output_dir:
+            filepath = Path(output_dir) / f"{tool_id}.scad"
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+            filepath.write_text(code)
+            click.echo(f"Written to {filepath}")
+        else:
+            click.echo(code)
+
+
 @build.command("wiring")
 @click.argument("caste")
 @click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")

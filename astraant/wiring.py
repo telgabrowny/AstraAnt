@@ -141,28 +141,43 @@ def generate_wiring_diagram(caste: str, track: str = "a") -> str:
 
     connections = []
 
-    # --- Locomotion (6 servos) ---
-    lines.append(f"\n--- LOCOMOTION (6x Servos) ---")
+    # --- Locomotion (6 leg servos) ---
     loco = cfg.get("locomotion", {})
+    n_legs = loco.get("legs", loco.get("actuators", 6))
     servo_id = loco.get("part_id", "sg90_servo")
     servo_info = COMPONENT_WIRING.get(servo_id, {})
 
-    for i in range(loco.get("actuators", 6)):
-        leg_name = ["Front-Left", "Front-Right", "Mid-Left",
-                    "Mid-Right", "Rear-Left", "Rear-Right"][i]
+    lines.append(f"\n--- LOCOMOTION ({n_legs}x Leg Servos) ---")
+    leg_names = ["Front-Left", "Front-Right", "Mid-Left",
+                 "Mid-Right", "Rear-Left", "Rear-Right"]
+    for i in range(n_legs):
+        leg_name = leg_names[i] if i < len(leg_names) else f"Leg-{i+1}"
         pwm_pin = mcu["pwm"][pwm_idx] if pwm_idx < len(mcu["pwm"]) else f"GP{gpio_idx}"
-        connections.append({
-            "component": f"Servo {i+1} ({leg_name})",
-            "part": servo_id,
-            "signal": pwm_pin,
-            "power": "5V rail",
-            "ground": "Common GND",
-        })
-        lines.append(f"  Servo {i+1} ({leg_name}):")
+        lines.append(f"  Leg {i+1} ({leg_name}):")
         lines.append(f"    Signal (orange) -> {pwm_pin}")
         lines.append(f"    VCC (red)       -> 5V power rail")
         lines.append(f"    GND (brown)     -> Common GND")
         pwm_idx += 1
+
+    if servo_info.get("notes"):
+        lines.append(f"  Note: {servo_info['notes']}")
+
+    # --- Mandible Arms (2 servos) ---
+    mandibles = cfg.get("mandibles", {})
+    n_mandibles = mandibles.get("count", 0)
+    if n_mandibles > 0:
+        mandible_part = mandibles.get("part_id", "sg51r_micro_servo")
+        lines.append(f"\n--- MANDIBLE ARMS ({n_mandibles}x Micro Servos) ---")
+        for i in range(n_mandibles):
+            side = "Left" if i == 0 else "Right"
+            pwm_pin = mcu["pwm"][pwm_idx] if pwm_idx < len(mcu["pwm"]) else f"GP{gpio_idx}"
+            lines.append(f"  Mandible {side} ({mandible_part}):")
+            lines.append(f"    Signal -> {pwm_pin}")
+            lines.append(f"    VCC    -> 5V power rail")
+            lines.append(f"    GND    -> Common GND")
+            pwm_idx += 1
+        grip = mandibles.get("grip_force_n", "?")
+        lines.append(f"  Grip force: {grip}N  |  Tool mount: magnetic clip")
 
     if servo_info.get("notes"):
         lines.append(f"  Note: {servo_info['notes']}")
