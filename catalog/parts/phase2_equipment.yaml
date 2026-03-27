@@ -1,0 +1,226 @@
+# Phase 2 Chamber Equipment -- Real industrial parts
+# These are the specific items the humanoid robots install and operate.
+# All standard Earth equipment -- works in the pressurized chamber.
+
+# === FUEL DEPOT ===
+
+id: phase2_equipment_catalog
+name: "Phase 2 Equipment Catalog"
+category: "phase2_industrial"
+description: "Real purchasable industrial equipment for chamber facilities"
+
+fuel_depot:
+  pem_electrolyzer:
+    name: "PEM Electrolyzer Stack"
+    description: "Proton Exchange Membrane water electrolysis unit"
+    reference_model: "Nel Hydrogen M400 or ITM Power HGas3SP"
+    specs:
+      h2_output_kg_per_day: 5
+      water_input_liters_per_day: 45
+      power_draw_kw: 20
+      efficiency_pct: 75
+      mass_kg: 150
+    cost_usd: 500000
+    supplier: "Nel Hydrogen / ITM Power"
+    note: "Industrial PEM electrolyzers are mature technology"
+
+  cryo_storage_h2:
+    name: "Cryogenic LH2 Storage Dewar"
+    description: "Vacuum-insulated liquid hydrogen storage"
+    reference_model: "Chart Industries cryogenic dewar"
+    specs:
+      capacity_kg_h2: 50
+      boiloff_pct_per_day: 0.5
+      mass_kg: 100
+      pressure_bar: 5
+    cost_usd: 200000
+    supplier: "Chart Industries"
+
+  cryo_storage_lox:
+    name: "Cryogenic LOX Storage"
+    specs:
+      capacity_kg_o2: 400
+      mass_kg: 80
+      pressure_bar: 10
+    cost_usd: 100000
+
+  compressor_h2:
+    name: "Hydrogen Compressor"
+    specs:
+      output_pressure_bar: 350
+      flow_rate_kg_per_hour: 0.5
+      power_kw: 5
+      mass_kg: 50
+    cost_usd: 150000
+
+# === MANUFACTURING PLANT ===
+
+manufacturing:
+  cnc_mill:
+    name: "3-Axis CNC Milling Machine"
+    description: "Desktop/benchtop CNC for machining metal parts from asteroid iron/nickel"
+    reference_model: "Tormach PCNC 440 or Haas Mini Mill"
+    specs:
+      work_envelope_mm: [300, 200, 200]
+      spindle_rpm: 10000
+      materials: ["iron", "nickel", "aluminum", "copper", "brass"]
+      accuracy_mm: 0.01
+      power_kw: 3
+      mass_kg: 300
+    cost_usd: 30000
+    supplier: "Tormach / Haas"
+
+  metal_3d_printer:
+    name: "Metal Powder Bed Fusion 3D Printer"
+    description: "Selective laser sintering for complex metal parts"
+    reference_model: "Markforged Metal X or Desktop Metal Studio"
+    specs:
+      build_volume_mm: [150, 150, 150]
+      materials: ["stainless_steel", "iron", "nickel_alloy"]
+      layer_thickness_um: 50
+      power_kw: 5
+      mass_kg: 400
+    cost_usd: 150000
+    supplier: "Markforged / Desktop Metal"
+    note: "Uses metal powder from asteroid extraction. Build parts directly."
+
+  polymer_3d_printer:
+    name: "Large-Format FDM 3D Printer"
+    reference_model: "Bambu Lab X1C or similar"
+    specs:
+      build_volume_mm: [256, 256, 256]
+      materials: ["PETG", "PHB_bioplastic", "nylon"]
+      power_kw: 0.5
+      mass_kg: 20
+    cost_usd: 1500
+    note: "Uses PHB bioplastic filament produced locally from C. necator"
+
+  welding_station:
+    name: "MIG/TIG Welding Station"
+    reference_model: "Miller Multimatic 220 or Lincoln Electric"
+    specs:
+      process: ["MIG", "TIG", "stick"]
+      amperage_max: 220
+      power_kw: 8
+      shielding_gas: "argon (from asteroid atmosphere capture)"
+      mass_kg: 40
+    cost_usd: 3000
+    supplier: "Miller Electric / Lincoln Electric"
+    note: "Humanoid robots are trained welders. Argon from fill gas supply."
+
+  lathe:
+    name: "Metal Lathe"
+    reference_model: "Grizzly G0752 or PM-1030V"
+    specs:
+      swing_diameter_mm: 250
+      length_mm: 500
+      spindle_rpm: 2000
+      power_kw: 1.5
+      mass_kg: 150
+    cost_usd: 5000
+    note: "For turning shafts, bushings, and cylindrical parts"
+
+  wire_edm:
+    name: "Wire EDM Machine"
+    description: "For precision cutting of hard metals"
+    specs:
+      accuracy_mm: 0.005
+      materials: ["hardened_steel", "tungsten", "nickel_superalloy"]
+      power_kw: 3
+      mass_kg: 200
+    cost_usd: 40000
+    note: "For making precision dies, molds, and cutting tool inserts"
+
+# === HABITAT ===
+
+habitat:
+  life_support_eclss:
+    name: "ECLSS Unit (ISS-heritage)"
+    description: "Environmental Control and Life Support System"
+    specs:
+      crew_capacity: 6
+      o2_generation: "electrolysis from water"
+      co2_removal: "zeolite adsorbent"
+      water_recycling_pct: 93
+      power_kw: 3
+      mass_kg: 500
+    cost_usd: 5000000
+    note: "ISS heritage hardware. Most expensive single item."
+
+  exercise_equipment:
+    name: "Crew Exercise Station"
+    description: "Resistance + cardio for zero-g (ARED-style + bike)"
+    specs:
+      mass_kg: 100
+      power_kw: 0.1
+    cost_usd: 50000
+
+  galley:
+    name: "Space Galley (Food Prep Station)"
+    specs:
+      includes: ["food warmer", "water dispenser", "storage", "trash compactor"]
+      mass_kg: 50
+      power_kw: 1
+    cost_usd: 20000
+
+# === CENTRIFUGE ===
+
+centrifuge_parts:
+  bearing_assembly:
+    name: "Centrifuge Hub Bearing (magnetic)"
+    description: "Frictionless magnetic bearing for the centrifuge ring hub"
+    specs:
+      load_capacity_kg: 5000
+      rpm_max: 10
+      power_kw: 0.3
+      mass_kg: 100
+      lifetime_years: 20
+    cost_usd: 200000
+    note: "Most critical component. Failure = centrifuge stops."
+
+  ring_segments:
+    name: "Structural Ring Segments (x12)"
+    description: "Curved aluminum beams forming the 5m-radius ring"
+    specs:
+      material: "aluminum_6061"
+      per_segment_mass_kg: 80
+      total_mass_kg: 960
+      per_segment_length_m: 2.6       # Circumference / 12
+    cost_usd: 100000
+    note: "Could be fabricated locally from asteroid aluminum if available"
+
+  flooring_panels:
+    name: "Ring Interior Floor Panels"
+    specs:
+      area_m2: 30                     # Inner ring floor area
+      mass_kg: 60
+    cost_usd: 10000
+
+sourcing:
+  suppliers:
+    - name: "Various (see individual items)"
+  price_history:
+    - date: "2026-03-27"
+      price_usd: 0
+      source: "catalog aggregate"
+
+notes: |
+  All prices are 2026 estimates based on current commercial/industrial pricing.
+  These are REAL machines you can buy today from the listed suppliers.
+
+  In the asteroid chamber:
+  - No special space modifications needed (pressurized environment)
+  - Power from nuclear reactor or solar array via 48V DC bus
+  - Shielding gas (argon) for welding from the nitrogen/argon fill gas supply
+  - Metal powder for 3D printing from bioreactor extraction
+  - Water for electrolysis from asteroid ice extraction
+
+  The humanoid robots operate all of this equipment. A Figure 02 can:
+  - Load/unload the CNC mill
+  - Set up and run welding jobs
+  - Change 3D printer filament and remove finished parts
+  - Assemble centrifuge segments using the welding station
+  - Install ECLSS plumbing with standard wrenches
+
+added_date: "2026-03-27"
+last_updated: "2026-03-27"
