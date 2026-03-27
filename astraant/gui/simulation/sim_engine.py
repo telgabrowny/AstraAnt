@@ -28,6 +28,7 @@ except ImportError:
     get_zones_for_asteroid = None
 
 from .asteroid_grid import AsteroidGrid
+from .material_ledger import MaterialLedger
 
 try:
     from ...endgame import HabitatGoal
@@ -112,6 +113,7 @@ class SimEngine:
         self.stats = SimStats()
         self.manufacturing = ManufacturingState()
         self.mining = MiningPriority()
+        self.ledger = MaterialLedger()   # Unified material tracking
         self.agents: list[AntAgent] = []
         self.event_log: list[dict[str, Any]] = []
 
@@ -314,21 +316,16 @@ class SimEngine:
             if "material_dumped_g" in agent_events:
                 kg = agent_events["material_dumped_g"] / 1000.0
 
-                # Track B/C: crusher bottleneck — material goes to buffer first
-                if self._has_bioreactor:
-                    self._regolith_buffer_kg += kg
-                    # If buffer is full, this dump was wasted time
-                    # (worker should have been reassigned)
-                    if self._regolith_buffer_kg > self._buffer_capacity_kg:
-                        self._regolith_buffer_kg = self._buffer_capacity_kg
-                        # Signal that workers should switch roles
-                        agent_events["buffer_full"] = True
-                else:
-                    # Track A: no bottleneck, all material counts
-                    pass
-
-                self.stats.total_material_extracted_kg += kg
+                # Material goes into the unified ledger
+                self.ledger.mine_regolith(kg)
+                self.stats.total_material_extracted_kg = self.ledger.total_mined_kg
                 self.stats.total_dump_cycles += 1
+
+                # Track B/C: check if processing pipeline is backed up
+                if self._has_bioreactor:
+                    self._regolith_buffer_kg = self.ledger.raw_regolith_buffer_kg
+                    if self._regolith_buffer_kg > self._buffer_capacity_kg:
+                        agent_events["buffer_full"] = True
 
                 # Mine voxels from the grid and use their zone for composition
                 voxel = self.grid.mine_voxel(*[int(c) for c in self._dig_position])
@@ -447,10 +444,19 @@ class SimEngine:
 
             if "failure" in agent_events:
                 self.stats.ants_failed += 1
+                # Recycle the dead ant through the material ledger
+                ant_mass_g = 115 if agent.caste not in ("taskmaster", "surface_ant") else 300
+                recycled = self.ledger.recycle_dead_ant(ant_mass_g)
+                salvage_msg = ""
+                if recycled["servos"] > 0 or recycled["mcus"] > 0:
+                    salvage_msg = (f" Salvaged: {recycled['servos']} servos"
+                                   f"{', 1 MCU' if recycled['mcus'] > 0 else ''}. ")
+                salvage_msg += f"Recycled {recycled['metal_kg']*1000:.0f}g metal to furnace."
+
                 events.append({
                     "type": "failure",
                     "time": self.clock.sim_time,
-                    "message": agent_events["failure"],
+                    "message": agent_events["failure"] + " " + salvage_msg,
                     "ant_id": agent.id,
                 })
 
@@ -460,14 +466,21 @@ class SimEngine:
                     "time": self.clock.sim_time,
                 })
 
-        # Crusher processes regolith from buffer at fixed rate (Track B/C bottleneck)
-        if self._has_bioreactor and self._regolith_buffer_kg > 0:
-            crusher_rate_per_sec = self._crusher_capacity_kg_per_day / 86400.0
-            processed = min(self._regolith_buffer_kg,
-                            crusher_rate_per_sec * sim_dt * self._fleet_multiplier)
-            self._regolith_buffer_kg -= processed
-            # The actual "value" from bioleaching comes from crushed material
-            # (revenue calculation already handles this via composition sampling)
+        # Process material through the pipeline (ledger-based)
+        dt_days = sim_dt / 86400.0
+        if dt_days > 0:
+            # Step 1: Thermal sorter (raw -> dried + water + CO2)
+            sort_result = self.ledger.process_thermal_sort(dt_days * self._fleet_multiplier)
+            if sort_result:
+                self.stats.total_water_recovered_kg = self.ledger.total_water_recovered_kg
+
+            # Step 2: Crusher (dried -> crushed)
+            self.ledger.process_crusher(dt_days * self._fleet_multiplier)
+
+            # Step 3: Bioreactor intake (crushed -> slurry)
+            if self._has_bioreactor:
+                self.ledger.feed_bioreactor(dt_days * self._fleet_multiplier)
+                self._regolith_buffer_kg = self.ledger.crushed_buffer_kg
 
         # Feed excavation into endgame habitat goal (scaled by fleet)
         if self.habitat_goal and self.stats.total_dump_cycles > 0:
@@ -494,14 +507,11 @@ class SimEngine:
                 chamber_contribution = sim_dt * 0.001  # Slow chamber growth
                 self.tunnel.contribute_to_chamber(chamber_contribution)
 
-        # Feed extracted material into manufacturing stockpile
-        # A fraction of mined material becomes iron/copper powder after bioleaching
+        # Manufacturing reads from the unified ledger
         mfg = self.manufacturing
         if mfg.enabled:
-            # Iron is ~20% of regolith on Bennu, extraction efficiency ~85%
-            iron_this_tick = self.stats.total_dump_cycles * 0.001  # Rough: small increment per dump
-            mfg.iron_stockpile_kg = max(0, self.stats.total_material_extracted_kg * 0.003)  # ~0.3% yield as usable iron powder
-            mfg.copper_stockpile_kg = max(0, self.stats.total_material_extracted_kg * 0.00001)  # Very little copper
+            mfg.iron_stockpile_kg = self.ledger.iron_stockpile_kg
+            mfg.copper_stockpile_kg = self.ledger.copper_stockpile_kg
 
         # Process manufacturing queue
         if mfg.enabled and (mfg.ants_queued > 0 or mfg.pods_queued > 0):
@@ -565,13 +575,13 @@ class SimEngine:
         mfg = self.manufacturing
         dt_hours = sim_dt / 3600.0
 
-        # SINTERING: convert iron stockpile into parts
-        if mfg.ants_queued > 0 and mfg.iron_stockpile_kg >= 0.025:
+        # SINTERING: consume iron from the LEDGER stockpile (not a separate counter)
+        if mfg.ants_queued > 0 and self.ledger.iron_stockpile_kg >= 0.025:
             mfg.current_sinter_timer += dt_hours
             if mfg.current_sinter_timer >= mfg.sinter_time_hours:
                 mfg.current_sinter_timer = 0.0
-                mfg.parts_ready += 1
-                mfg.iron_stockpile_kg -= 0.025  # ~25g iron per part
+                if self.ledger.use_iron_for_part():
+                    mfg.parts_ready += 1
                 mfg.parts_sintering = min(mfg.ants_queued * mfg.parts_per_ant - mfg.parts_ready, 1)
 
         # ASSEMBLY: when enough parts ready, start assembling an ant
@@ -827,6 +837,7 @@ class SimEngine:
                     key=lambda x: -x[1]
                 )[:3] if self.mining.revenue_by_material else [],
             },
+            "ledger": self.ledger.summary(),
             "fleet": {
                 "motherships": self.mothership_count,
                 "multiplier": self._fleet_multiplier,
