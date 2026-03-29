@@ -2,7 +2,7 @@
 
 "I want to build an Interstellar habitat" -> recommends Bennu, 428 motherships, nuclear
 "I want maximum water" -> ranks asteroids by water content × accessibility
-"I want platinum" -> ranks by PGM content, recommends Track B + bioleaching
+"I want platinum" -> ranks by PGM content, recommends bioleaching track
 "Cheapest path to profit" -> smallest viable mission
 """
 

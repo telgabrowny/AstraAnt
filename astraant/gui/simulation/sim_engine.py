@@ -157,13 +157,13 @@ class SimEngine:
         self._telemetry_interval = 900.0  # Every 15 min sim-time
         self._last_telemetry_time = 0.0
 
-        # Bioreactor state (Track B/C only)
+        # Bioreactor state (Bioleaching/hybrid only)
         self._has_bioreactor = track in ("bioleaching", "hybrid")
         self._bioreactor_state = None
         self._bioreactor_update_interval = 3600.0
         self._last_bioreactor_update = 0.0
 
-        # Processing throughput bottleneck (Track B/C)
+        # Processing throughput bottleneck (Bioleaching/hybrid)
         self._crusher_capacity_kg_per_day = 120.0  # 5 kg/hr × 24
         self._regolith_buffer_kg = 0.0             # Pile at crusher intake
         self._buffer_capacity_kg = 500.0           # Max buffer before workers idle
@@ -317,7 +317,7 @@ class SimEngine:
             except Exception:
                 pass
 
-        # Initialize bioreactor if Track B/C
+        # Initialize bioreactor if Bioleaching/hybrid
         if self._has_bioreactor:
             try:
                 from ...bioreactor import VatState, VAT_SULFIDE
@@ -354,7 +354,7 @@ class SimEngine:
                 self.stats.total_material_extracted_kg = self.ledger.total_mined_kg
                 self.stats.total_dump_cycles += 1
 
-                # Track B/C: check if processing pipeline is backed up
+                # Bioleaching/hybrid: check if processing pipeline is backed up
                 if self._has_bioreactor:
                     self._regolith_buffer_kg = self.ledger.raw_regolith_buffer_kg
                     if self._regolith_buffer_kg > self._buffer_capacity_kg:

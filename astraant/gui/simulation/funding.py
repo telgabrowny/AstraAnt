@@ -81,7 +81,7 @@ def what_fits(rocket_kg: float) -> dict[str, Any]:
 
     # Everything else is optional
     options = [
-        ("Bioreactor (Track B)", 110),
+        ("Bioreactor (bioleaching)", 110),
         ("Thermal sorter", 13),
         ("Sugar production", 62),
         ("Manufacturing bay", 34),
