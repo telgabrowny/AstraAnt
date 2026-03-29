@@ -663,3 +663,74 @@ The ultra-budget approach: send pieces one at a time via rideshare slots. Each a
   - Japan: Dedicated medium launcher (H3) + precision CubeSat resupply (Hayabusa heritage)
   - Russia: Proton/Angara dedicated + bulk resupply on schedule
   - Luxembourg/EU: No launch capability. Buys rideshare slots from others. Cheapest per-kg but least control over timing.
+
+### High-Fidelity Simulation Verification Strategy
+
+The voxel game sim is the strategic layer (thousands of ants, years of time). High-fidelity physics simulators are the **engineering verification layer** (one ant, one interaction, real physics). Both serve different purposes.
+
+**Goal:** Verify that the control code, mechanical designs, and physics assumptions hold up in realistic environments before committing to hardware. The game sim says "this should work." The physics sim says "this actually works (or doesn't)."
+
+#### Recommended Simulators
+
+**MuJoCo (DeepMind, free/open source) -- START HERE**
+- Best contact physics engine available. Used for almost all legged locomotion research.
+- Perfect for hexapod ant gait verification (6 legs + 2 mandibles = exactly what MuJoCo excels at).
+- Extremely fast (1000x real-time for training loops).
+- Custom gravity trivially supported (Bennu: 6 um/s^2).
+- Python bindings: `pip install mujoco`.
+- MJCF model format (XML, straightforward to write).
+- Use for: gait controller verification, tool head interaction, mandible grip testing, microgravity locomotion.
+
+**NVIDIA Isaac Sim (Omniverse/PhysX 5) -- ADD SECOND**
+- GPU-accelerated rigid body AND particle physics.
+- Granular material simulation -- regolith as individual particles, not just solid blocks.
+- Can simulate loose gravel flowing, piling, and resisting scooping differently than sand.
+- ROS2 native integration.
+- Terrain generation with variable material properties.
+- Visually impressive output (good for demos/videos).
+- Use for: regolith interaction, scoop tool verification, boulder pushing physics, tunnel wall stability, mothership landing/anchoring.
+- Requires: RTX 3070+ GPU, NVIDIA-only.
+
+**Gazebo (gz-sim) -- ALREADY IN PROJECT**
+- Already referenced in Discovery project (Ticket 1.1.5).
+- Open source, ROS2 native, multiple physics engines.
+- Good general-purpose sim but less specialized than MuJoCo or Isaac.
+- Use for: ROS2 integration testing, multi-ant coordination, comms protocol verification.
+
+#### Verification Test Matrix
+
+| Test | Best Simulator | What We Learn |
+|------|---------------|---------------|
+| Hexapod gait in microgravity | MuJoCo | Does tripod gait work at ~0 gravity? Need magnetic feet? |
+| Scooping loose regolith | Isaac Sim | Does the scoop actually pick up granular material? How much spills? |
+| Boulder pushing (cooperative) | Isaac Sim + MuJoCo | Can 8 micro ants push a 50kg boulder in microgravity? Braking? |
+| Drill tool torque/vibration | MuJoCo | Does the drill stall? Does the ant body stay anchored? |
+| Tool head magnetic clip swap | MuJoCo | Does the mount engage/release reliably? |
+| Tunnel wall collapse | Isaac Sim | Does unsealed regolith hold shape? When does it collapse? |
+| Surface ant in vacuum | Isaac Sim | Thermal behavior, Maxon actuator performance, no convection |
+| Mothership landing/anchoring | Isaac Sim | Screw anchor penetration depth, gasket compression |
+| Squad coordination (20 ants) | Gazebo + ROS2 | Radio protocol, taskmaster command dispatch, collision avoidance |
+| Gravel vs boulder size handling | Isaac Sim | How do different material sizes behave when scooped/pushed/drilled? |
+| Different gravity environments | MuJoCo | Compare Bennu (6 um/s^2) vs Eros (5.6 mm/s^2) vs Psyche (0.14 m/s^2) |
+
+#### Integration Path
+
+```
+OpenSCAD (.scad) --> STL mesh --> URDF/MJCF/USD robot model --> Simulator
+```
+
+- Existing OpenSCAD models (10 printable designs) can be converted to simulation-ready meshes.
+- MicroPython firmware gait controller can be translated to Python for sim-in-the-loop testing.
+- Physics parameters (gravity, friction, regolith properties) come from the catalog YAML data.
+- The voxel game sim and the physics sim agree on the same ant configs and asteroid properties.
+
+#### Priority Order
+1. **MuJoCo gait verification** -- `pip install mujoco`, write MJCF model of worker ant, test tripod gait at various gravities. Fastest path to a verification result.
+2. **Isaac Sim regolith interaction** -- requires GPU setup but answers the hardest physics questions (does scooping actually work in granular microgravity material?).
+3. **Gazebo multi-ant coordination** -- already partially set up in Discovery project. ROS2 integration for squad-level testing.
+
+#### What This Is NOT
+- Not a replacement for the voxel game sim (different scale, different purpose).
+- Not required for the game to ship (the game uses simplified physics that are fun and educational).
+- IS required before committing to real hardware builds (the "bridge to reality" verification step).
+- IS great content for demo videos and marketing ("look, we actually simulated this in real physics").
