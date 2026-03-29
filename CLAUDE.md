@@ -142,6 +142,8 @@ Key items needing physical testing:
 - 2m regolith = ~70-80% GCR reduction (radiation shielding)
 - 5 kPa tunnel pressure stops lubricant outgassing, extends COTS MTBF ~100x
 - Solar power scales with 1/r^2 — Psyche at 2.9 AU gets only 12% of 1 AU power
+- Asteroid rotation = day/night cycle. All catalog asteroids have rotation_period_hours (2.3-12.1 hrs)
+- Solar-only missions lose ~50% uptime to dark periods unless battery-bridged or nuclear-powered
 - CP1 polyimide sail: ~7 g/m^2 film, NOT 50g for 25 m^2 (real mass ~175g film + booms)
 - NEA surface gravity is negligible for fluid dynamics (Bennu: 6 μm/s^2)
 
@@ -371,6 +373,38 @@ This is a legitimate real-world approach. Less efficient than bioleaching, but i
 | **Year 15-25** | Fusion micro-reactor (50-100kW) | Speculative but plausible (Commonwealth Fusion, Helion timelines) | Order-of-magnitude power increase. Enables energy-intensive refining. |
 | **Year 20-30** | On-site chip fabrication (simple ASICs from asteroid silicon) | Extremely speculative but not impossible with asteroid-purity silicon | Print basic control circuits locally. Reduce resupply to raw wafers. |
 | **Year 30-50** | Full self-replication (builds everything including electronics) | The endgame | Colony no longer needs Earth. Independence is physically possible. |
+
+### Day/Night Power Cycle (Future Implementation)
+
+**Real-world basis:** Asteroids rotate. All 7 catalog asteroids have `rotation_period_hours` in their YAML data. Solar panels produce zero power during the dark half of each rotation.
+
+| Asteroid | Rotation Period | Dark Period | Difficulty |
+|----------|----------------|-------------|-----------|
+| Didymos | 2.26 hrs | ~1.1 hrs | Easiest -- short dark, easy to bridge with batteries |
+| 2008 EV5 | 3.73 hrs | ~1.9 hrs | Short |
+| Psyche | 4.20 hrs | ~2.1 hrs | Medium |
+| Bennu | 4.29 hrs | ~2.1 hrs | Medium |
+| Eros | 5.27 hrs | ~2.6 hrs | Medium |
+| Ryugu | 7.63 hrs | ~3.8 hrs | Hard |
+| Itokawa | 12.13 hrs | ~6.1 hrs | Hardest -- 6 hours of darkness per rotation |
+
+**Power strategies (player choice):**
+1. **Daylight-only operations** (~50% uptime). Simplest. Ants idle during dark. Surface ants shelter. Cheapest to implement -- just accept the downtime. Good enough for a bootstrapper.
+2. **Battery-bridged 24/7 operations**. Mothership battery bank stores solar energy during day, powers the tunnel rail during night. Reduced capacity (batteries can't match peak solar), but continuous production. Heavier launch mass (battery weight).
+3. **Nuclear power** (Year 5-8 tech unlock). Eliminates the problem entirely. 24/7 full power regardless of rotation. The single biggest quality-of-life upgrade in the tech tree.
+
+**Rotation period as asteroid selection factor:**
+- Fast rotators (Didymos, 2.26 hrs) have short dark periods, easy to bridge.
+- Slow rotators (Itokawa, 12.13 hrs) have brutal dark periods. Nuclear is almost mandatory for serious operations.
+- This adds another axis to the asteroid selection decision beyond composition and delta-v.
+
+**Sim engine impact (not yet implemented):**
+- SimEngine needs a `_power_available` fraction that cycles with asteroid rotation.
+- During dark periods: tunnel power rail drops to battery capacity (if batteries exist) or zero.
+- Ants on the rail during a blackout go to supercap reserve (2 minutes), then idle.
+- Surface ants must shelter (no solar = no power, plus thermal concerns).
+- Bioreactor centrifuge must keep spinning (bacteria die if settled too long) -- power priority.
+- This creates real tension: do you spend launch mass on batteries, or accept downtime?
 
 #### Tech Tree Design Principles
 - **Each unlock should be a resupply rocket.** Real cost, real delay, real decision: is this upgrade worth the investment now? The rocket itself is a gameplay event (months of anticipation, loading manifest, watching it arrive).
