@@ -563,3 +563,69 @@ No sabotage. No combat. Interesting conflicts are economic and logistical:
 - Each size class should have its own catalog YAML files with real (or plausible) parts at that tier.
 - The "bridge to reality" feature (export BOM, print STL, flash firmware) works for micro and standard tiers. Heavy and above are aspirational/educational -- real parts exist but the complete robot is a larger engineering project.
 - Visual distinction in the GUI: micro ants are fast and numerous. Heavy ants are slow and imposing. Industrial units are dramatic. The size difference should be immediately visible and viscerally satisfying.
+
+### Delivery Models (More Than One Way to Launch)
+
+Real space missions have multiple launch options. The game should represent this. There is no single "right" way to get hardware to an asteroid -- the tradeoff is cost vs. mass vs. transit time vs. risk.
+
+#### The Bootstrap Problem
+Worker ants are useless without infrastructure. Before any mining can happen, the asteroid needs:
+- A drill (bore the initial tunnel entrance)
+- Anchoring system (screw anchors + gasket seal to the surface)
+- Power (deployable solar panels)
+- Comms relay (Earth link)
+- Sealant (pressurize the first tunnel section)
+- At least a few ants to begin work
+
+This is the **minimum viable lander** (~80-120 kg). It must arrive as one package. After that, everything else can be delivered piecemeal.
+
+#### Delivery Options
+
+| Method | Payload | Cost | Transit Time | Risk | Who Uses This |
+|--------|---------|------|-------------|------|---------------|
+| **Dedicated Starship** | 100,000+ kg | $50-100M | 6-18 months | Low | UAE, China. Land everything at once. |
+| **Dedicated Falcon Heavy** | 63,800 kg LEO | $150M | 6-18 months | Low | US commercial, large missions. |
+| **ESPA rideshare** | ~180 kg secondary | $1-3M | Goes where the primary goes | Medium (no control over trajectory) | Bootstrapper seed ship. |
+| **CubeSat rideshare** | 6U=12kg, 12U=24kg | $150-500K | 1-3 years (ion drive to NEA) | Higher (small margins, long transit) | Ant resupply batches, upgrade packs. |
+| **Solar sail delivery** | 5-20 kg | $100-300K (ride to LEO, sail is free propulsion) | 2-5 years | Highest (unproven for cargo) | Extreme budget. The long game. |
+
+#### Piecemeal CubeSat Delivery Model (The Bootstrapper Strategy)
+
+The ultra-budget approach: send pieces one at a time via rideshare slots. Each arrival is a game event.
+
+**Example manifest (total ~$5M over 3 years):**
+
+| Delivery | Size | Contents | Cost | Arrives |
+|----------|------|----------|------|---------|
+| Seed ship | ESPA ~120 kg | Drill, power, comms, sealant, 10 micro ants | $2M | Month 0 |
+| Ant batch 1 | 6U CubeSat | 30 workers + tool heads | $300K | Month 4 |
+| Ant batch 2 | 6U CubeSat | 20 workers + 2 taskmasters | $300K | Month 8 |
+| Surface ant | 12U CubeSat | 1 surface ant (vacuum-rated) + spare parts | $500K | Month 12 |
+| Bioreactor | 12U CubeSat | Bacteria + nutrients + centrifuge drum | $500K | Month 14 |
+| Upgrade pack 1 | 3U CubeSat | Metal gear servos, brushless motors (for all ants) | $150K | Month 18 |
+| Ant batch 3 | 6U CubeSat | 50 workers + 5 taskmasters | $400K | Month 22 |
+| Nuclear power | ESPA ~80 kg | Kilopower 1kW fission unit | $2M | Year 3 |
+
+**Early game with piecemeal delivery feels completely different:**
+- Month 0: 10 ants. Every one matters. One failure is 10% of your workforce.
+- Month 4: Reinforcements! 30 fresh workers. Real relief.
+- Month 14: Bioreactor arrives. Extraction rates triple. Revenue jumps.
+- Year 3: Nuclear power. No more night-side shutdowns.
+
+**Contrast: UAE lands a 2-ton mothership with 200 heavy ants on day one.** Same asteroid, completely different experience. Both viable.
+
+#### Delivery Model Design Principles
+- **The manifest IS the strategy.** What you put on each delivery, and when, is the core budget player's planning game.
+- **Transit times are real.** 1-3 years for CubeSat deliveries. Once launched, you can't change the contents. Commit early, wait long.
+- **Rideshare means you go where they go.** ESPA slots are secondary payloads -- you might not get an ideal trajectory. CubeSats need their own propulsion (ion drive or solar sail) for the final leg.
+- **Every delivery is a game event.** Anticipation, arrival animation, unpacking. Like Christmas morning on an asteroid.
+- **Loss is possible.** CubeSat failure rate is ~5-10%. A delivery that doesn't arrive is a real setback. Insurance is available but costs extra.
+- **The seed ship is irreplaceable.** If your one ESPA rideshare fails, the game is over (or you wait 6-12 months for another rideshare window). This is the highest-stakes moment for budget players.
+- **Dedicated launches can send EVERYTHING at once** but cost 50-100x more. That's the whole tradeoff.
+- **Faction default delivery models:**
+  - Bootstrapper/India: Seed ship ESPA + CubeSat resupply chain
+  - US Commercial: Falcon Heavy dedicated + occasional rideshare resupply
+  - UAE/China: Starship dedicated. Everything at once. Money is not the constraint.
+  - Japan: Dedicated medium launcher (H3) + precision CubeSat resupply (Hayabusa heritage)
+  - Russia: Proton/Angara dedicated + bulk resupply on schedule
+  - Luxembourg/EU: No launch capability. Buys rideshare slots from others. Cheapest per-kg but least control over timing.

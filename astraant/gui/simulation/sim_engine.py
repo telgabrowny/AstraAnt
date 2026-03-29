@@ -959,6 +959,29 @@ class SimEngine:
                                f"Wait for cargo pod revenue.",
                 })
 
+        elif cmd_type == "schedule_delivery":
+            method = command.get("method", "cubesat_6u")
+            contents = command.get("contents", "worker ants + tool heads")
+            result = self.economy.schedule_delivery(
+                method, contents, self.clock.sim_time / 3600)
+            if result:
+                events.append({
+                    "type": "delivery_scheduled",
+                    "time": self.clock.sim_time,
+                    "message": result["message"],
+                })
+            else:
+                from .game_economy import DELIVERY_METHODS
+                spec = DELIVERY_METHODS.get(method, {})
+                cost = spec.get("cost_usd", 0)
+                events.append({
+                    "type": "insufficient_funds",
+                    "time": self.clock.sim_time,
+                    "message": f"CANNOT AFFORD {spec.get('name', method)} "
+                               f"(${cost/1e6:.2f}M needed, "
+                               f"${self.economy.cash_on_hand_usd/1e6:.1f}M available).",
+                })
+
         elif cmd_type == "set_endgame_target":
             radius = command.get("radius_m", 224)
             length = command.get("length_m", 200)
