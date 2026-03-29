@@ -124,7 +124,7 @@ class SimEngine:
     def __init__(self, workers: int = 100, taskmasters: int = 5,
                  surface_ants: int = 3, couriers: int = 0,
                  sorters: int = 0, plasterers: int = 0, tenders: int = 0,
-                 track: str = "a", asteroid_distance_au: float = 1.0) -> None:
+                 track: str = "mechanical", asteroid_distance_au: float = 1.0) -> None:
         self.clock = MissionClock()
         self.tunnel = TunnelNetwork()
         self.comms = CommsDelay(asteroid_distance_au)
@@ -158,7 +158,7 @@ class SimEngine:
         self._last_telemetry_time = 0.0
 
         # Bioreactor state (Track B/C only)
-        self._has_bioreactor = track in ("b", "c")
+        self._has_bioreactor = track in ("bioleaching", "hybrid")
         self._bioreactor_state = None
         self._bioreactor_update_interval = 3600.0
         self._last_bioreactor_update = 0.0

@@ -35,7 +35,7 @@ def run_sensitivity(baseline: MissionConfig | None = None,
     """
     if baseline is None:
         baseline = MissionConfig(
-            swarm=SwarmConfig(workers=100, taskmasters=5, surface_ants=3, track="b"),
+            swarm=SwarmConfig(workers=100, taskmasters=5, surface_ants=3, track="bioleaching"),
             asteroid_id="bennu",
             destination="lunar_orbit",
             launch_vehicle="starship_conservative",
@@ -61,7 +61,7 @@ def run_sensitivity(baseline: MissionConfig | None = None,
     results.append(r)
 
     # 4. Track
-    tracks = ["a", "b", "c"]
+    tracks = ["mechanical", "bioleaching", "hybrid"]
     r = _sweep_track(baseline, catalog, tracks)
     results.append(r)
 

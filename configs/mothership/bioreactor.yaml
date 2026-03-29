@@ -1,10 +1,10 @@
-# Mothership Module: Bioreactor Bay (Track B and Track C only)
+# Mothership Module: Bioreactor Bay (bioleaching and hybrid tracks only)
 # Centrifuge bioreactors for microgravity bioleaching operations.
 
 module: bioreactor
 name: "Centrifuge Bioleaching Bay"
 type: bioprocessing
-tracks: ["b", "c"]                   # Only included for Track B/C missions
+tracks: ["bioleaching", "hybrid"]    # Only included for bioleaching/hybrid missions
 
 centrifuge_system:
   design: rotating_drum

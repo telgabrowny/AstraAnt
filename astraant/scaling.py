@@ -86,7 +86,7 @@ def _crowding_factor(workers: int, baseline: int = 50) -> float:
     return 0.4 + 0.6 / (1 + math.exp(k * (workers - midpoint)))
 
 
-def run_scaling_analysis(track: str = "b", sim_days: int = 30,
+def run_scaling_analysis(track: str = "bioleaching", sim_days: int = 30,
                          baseline_workers: int = 50) -> ScalingReport:
     """Run scaling analysis from small to large swarm sizes.
 

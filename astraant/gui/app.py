@@ -50,7 +50,7 @@ class AstraAntApp:
 
     def __init__(self, asteroid_id: str = "bennu", workers: int = 20,
                  taskmasters: int = 1, surface_ants: int = 2,
-                 track: str = "a"):
+                 track: str = "mechanical"):
         self.asteroid_id = asteroid_id
         self.track = track
 
@@ -751,7 +751,7 @@ class AstraAntApp:
 
 
 def run_app(asteroid: str = "bennu", workers: int = 20, taskmasters: int = 1,
-            surface_ants: int = 2, track: str = "a"):
+            surface_ants: int = 2, track: str = "mechanical"):
     """Launch the Ursina application."""
     app_instance = Ursina(
         title="AstraAnt -- Asteroid Mining Simulator",

@@ -67,7 +67,7 @@ class MissionEconomics:
     """Complete economic breakdown for a single site over its lifetime."""
     asteroid_name: str = ""
     destination: str = "lunar_orbit"
-    track: str = "b"
+    track: str = "bioleaching"
 
     # Mission parameters
     mission_lifetime_years: float = 5.0
@@ -105,7 +105,7 @@ class MissionEconomics:
 def calculate_site_economics(
     asteroid_id: str = "bennu",
     destination: str = "lunar_orbit",
-    track: str = "b",
+    track: str = "bioleaching",
     workers: int = 100,
     taskmasters: int = 5,
     surface_ants: int = 3,
@@ -160,14 +160,14 @@ def calculate_site_economics(
 
     # --- Metal Extraction ---
     for metal, ppm in metals_ppm.items():
-        if metal == "iron" and track == "a":
-            # Track A: mechanical separation, lower purity
+        if metal == "iron" and track == "mechanical":
+            # Mechanical track: mechanical separation, lower purity
             efficiency = 0.30  # Much lower than bioleaching
         else:
             efficiency = EXTRACTION_EFFICIENCIES.get(metal, 0.50)
 
-        if track == "a":
-            efficiency *= 0.5  # Track A has lower overall extraction
+        if track == "mechanical":
+            efficiency *= 0.5  # Mechanical track has lower overall extraction
 
         metal_fraction = ppm / 1_000_000  # ppm to fraction
         extracted_kg = (

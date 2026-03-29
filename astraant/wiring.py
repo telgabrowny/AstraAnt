@@ -117,7 +117,7 @@ COMPONENT_WIRING = {
 }
 
 
-def generate_wiring_diagram(caste: str, track: str = "a") -> str:
+def generate_wiring_diagram(caste: str, track: str = "mechanical") -> str:
     """Generate a complete wiring diagram for an ant caste."""
     configs = load_all_ant_configs()
     if caste not in configs:

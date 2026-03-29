@@ -1,11 +1,11 @@
 # Mothership Module: Sugar Production Bioreactor
-# Closes the consumables loop for Track B/C by producing sucrose on-site.
+# Closes the consumables loop for bioleaching/hybrid tracks by producing sucrose on-site.
 # Eliminates the need to ship sugar from Earth after initial startup.
 
 module: sugar_production
 name: "In-Situ Sugar Production System"
 type: nutrient_production
-tracks: ["b", "c"]
+tracks: ["bioleaching", "hybrid"]
 purpose: "Produce sucrose feedstock for Aspergillus niger (REE bioleaching vat)"
 
 # ── Primary: Photosynthetic Algae Bioreactor ──────────────────────────────

@@ -549,7 +549,7 @@ def assess_operations() -> list[ReadinessItem]:
     ]
 
 
-def assess_mission(catalog: Catalog | None = None, track: str = "a") -> ReadinessReport:
+def assess_mission(catalog: Catalog | None = None, track: str = "mechanical") -> ReadinessReport:
     """Run complete readiness assessment for a mission."""
     if catalog is None:
         catalog = Catalog()

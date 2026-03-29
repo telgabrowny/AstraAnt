@@ -19,7 +19,7 @@ pip install -e ".[dev,gui]"
 astraant --help
 
 # Run a feasibility analysis
-astraant analyze --track b --asteroid bennu --destination lunar_orbit
+astraant analyze --track bioleachingioleaching --asteroid bennu --destination lunar_orbit
 
 # Compare all three extraction tracks
 astraant compare
@@ -28,13 +28,13 @@ astraant compare
 astraant plan cheapest_profit
 
 # Full 5-year economics with reality check
-astraant economics --track b --reality-check
+astraant economics --track bioleaching --reality-check
 
 # Run a 30-day headless simulation
-astraant simulate --days 30 --track b
+astraant simulate --days 30 --track bioleaching
 
 # Launch the 3D GUI
-astraant gui --track b --workers 20
+astraant gui --track bioleaching --workers 20
 
 # Open the web dashboard
 astraant dashboard
@@ -45,7 +45,7 @@ astraant dashboard
 - **3 ant castes**: Worker (6 legs + 2 mandible arms, $37, RP2040), Taskmaster ($75, ESP32-S3), Surface Ant ($1242, vacuum-rated Maxon actuators)
 - **7 modular tool heads**: drill, scoop, paste nozzle, thermal rake, sampling probe, cargo gripper, panel brush. Magnetic clip mount, all 3D-printable.
 - **Underground tunnel operations**: sealed at 1-10 kPa, extends COTS component life 100x
-- **3 extraction tracks**: A (mechanical), B (bioleaching), C (hybrid)
+- **3 extraction tracks**: mechanical, bioleaching, hybrid
 - **Self-sustaining biology**: bacteria self-replicate, sugar grown on-site from algae photobioreactor
 - **In-situ manufacturing**: build new ants from asteroid iron using a sintering furnace
 - **Voxel asteroid interior**: Minecraft-style geology with mineral veins
@@ -84,7 +84,7 @@ At any time, export everything needed to build a real worker ant:
 
 ```bash
 # Parts list with DigiKey/Mouser links
-astraant build bom worker --track a
+astraant build bom worker --track mechanical
 
 # Pin-to-pin wiring diagram
 astraant build wiring worker

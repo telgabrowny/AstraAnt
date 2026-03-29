@@ -14,7 +14,7 @@ sites:
     workers: 100
     taskmasters: 5
     surface_ants: 3
-    track: b
+    track: bioleaching
   total_ants: 1728                  # 16 × 108 ants per site
 
 common_chamber:

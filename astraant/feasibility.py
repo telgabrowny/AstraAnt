@@ -77,7 +77,7 @@ class SwarmConfig:
     workers: int = 100
     taskmasters: int = 5
     surface_ants: int = 3
-    track: str = "a"  # a, b, or c
+    track: str = "mechanical"  # mechanical, bioleaching, or hybrid
     tool_heads: int = 0  # Auto-calculated if 0
 
     @property
@@ -87,12 +87,12 @@ class SwarmConfig:
 
 # Default mothership modules per track
 TRACK_MODULES = {
-    "a": ["drill", "power", "comms", "sealing", "cargo", "thermal_sorter",
-          "exterior_maintenance"],
-    "b": ["drill", "power", "comms", "sealing", "cargo", "thermal_sorter",
-          "exterior_maintenance", "bioreactor", "sugar_production"],
-    "c": ["drill", "power", "comms", "sealing", "cargo", "thermal_sorter",
-          "exterior_maintenance", "bioreactor", "sugar_production"],
+    "mechanical": ["drill", "power", "comms", "sealing", "cargo", "thermal_sorter",
+                   "exterior_maintenance"],
+    "bioleaching": ["drill", "power", "comms", "sealing", "cargo", "thermal_sorter",
+                    "exterior_maintenance", "bioreactor", "sugar_production"],
+    "hybrid": ["drill", "power", "comms", "sealing", "cargo", "thermal_sorter",
+               "exterior_maintenance", "bioreactor", "sugar_production"],
 }
 
 
@@ -202,7 +202,7 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     # Auto-set mothership modules from track if not explicitly provided
     if mission.mothership_modules is None:
         mission.mothership_modules = list(TRACK_MODULES.get(mission.swarm.track,
-                                                            TRACK_MODULES["a"]))
+                                                            TRACK_MODULES["mechanical"]))
 
     # Load configs
     ant_configs = load_all_ant_configs()
@@ -257,7 +257,7 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
             "Total bioprocessing: 410 kg (not 110 kg dry)."
         )
 
-    # Consumables — Track B/C with sugar production are nearly self-sustaining
+    # Consumables — bioleaching/hybrid with sugar production are nearly self-sustaining
     if has_bioreactor and has_sugar_production:
         # Sugar produced on-site from asteroid CO2 + sunlight — no resupply needed
         # Only consumables: precipitation reagents (~8 kg/yr) + filter replacements
@@ -269,7 +269,7 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     elif has_bioreactor:
         mass.consumables_mass_kg = 25  # Includes sucrose from Earth
     else:
-        mass.consumables_mass_kg = 5  # Track A: minimal (replacement drill bits)
+        mass.consumables_mass_kg = 5  # Mechanical track: minimal (replacement drill bits)
 
     # Return vehicles — micro-pod design (many small, not one big)
     cargo_mod = modules.get("cargo", {})
@@ -315,7 +315,7 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     elif has_bioreactor:
         cost.consumables_per_cycle_usd = 25 * 200  # Sucrose from Earth at $200/kg delivered
     else:
-        cost.consumables_per_cycle_usd = 1000  # Track A: drill bit replacement
+        cost.consumables_per_cycle_usd = 1000  # Mechanical track: drill bit replacement
 
     cost.total_first_cycle_usd = (
         cost.swarm_hardware_usd +
@@ -355,16 +355,16 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
     swarm = mission.swarm
     cycle_days = 30
 
-    if swarm.track == "a":
-        # Track A: mechanical mining
+    if swarm.track == "mechanical":
+        # Mechanical track: mechanical mining
         # Workers dig 200g/load, ~10 loads/day
         regolith_kg_per_day = swarm.workers * 0.2 * 10 / 1000
         kg_per_cycle = regolith_kg_per_day * cycle_days
         # Mechanical sorting — lower purity, mostly bulk metals
         revenue_per_kg = (material_values.get("nickel", 25000) * 0.05 +
                           material_values.get("iron", 20000) * 0.20)
-    elif swarm.track == "b":
-        # Track B: bioleaching — worker hauling rate vs bioreactor throughput
+    elif swarm.track == "bioleaching":
+        # Bioleaching track — worker hauling rate vs bioreactor throughput
         hauling_kg_per_day = swarm.workers * 0.35 * 8 / 1000
         bioreactor_max_kg_per_day = 120  # Crusher throughput limit
         effective_kg_per_day = min(hauling_kg_per_day, bioreactor_max_kg_per_day)
@@ -374,7 +374,7 @@ def analyze_mission(mission: MissionConfig, catalog: Catalog | None = None) -> F
                           material_values.get("nickel", 25000) * 0.05 +
                           material_values.get("rare_earths", 30000) * 0.01 +
                           material_values.get("cobalt", 25000) * 0.02)
-    else:  # Track C — hybrid
+    else:  # Hybrid track
         # Mechanical mining speed + bioleaching purity
         hauling_kg_per_day = swarm.workers * 0.2 * 10 / 1000
         bioreactor_max_kg_per_day = 120

@@ -20,7 +20,7 @@ def profile_tick_performance():
 
     for n_workers in [10, 50, 100, 200]:
         engine = SimEngine(workers=n_workers, taskmasters=max(1, n_workers // 20),
-                           surface_ants=2, track="b")
+                           surface_ants=2, track="bioleaching")
         engine.setup()
         engine.clock.speed = 10000
 
@@ -46,7 +46,7 @@ def profile_memory_growth():
     print("\nMEMORY GROWTH PROFILE")
     print("=" * 60)
 
-    engine = SimEngine(workers=50, taskmasters=3, surface_ants=2, track="b")
+    engine = SimEngine(workers=50, taskmasters=3, surface_ants=2, track="bioleaching")
     engine.setup()
     engine.clock.speed = 100000
 
@@ -90,7 +90,7 @@ def profile_status_call():
     print("\nSTATUS() CALL PROFILE")
     print("=" * 60)
 
-    engine = SimEngine(workers=100, taskmasters=5, surface_ants=3, track="b")
+    engine = SimEngine(workers=100, taskmasters=5, surface_ants=3, track="bioleaching")
     engine.setup()
     engine.clock.speed = 10000
 
@@ -115,7 +115,7 @@ def profile_entity_counts():
     print("\nSIM OBJECT COUNT PROFILE")
     print("=" * 60)
 
-    engine = SimEngine(workers=50, taskmasters=3, surface_ants=2, track="b")
+    engine = SimEngine(workers=50, taskmasters=3, surface_ants=2, track="bioleaching")
     engine.setup()
     engine.clock.speed = 100000
 

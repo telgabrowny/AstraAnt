@@ -208,7 +208,7 @@ def ant_list():
 @click.option("--workers", "-w", default=100, help="Number of worker ants")
 @click.option("--taskmasters", "-t", default=5, help="Number of taskmaster ants")
 @click.option("--surface-ants", "-s", default=3, help="Number of surface ants")
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a", help="Extraction track")
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="mechanical", help="Extraction track")
 @click.option("--asteroid", default="bennu", help="Target asteroid ID")
 @click.option("--destination", type=click.Choice(["lunar_orbit", "mars_orbit", "earth_return"]),
               default="lunar_orbit", help="Cargo destination")
@@ -242,7 +242,7 @@ def compare(workers: int, taskmasters: int, surface_ants: int,
     click.echo("Running three-track comparison...\n")
 
     reports = {}
-    for track in ["a", "b", "c"]:
+    for track in ["mechanical", "bioleaching", "hybrid"]:
         mission = MissionConfig(
             swarm=SwarmConfig(workers=workers, taskmasters=taskmasters, surface_ants=surface_ants, track=track),
             asteroid_id=asteroid,
@@ -257,7 +257,7 @@ def compare(workers: int, taskmasters: int, surface_ants: int,
     click.echo("=" * 70)
     click.echo(f"Swarm: {workers}W + {taskmasters}T + {surface_ants}S -> {asteroid} -> {destination}\n")
 
-    click.echo(f"{'Metric':<30s} {'Track A':<18s} {'Track B':<18s} {'Track C':<18s}")
+    click.echo(f"{'Metric':<30s} {'Mechanical':<18s} {'Bioleaching':<18s} {'Hybrid':<18s}")
     click.echo("-" * 85)
 
     def fmt_usd(v: float) -> str:
@@ -270,7 +270,7 @@ def compare(workers: int, taskmasters: int, surface_ants: int,
     def fmt_kg(v: float) -> str:
         return f"{v:.1f} kg"
 
-    ra, rb, rc = reports["a"], reports["b"], reports["c"]
+    ra, rb, rc = reports["mechanical"], reports["bioleaching"], reports["hybrid"]
 
     click.echo(f"{'Total mass (wet+margin)':<30s} {fmt_kg(ra.mass_budget.total_with_margin_kg):<18s} "
                f"{fmt_kg(rb.mass_budget.total_with_margin_kg):<18s} "
@@ -305,7 +305,7 @@ def build():
 
 @build.command("bom")
 @click.argument("caste")
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="mechanical")
 @click.option("--output", "-o", default=None, help="Output file path")
 def build_bom(caste: str, track: str, output: str | None):
     """Generate Bill of Materials for an ant caste."""
@@ -366,7 +366,7 @@ def build_bom(caste: str, track: str, output: str | None):
 
     # Tool (track-specific)
     tool = cfg.get("tool", {})
-    if isinstance(tool, dict) and track in ("a", "b", "c"):
+    if isinstance(tool, dict) and track in ("mechanical", "bioleaching", "hybrid"):
         track_tool = tool.get(f"track_{track}", tool)
         if track_tool and track_tool.get("type") != "none":
             add_item(f"Tool: {track_tool.get('type', '?')}", track_tool.get("part_id", "?"),
@@ -404,7 +404,7 @@ def build_bom(caste: str, track: str, output: str | None):
 @click.option("--workers", "-w", default=100)
 @click.option("--taskmasters", "-t", default=5)
 @click.option("--surface-ants", "-s", default=3)
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="b")
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="bioleaching")
 @click.option("--asteroid", default="bennu")
 @click.option("--destination", default="lunar_orbit")
 @click.option("--years", default=5.0, help="Mission lifetime in years")
@@ -528,7 +528,7 @@ def phase2(facilities, all_facilities, chamber_m3):
 
     # Get Phase 1 revenue for combined economics
     from .mission_economics import calculate_site_economics
-    econ = calculate_site_economics("bennu", "lunar_orbit", "b", workers=100, mission_years=5)
+    econ = calculate_site_economics("bennu", "lunar_orbit", "bioleaching", workers=100, mission_years=5)
 
     click.echo(format_phase2_report(plan, phase1_revenue=econ.total_revenue_usd))
 
@@ -537,7 +537,7 @@ def phase2(facilities, all_facilities, chamber_m3):
 
 @main.command("manufacturing")
 @click.option("--asteroid", default="bennu")
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="b")
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="bioleaching")
 @click.option("--years", default=5.0, help="Mission years of accumulated excess")
 def manufacturing(asteroid: str, track: str, years: float):
     """Plan in-situ manufacturing from excess extracted materials."""
@@ -587,7 +587,7 @@ def composition(asteroid: str, batches: int, batch_kg: float):
 # -- Scaling command -----------------------------------------------------------
 
 @main.command("scaling")
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="b")
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="bioleaching")
 @click.option("--baseline", default=25, help="Baseline worker count for calibration")
 @click.option("--days", default=10, help="Simulation days for calibration")
 def scaling_cmd(track: str, baseline: int, days: int):
@@ -602,7 +602,7 @@ def scaling_cmd(track: str, baseline: int, days: int):
 
 @main.command()
 @click.option("--workers", "-w", default=100, help="Baseline worker count")
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="b")
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="bioleaching")
 @click.option("--asteroid", default="bennu")
 @click.option("--destination", default="lunar_orbit")
 def sensitivity(workers: int, track: str, asteroid: str, destination: str):
@@ -669,7 +669,7 @@ def build_models(model: str | None):
 
 @build.command("wiring")
 @click.argument("caste")
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="mechanical")
 @click.option("--output", "-o", default=None, help="Output file path")
 def build_wiring(caste: str, track: str, output: str | None):
     """Generate wiring diagram for an ant caste."""
@@ -685,7 +685,7 @@ def build_wiring(caste: str, track: str, output: str | None):
 # -- Readiness commands -----------------------------------------------------
 
 @main.command()
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a",
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="mechanical",
               help="Extraction track to assess")
 def readiness(track: str):
     """Run readiness assessment -- what's proven, what needs testing."""
@@ -701,7 +701,7 @@ def readiness(track: str):
 @click.option("--workers", "-w", default=50, help="Number of worker ants")
 @click.option("--taskmasters", "-t", default=3, help="Number of taskmasters")
 @click.option("--surface-ants", "-s", default=2, help="Number of surface ants")
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="mechanical")
 @click.option("--days", default=30, help="Simulated mission days to run")
 @click.option("--speed", default=10000.0, help="Simulation speed multiplier")
 def simulate(workers: int, taskmasters: int, surface_ants: int,
@@ -771,7 +771,7 @@ def simulate(workers: int, taskmasters: int, surface_ants: int,
 @click.option("--workers", "-w", default=20, help="Number of worker ants")
 @click.option("--taskmasters", "-t", default=1, help="Number of taskmasters")
 @click.option("--surface-ants", "-s", default=2, help="Number of surface ants")
-@click.option("--track", type=click.Choice(["a", "b", "c"]), default="a")
+@click.option("--track", type=click.Choice(["mechanical", "bioleaching", "hybrid"]), default="mechanical")
 def gui(asteroid: str, workers: int, taskmasters: int, surface_ants: int,
         track: str):
     """Launch the 3D interactive simulation."""

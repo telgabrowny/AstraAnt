@@ -38,8 +38,8 @@ asteroid = st.sidebar.selectbox("Target Asteroid",
 destination = st.sidebar.selectbox("Destination",
     ["lunar_orbit", "mars_orbit", "earth_return"])
 track = st.sidebar.selectbox("Extraction Track",
-    ["b", "a", "c"],
-    format_func=lambda x: {"a": "A (Mechanical)", "b": "B (Bioleaching)", "c": "C (Hybrid)"}[x])
+    ["bioleaching", "mechanical", "hybrid"],
+    format_func=lambda x: {"mechanical": "Mechanical", "bioleaching": "Bioleaching", "hybrid": "Hybrid"}[x])
 workers = st.sidebar.slider("Workers", 10, 500, 100)
 mission_years = st.sidebar.slider("Mission Lifetime (years)", 1, 20, 5)
 power = st.sidebar.selectbox("Power Source",
