@@ -189,6 +189,14 @@ class SimEngine:
         self._boulders_encountered = 0
         self._boulders_cleared = 0
 
+        # Dig direction intelligence
+        # Direction bias: (dx, dy, dz) normalized hint, not exact coordinate.
+        # (0, -1, 0) = straight down (default). Taskmaster scans update this
+        # to steer toward valuable veins matching the player's priority.
+        self._dig_bias = [0.0, -1.0, 0.0]    # Default: dig deeper
+        self._auto_target_veins = True        # Taskmaster auto-steers toward veins
+        self._last_scan_pos = list(self._dig_position)  # Rescan after 3m of movement
+
         # Endgame habitat goal
         self.habitat_goal = None
         if HabitatGoal is not None:
@@ -434,22 +442,31 @@ class SimEngine:
                     # Base: ~3% chance per dump. Hardness reduces this.
                     advance_chance = 0.03 * (1.0 - voxel.hardness * 0.7)
 
-                    # Advance dig position
-                    if self.tunnel.dig_target and random.random() < advance_chance:
-                        # Dig toward target
-                        dt_pos = self.tunnel.dig_target
-                        dx = 1 if dt_pos.x > self._dig_position[0] else (-1 if dt_pos.x < self._dig_position[0] else 0)
-                        dy = -1  # Generally dig deeper
-                        dz = 1 if dt_pos.z > self._dig_position[2] else (-1 if dt_pos.z < self._dig_position[2] else 0)
-                        self._dig_position[0] += dx * random.choice([0, 0, 1])
-                        self._dig_position[1] += dy
-                        self._dig_position[2] += dz * random.choice([0, 0, 1])
-                    else:
-                        # Random exploration with downward bias
-                        if random.random() < advance_chance:
+                    # Advance dig position using direction bias + randomness.
+                    # Player sets general intent ("go that way", "prioritize water"),
+                    # ants figure out the voxel-by-voxel decisions.
+                    if random.random() < advance_chance:
+                        bx, by, bz = self._dig_bias
+
+                        if self.tunnel.dig_target:
+                            # Explicit target overrides bias (legacy command support)
+                            dt = self.tunnel.dig_target
+                            bx = 1 if dt.x > self._dig_position[0] else (-1 if dt.x < self._dig_position[0] else 0)
+                            by = -1
+                            bz = 1 if dt.z > self._dig_position[2] else (-1 if dt.z < self._dig_position[2] else 0)
+
+                        # Bias-weighted random step: 60% follow bias, 40% wander
+                        if random.random() < 0.6 and (bx != 0 or bz != 0):
+                            # Follow the bias direction
+                            self._dig_position[0] += (1 if bx > 0 else (-1 if bx < 0 else 0))
+                            self._dig_position[2] += (1 if bz > 0 else (-1 if bz < 0 else 0))
+                        else:
+                            # Random lateral wander (exploration)
                             self._dig_position[0] += random.choice([-1, 0, 0, 0, 1])
-                            self._dig_position[1] -= 1
                             self._dig_position[2] += random.choice([-1, 0, 0, 0, 1])
+
+                        # Always advance deeper (by always steps down)
+                        self._dig_position[1] += (1 if by > 0 else -1)
 
                     # Sample composition using the voxel's zone type
                     if self._comp_zones and sample_regolith and self._bulk_metals:
@@ -485,6 +502,11 @@ class SimEngine:
                                     "message": f"ZONE FOUND: {sample.zone} at {self.tunnel.total_length_m:.0f}m depth!",
                                     "zone": sample.zone,
                                 })
+                                # Auto-target toward the vein on first zone discovery
+                                if (self._auto_target_veins
+                                        and not self.tunnel.dig_target
+                                        and len(self._discovered_zone_types) == 1):
+                                    self._try_auto_target(events)
 
                         # Track revenue from this batch at lunar orbit prices
                         batch_revenue = 0.0
@@ -667,6 +689,17 @@ class SimEngine:
                 chamber_contribution = sim_dt * 0.001  # Slow chamber growth
                 self.tunnel.contribute_to_chamber(chamber_contribution)
 
+        # Taskmaster rescans when dig has moved 3+ meters (any direction)
+        dx = self._dig_position[0] - self._last_scan_pos[0]
+        dy = self._dig_position[1] - self._last_scan_pos[1]
+        dz = self._dig_position[2] - self._last_scan_pos[2]
+        dist_since_scan = (dx*dx + dy*dy + dz*dz) ** 0.5
+        if (self._auto_target_veins
+                and not self.tunnel.dig_target
+                and dist_since_scan >= 3.0):
+            self._last_scan_pos = list(self._dig_position)
+            self._try_auto_target(events)
+
         # Manufacturing reads from the unified ledger
         mfg = self.manufacturing
         if mfg.enabled:
@@ -713,6 +746,57 @@ class SimEngine:
         if len(self.event_log) > 1000:
             self.event_log = self.event_log[-500:]
         return events
+
+    # Map player metal priorities to asteroid zone types
+    _METAL_TO_ZONE = {
+        "iron": "metal_grain",
+        "nickel": "metal_grain",
+        "copper": "sulfide_pocket",
+        "cobalt": "sulfide_pocket",
+        "platinum": "metal_grain",
+        "palladium": "metal_grain",
+        "iridium": "metal_grain",
+        "rare_earths": "sulfide_pocket",
+        "water": "hydrated_matrix",
+    }
+
+    def _try_auto_target(self, events: list) -> None:
+        """Taskmaster scans for veins and updates dig bias toward the best one.
+
+        This is the autonomous "go that way" intelligence. The taskmaster
+        finds the nearest valuable vein matching the player's priority
+        and biases the dig direction toward it. Player can override with
+        explicit dig_target or set_dig_bias commands.
+        """
+        x, y, z = self._dig_position
+        nearby = self.grid.get_nearby_veins(int(x), int(y), int(z), scan_radius=15)
+        if not nearby:
+            return
+
+        # Filter by player priority metal -> zone type mapping
+        target_metal = self.mining.target_metal
+        priority_zone = self._METAL_TO_ZONE.get(target_metal, "")
+        if priority_zone:
+            matching = [v for v in nearby if v["zone"] == priority_zone]
+            candidates = matching if matching else nearby
+        else:
+            # Default: prefer sulfide_pocket and metal_grain (highest value)
+            valuable = [v for v in nearby
+                        if v["zone"] in ("sulfide_pocket", "metal_grain", "hydrated_matrix")]
+            candidates = valuable if valuable else nearby
+
+        best = candidates[0]  # Already sorted by distance
+        dx, dy, dz = best["direction"]
+
+        # Set dig bias toward the vein
+        self._dig_bias = [dx, dy if dy != 0 else -1.0, dz]
+
+        events.append({
+            "type": "dig_bias_updated",
+            "time": self.clock.sim_time,
+            "message": f"TASKMASTER: steering toward {best['zone']} "
+                       f"({best['distance_m']:.0f}m away, {best['richness']:.1f}x richness)",
+        })
 
     def _broadcast_telemetry(self) -> None:
         """Send status telemetry from asteroid to Earth."""
@@ -955,7 +1039,7 @@ class SimEngine:
             pass
 
         elif cmd_type == "dig_toward":
-            # Player directs dig toward specific coordinates
+            # Player directs dig toward specific coordinates (legacy exact target)
             from .tunnel_state import Vec3 as TV3
             x = command.get("x", 0)
             y = command.get("y", -50)
@@ -965,6 +1049,30 @@ class SimEngine:
                 "type": "dig_redirect",
                 "time": self.clock.sim_time,
                 "message": f"DIG TARGET SET: ({x}, {y}, {z})",
+            })
+
+        elif cmd_type == "set_dig_bias":
+            # Player sets general direction: "go that way"
+            # Values are -1, 0, or 1 for each axis. (0, -1, 0) = straight down.
+            bx = max(-1.0, min(1.0, command.get("x", 0.0)))
+            by = max(-1.0, min(1.0, command.get("y", -1.0)))
+            bz = max(-1.0, min(1.0, command.get("z", 0.0)))
+            self._dig_bias = [bx, by, bz]
+            self.tunnel.dig_target = None  # Clear exact target, use bias instead
+            events.append({
+                "type": "dig_bias_set",
+                "time": self.clock.sim_time,
+                "message": f"DIG BIAS: ({bx:.1f}, {by:.1f}, {bz:.1f})",
+            })
+
+        elif cmd_type == "clear_dig_target":
+            # Revert to autonomous exploration (taskmaster decides)
+            self.tunnel.dig_target = None
+            self._dig_bias = [0.0, -1.0, 0.0]  # Default: dig deeper
+            events.append({
+                "type": "dig_cleared",
+                "time": self.clock.sim_time,
+                "message": "DIG DIRECTION: autonomous (taskmaster will steer toward veins)",
             })
 
         elif cmd_type == "branch_tunnel":
@@ -1040,6 +1148,9 @@ class SimEngine:
             },
             "mining": {
                 "priority": self.mining.target_metal or "balanced",
+                "dig_bias": list(self._dig_bias),
+                "has_explicit_target": self.tunnel.dig_target is not None,
+                "auto_target_veins": self._auto_target_veins,
                 "revenue_usd": round(self.mining.total_revenue_usd, 0),
                 "profitable": self.mining.profitable,
                 "time_to_profit": self.mining.time_to_profit_hours,
