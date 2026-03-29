@@ -753,6 +753,9 @@ def simulate(workers: int, taskmasters: int, surface_ants: int,
     click.echo(f"    Vat checks:        {s['vat_checks']}")
     click.echo(f"    Anomalies:         {s['anomalies']}")
     click.echo(f"    Ant failures:      {s['failures']}")
+    boulders = s.get('boulders_encountered', 0)
+    if boulders > 0:
+        click.echo(f"    Boulders hit:      {boulders} ({s.get('boulders_cleared', 0)} cleared)")
 
     metals = s.get('metals_extracted_kg', 0)
     biomass = s.get('biomass_g_per_l', 0)

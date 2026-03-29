@@ -108,6 +108,9 @@ class SimStats:
     # Bioreactor stats
     metals_extracted_kg: float = 0.0
     biomass_g_per_l: float = 0.1     # Current culture density
+    # Boulder stats
+    boulders_encountered: int = 0
+    boulders_cleared: int = 0
 
 
 class SimEngine:
@@ -177,6 +180,14 @@ class SimEngine:
         # Voxel grid (Minecraft-style asteroid interior)
         self.grid = AsteroidGrid(radius_m=50, seed=random.randint(0, 999999))
         self._dig_position = [0, -3, 0]
+
+        # Boulder / hardness state at the work face
+        self._boulder_active = False        # Is a boulder blocking the work face?
+        self._boulder_hardness = 0.0        # Hardness of the active boulder
+        self._boulder_hp = 0.0             # "Hit points" remaining (work to clear it)
+        self._boulder_zone = ""             # Zone type of the boulder voxel
+        self._boulders_encountered = 0
+        self._boulders_cleared = 0
 
         # Endgame habitat goal
         self.habitat_goal = None
@@ -360,111 +371,160 @@ class SimEngine:
                     if self._regolith_buffer_kg > self._buffer_capacity_kg:
                         agent_events["buffer_full"] = True
 
-                # Mine voxels from the grid and check for anomalies
-                dig_coords = [int(c) for c in self._dig_position]
-                voxel = self.grid.mine_voxel(*dig_coords)
+                # --- Boulder handling ---
+                # If a boulder is blocking, dump work goes toward clearing it.
+                # Material is still extracted (drill fragments) but dig doesn't advance.
+                dig_blocked = False
 
-                # Anomaly detection on freshly mined voxel
-                anomaly = self.anomaly_detector.check_voxel(
-                    *dig_coords, voxel.zone_type, self.clock.sim_time)
-                if anomaly:
-                    events.append({
-                        "type": "anomaly_found",
-                        "time": self.clock.sim_time,
-                        "message": f"ANOMALY [{anomaly.severity.upper()}]: {anomaly.description[:80]}",
-                        "anomaly": anomaly,
-                    })
-                # Advance dig position
-                if self.tunnel.dig_target and random.random() < 0.03:
-                    # Dig toward target (advance every ~30 dumps)
-                    dt_pos = self.tunnel.dig_target
-                    dx = 1 if dt_pos.x > self._dig_position[0] else (-1 if dt_pos.x < self._dig_position[0] else 0)
-                    dy = -1  # Generally dig deeper
-                    dz = 1 if dt_pos.z > self._dig_position[2] else (-1 if dt_pos.z < self._dig_position[2] else 0)
-                    self._dig_position[0] += dx * random.choice([0, 0, 1])
-                    self._dig_position[1] += dy
-                    self._dig_position[2] += dz * random.choice([0, 0, 1])
-                else:
-                    # Random exploration with downward bias (advance every ~30 dumps)
-                    if random.random() < 0.03:
-                        self._dig_position[0] += random.choice([-1, 0, 0, 0, 1])
-                        self._dig_position[1] -= 1
-                        self._dig_position[2] += random.choice([-1, 0, 0, 0, 1])
-
-                # Sample composition using the voxel's zone type
-                if self._comp_zones and sample_regolith and self._bulk_metals:
-                    zones = self._comp_zones
-                    sample = sample_regolith(
-                        self._bulk_metals, self._bulk_water_pct,
-                        kg, zones,
-                        depth_m=abs(self._dig_position[1]),
-                    )
-                    # Override zone with the actual voxel zone
-                    sample = sample._replace(zone=voxel.zone_type) if hasattr(sample, '_replace') else sample
-                    sample.zone = voxel.zone_type
-                    self._zone_hits[sample.zone] = self._zone_hits.get(sample.zone, 0) + 1
-
-                    # Assign zone to current tunnel segment (O(1) — always the last)
-                    active_seg = self.tunnel.segments[-1] if self.tunnel.segments else None
-                    if active_seg and not active_seg.zone_type:
-                        active_seg.zone_type = sample.zone
-
-                    # Taskmaster "discovers" valuable zones (O(1) set check)
-                    if sample.zone in ("sulfide_pocket", "metal_grain"):
-                        if sample.zone not in self._discovered_zone_types:
-                            self._discovered_zone_types.add(sample.zone)
-                            self.mining.discovered_zones.append({
-                                "zone": sample.zone,
-                                "segment_id": self.tunnel.active_work_face_id,
-                                "depth_m": self.tunnel.total_length_m,
-                                "time": self.clock.sim_time,
-                            })
-                            events.append({
-                                "type": "zone_discovered",
-                                "time": self.clock.sim_time,
-                                "message": f"ZONE FOUND: {sample.zone} at {self.tunnel.total_length_m:.0f}m depth!",
-                                "zone": sample.zone,
-                            })
-
-                    # Track revenue from this batch at lunar orbit prices
-                    batch_revenue = 0.0
-                    for metal, ppm in sample.metals_ppm.items():
-                        metal_kg = kg * ppm / 1_000_000 * 0.85  # extraction efficiency
-                        price = LUNAR_ORBIT_PRICES.get(metal, 1000)
-                        rev = metal_kg * price
-                        batch_revenue += rev
-                        self.mining.revenue_by_material[metal] = (
-                            self.mining.revenue_by_material.get(metal, 0) + rev
-                        )
-                    # Water revenue
-                    water_kg = kg * sample.water_pct / 100 * 0.90
-                    water_rev = water_kg * 50000  # $50K/kg at lunar orbit
-                    batch_revenue += water_rev
-                    self.mining.revenue_by_material["water"] = (
-                        self.mining.revenue_by_material.get("water", 0) + water_rev
-                    )
-                    self.mining.total_revenue_usd += batch_revenue
-
-                    # Launch cargo pods (revenue enters transit delay)
-                    # Approximately 1 pod per 8 hours of mining (3/day)
-                    if random.random() < 0.003 and batch_revenue > 100:
-                        self.economy.launch_pod(
-                            batch_revenue * 100,  # Scaled up (represents accumulated value)
-                            self.clock.sim_time / 3600,
-                            transit_years=2.5,
-                        )
-
-                    # Check profitability
-                    if not self.mining.profitable and self.mining.total_revenue_usd > self.mining.mission_cost_usd:
-                        self.mining.profitable = True
-                        self.mining.time_to_profit_hours = self.clock.sim_time / 3600
+                if self._boulder_active:
+                    work = kg * (1.0 - self._boulder_hardness * 0.5)
+                    self._boulder_hp -= work
+                    if self._boulder_hp <= 0:
+                        self._boulder_active = False
+                        self._boulders_cleared += 1
+                        self.stats.boulders_cleared = self._boulders_cleared
                         events.append({
-                            "type": "profitable",
+                            "type": "boulder_cleared",
                             "time": self.clock.sim_time,
-                            "message": f"PROFITABLE! Revenue ${self.mining.total_revenue_usd:,.0f} exceeds "
-                                       f"cost ${self.mining.mission_cost_usd:,.0f} at "
-                                       f"{self.clock.format_elapsed()}",
+                            "message": f"BOULDER CLEARED at {abs(self._dig_position[1]):.0f}m depth "
+                                       f"({self._boulder_zone})",
                         })
+                    dig_blocked = True
+
+                if not dig_blocked:
+                    # Mine voxels from the grid and check for anomalies
+                    dig_coords = [int(c) for c in self._dig_position]
+                    voxel = self.grid.mine_voxel(*dig_coords)
+
+                    # Anomaly detection on freshly mined voxel
+                    anomaly = self.anomaly_detector.check_voxel(
+                        *dig_coords, voxel.zone_type, self.clock.sim_time)
+                    if anomaly:
+                        events.append({
+                            "type": "anomaly_found",
+                            "time": self.clock.sim_time,
+                            "message": f"ANOMALY [{anomaly.severity.upper()}]: {anomaly.description[:80]}",
+                            "anomaly": anomaly,
+                        })
+
+                    # Boulder encounter: hard voxel blocks progress until cleared
+                    if voxel.is_boulder:
+                        self._boulder_active = True
+                        self._boulder_hardness = voxel.hardness
+                        self._boulder_zone = voxel.zone_type
+                        # HP: boulder (0.75) = 3-6 effective dump-equivalents from all workers combined
+                        # megalith (0.95) = 4-8 effective dump-equivalents
+                        self._boulder_hp = voxel.hardness * random.uniform(4.0, 8.0)
+                        self._boulders_encountered += 1
+                        self.stats.boulders_encountered = self._boulders_encountered
+                        mat_class = voxel.material_class
+                        events.append({
+                            "type": "boulder_encountered",
+                            "time": self.clock.sim_time,
+                            "message": f"OBSTACLE: {mat_class} ({voxel.zone_type}) at "
+                                       f"{abs(self._dig_position[1]):.0f}m depth -- "
+                                       f"drilling through (hardness {voxel.hardness:.2f})",
+                            "hardness": voxel.hardness,
+                            "material_class": mat_class,
+                        })
+                        dig_blocked = True  # Don't advance past the boulder this tick
+
+                if not dig_blocked:
+                    # Hardness slows dig advance: soft = advance often, hard = advance rarely
+                    # Base: ~3% chance per dump. Hardness reduces this.
+                    advance_chance = 0.03 * (1.0 - voxel.hardness * 0.7)
+
+                    # Advance dig position
+                    if self.tunnel.dig_target and random.random() < advance_chance:
+                        # Dig toward target
+                        dt_pos = self.tunnel.dig_target
+                        dx = 1 if dt_pos.x > self._dig_position[0] else (-1 if dt_pos.x < self._dig_position[0] else 0)
+                        dy = -1  # Generally dig deeper
+                        dz = 1 if dt_pos.z > self._dig_position[2] else (-1 if dt_pos.z < self._dig_position[2] else 0)
+                        self._dig_position[0] += dx * random.choice([0, 0, 1])
+                        self._dig_position[1] += dy
+                        self._dig_position[2] += dz * random.choice([0, 0, 1])
+                    else:
+                        # Random exploration with downward bias
+                        if random.random() < advance_chance:
+                            self._dig_position[0] += random.choice([-1, 0, 0, 0, 1])
+                            self._dig_position[1] -= 1
+                            self._dig_position[2] += random.choice([-1, 0, 0, 0, 1])
+
+                    # Sample composition using the voxel's zone type
+                    if self._comp_zones and sample_regolith and self._bulk_metals:
+                        zones = self._comp_zones
+                        sample = sample_regolith(
+                            self._bulk_metals, self._bulk_water_pct,
+                            kg, zones,
+                            depth_m=abs(self._dig_position[1]),
+                        )
+                        # Override zone with the actual voxel zone
+                        sample = sample._replace(zone=voxel.zone_type) if hasattr(sample, '_replace') else sample
+                        sample.zone = voxel.zone_type
+                        self._zone_hits[sample.zone] = self._zone_hits.get(sample.zone, 0) + 1
+
+                        # Assign zone to current tunnel segment (O(1) -- always the last)
+                        active_seg = self.tunnel.segments[-1] if self.tunnel.segments else None
+                        if active_seg and not active_seg.zone_type:
+                            active_seg.zone_type = sample.zone
+
+                        # Taskmaster "discovers" valuable zones (O(1) set check)
+                        if sample.zone in ("sulfide_pocket", "metal_grain"):
+                            if sample.zone not in self._discovered_zone_types:
+                                self._discovered_zone_types.add(sample.zone)
+                                self.mining.discovered_zones.append({
+                                    "zone": sample.zone,
+                                    "segment_id": self.tunnel.active_work_face_id,
+                                    "depth_m": self.tunnel.total_length_m,
+                                    "time": self.clock.sim_time,
+                                })
+                                events.append({
+                                    "type": "zone_discovered",
+                                    "time": self.clock.sim_time,
+                                    "message": f"ZONE FOUND: {sample.zone} at {self.tunnel.total_length_m:.0f}m depth!",
+                                    "zone": sample.zone,
+                                })
+
+                        # Track revenue from this batch at lunar orbit prices
+                        batch_revenue = 0.0
+                        for metal, ppm in sample.metals_ppm.items():
+                            metal_kg = kg * ppm / 1_000_000 * 0.85  # extraction efficiency
+                            price = LUNAR_ORBIT_PRICES.get(metal, 1000)
+                            rev = metal_kg * price
+                            batch_revenue += rev
+                            self.mining.revenue_by_material[metal] = (
+                                self.mining.revenue_by_material.get(metal, 0) + rev
+                            )
+                        # Water revenue
+                        water_kg = kg * sample.water_pct / 100 * 0.90
+                        water_rev = water_kg * 50000  # $50K/kg at lunar orbit
+                        batch_revenue += water_rev
+                        self.mining.revenue_by_material["water"] = (
+                            self.mining.revenue_by_material.get("water", 0) + water_rev
+                        )
+                        self.mining.total_revenue_usd += batch_revenue
+
+                        # Launch cargo pods (revenue enters transit delay)
+                        # Approximately 1 pod per 8 hours of mining (3/day)
+                        if random.random() < 0.003 and batch_revenue > 100:
+                            self.economy.launch_pod(
+                                batch_revenue * 100,  # Scaled up (represents accumulated value)
+                                self.clock.sim_time / 3600,
+                                transit_years=2.5,
+                            )
+
+                        # Check profitability
+                        if not self.mining.profitable and self.mining.total_revenue_usd > self.mining.mission_cost_usd:
+                            self.mining.profitable = True
+                            self.mining.time_to_profit_hours = self.clock.sim_time / 3600
+                            events.append({
+                                "type": "profitable",
+                                "time": self.clock.sim_time,
+                                "message": f"PROFITABLE! Revenue ${self.mining.total_revenue_usd:,.0f} exceeds "
+                                           f"cost ${self.mining.mission_cost_usd:,.0f} at "
+                                           f"{self.clock.format_elapsed()}",
+                            })
 
             if "water_recovered_g" in agent_events:
                 kg = agent_events["water_recovered_g"] / 1000.0
@@ -969,6 +1029,9 @@ class SimEngine:
                 "biomass_g_per_l": round(self.stats.biomass_g_per_l, 3),
                 "crusher_buffer_kg": round(self._regolith_buffer_kg, 1),
                 "crusher_buffer_pct": round(self._regolith_buffer_kg / self._buffer_capacity_kg * 100, 0) if self._has_bioreactor else 0,
+                "boulders_encountered": self.stats.boulders_encountered,
+                "boulders_cleared": self.stats.boulders_cleared,
+                "boulder_active": self._boulder_active,
             },
             "comms": {
                 "delay_minutes": round(self.comms.one_way_delay_minutes, 1),
