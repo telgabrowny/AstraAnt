@@ -629,10 +629,18 @@ class SimEngine:
             self._last_upgrade_check_year = current_year_int
             new_upgrades = self.upgrade_manager.check_availability(game_year)
         for upg in new_upgrades:
+            from .tech_upgrades import CatalogUpgrade, SystemUpgrade  # noqa: cached after first import
+            if isinstance(upg, CatalogUpgrade):
+                cost_str = f"${upg.cost_per_unit_usd}/unit"
+                upg_type = "upgrade_available"
+            else:
+                cost_str = f"${upg.cost_usd:,.0f} + delivery"
+                upg_type = "system_available"
             events.append({
-                "type": "upgrade_available",
+                "type": upg_type,
                 "time": self.clock.sim_time,
-                "message": f"NEW UPGRADE: {upg.name} -- {upg.description[:60]}... (${upg.cost_per_unit_usd}/unit)",
+                "message": f"NEW {'SYSTEM' if isinstance(upg, SystemUpgrade) else 'UPGRADE'}: "
+                           f"{upg.name} -- {upg.description[:60]}... ({cost_str})",
                 "upgrade_id": upg.id,
             })
 
