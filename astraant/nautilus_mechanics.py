@@ -30,6 +30,7 @@ N_ELECTRONS = 2            # Fe2+ -> Fe(s) requires 2 electrons
 RHO_IRON = 7870.0          # kg/m^3 (iron density)
 IRON_YIELD_MPA = 250.0     # Yield strength of deposited iron
 NACRE_BONUS = 1.6          # Space nacre composite multiplier (iron + glass)
+CORROSION_RATE_MM_PER_YEAR = 1.0  # Iron in pH 2.0 H2SO4 at 30C
 STEFAN_BOLTZMANN = 5.67e-8 # W/m^2/K^4
 SOLAR_FLUX_1AU = 1361.0    # W/m^2
 
@@ -241,9 +242,11 @@ def simulate_cycle(state, asteroid_diameter_m=10, dt_hours=24.0, verbose=False):
                 state.dissolved_iron_g_per_l -= (deposited_kg * 1000) / max(state.solution_volume_l, 1)
                 state.dissolved_iron_g_per_l = max(0, state.dissolved_iron_g_per_l)
 
-                # Wall growth
+                # Wall growth (deposition) minus corrosion (acid eating the surface)
                 thickness_gain_mm = (deposited_kg / (RHO_IRON * state.chamber_surface_m2)) * 1000
-                state.wall_thickness_mm += thickness_gain_mm
+                corrosion_mm = CORROSION_RATE_MM_PER_YEAR * (dt_hours / (365.25 * 24))
+                net_growth_mm = thickness_gain_mm - corrosion_mm
+                state.wall_thickness_mm = max(0, state.wall_thickness_mm + net_growth_mm)
 
                 # Aperture shrinks as walls extend
                 state.aperture_width_m -= thickness_gain_mm * WALL_EXTENSION_RATE / 1000 * 2

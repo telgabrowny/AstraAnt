@@ -693,8 +693,21 @@ pac_man:
             Alternating layers of electrodeposited iron + sintered
             glass-ceramic. Like biological nacre (95% aragonite + 5%
             organic protein = 3000x tougher than pure mineral).
-            Iron provides strength, glass resists crack propagation.
-          layers: "iron (electrodeposited) + glass-ceramic (sintered silicates)"
+          acid_contact: >
+            The innermost iron surface IS in contact with the acid.
+            The acid corrodes it at ~1 mm/year. But electrodeposition
+            replates at ~2.9 mm/year. Net growth: +1.9 mm/year.
+            The deposition IS the protection. Same as a real nautilus:
+            the ocean dissolves the shell, but nacre secretion outpaces it.
+          glass_role: >
+            NOT an acid barrier. Glass-ceramic layers are EMBEDDED
+            between iron layers as structural reinforcement. They
+            arrest crack propagation (why nacre is 3000x tougher).
+            Deposited periodically: 2 weeks iron -> sinter glass -> repeat.
+          layers: "iron (0.1mm) -> glass (thin) -> iron -> glass -> ..."
+          corrosion_rate_mm_per_year: 1.0
+          deposition_rate_mm_per_year: 2.9
+          net_growth_mm_per_year: 1.9
           strength: "composite tougher than either material alone"
           heritage: "Damascus steel, biological nacre, laminated armor"
 
