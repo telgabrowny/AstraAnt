@@ -535,6 +535,88 @@ pac_man:
         pgm: "sealed containers (highest security zone)"
         water: "insulated ice blocks + liquid for refueling"
 
+    # === TRUE NAUTILUS ARCHITECTURE (corrected) ===
+    # The processing zone MIGRATES OUTWARD like a real nautilus animal.
+    # The animal lives in the outermost chamber only. Old chambers are
+    # sealed, inert, permanent. This solves both the feeding problem
+    # and the acid corrosion problem.
+
+    true_nautilus:
+      principle: >
+        A real nautilus lives in its OUTERMOST chamber. When it outgrows
+        it, it seals the old one (becomes buoyancy tank) and builds a
+        new larger one at the leading edge. Our station works the same:
+        the active bioreactor is always the outermost chamber. Inner
+        chambers are sealed, inert, dry storage.
+
+      why_this_solves_feeding: >
+        New asteroids always enter from the EXTERIOR of the station
+        directly into the outermost (active) chamber. The feed port
+        is never buried under layers of shell. The airlock is always
+        on the outside face.
+
+      why_this_solves_corrosion: >
+        The acidic soup (pH 2.0 H2SO4) is ONLY in the outermost chamber.
+        Inner chambers are sealed with iron bulkheads + silicone gaskets.
+        Acid never touches the inner structure. The active chamber is
+        lined with glass-ceramic (sintered from asteroid silicates),
+        which is virtually immune to sulfuric acid.
+
+      glass_ceramic_liner:
+        description: >
+          Instead of shipping Kapton liner from Earth, sinter the inner
+          surface of each new iron chamber with regolith silicates at
+          1100C using the microwave emitter. Glass-lined steel is a
+          200-year-old industrial technique for acid-resistant tanks.
+        material: "asteroid regolith silicates (50%+ of mass)"
+        process: "coat iron wall with silicate powder -> microwave sinter -> glass"
+        sintering_time_hours: 400    # 400 m^2 at 1 m^2/hr
+        acid_resistance: "excellent (glass is virtually immune to H2SO4 at pH 2)"
+        source: "asteroid (FREE, unlimited)"
+        from_earth: false
+
+      airlock_relocation:
+        description: >
+          The airlock (Bag B + tube + gate) is a permanent modular unit.
+          Asteroids are always 10m, so the door is always ~14m wide.
+          When a chamber is retired, unbolt the airlock flange from the
+          old wall, cut a port in the new outer wall, bolt it on.
+          Same airlock, different wall. Like a loading dock door.
+        airlock_size_m: 14           # 10m asteroid + clearance
+        relocation_time_days: 3-5
+        frequency: "every ~3 years (when active chamber is retired)"
+        reusable: true
+        note: "4 surface ants handle the relocation"
+
+      chamber_lifecycle:
+        born: >
+          Built as new outermost processing chamber.
+          Iron walls from extracted stockpile. Glass-ceramic inner lining.
+          Airlock relocated to exterior face. Fresh, acid-resistant.
+        active: >
+          Years 0-3: Processing asteroids. Hot, acidic, full of bacteria.
+          Glass liner protects iron walls from acid dissolution.
+          Electro-winning extracts metals from solution.
+        retired: >
+          Glass liner degraded after ~3 years. Drain acid. Seal bulkhead
+          (iron plate + 2 kg silicone gasket). Chamber becomes inert dry
+          storage. New chamber built outward takes over processing.
+        forever: >
+          Sealed, inert, structural. Stores sorted metals.
+          Customers take from exterior face of most-recently-retired chamber.
+          Station restocks from active chamber production.
+
+      consumables_per_generation:
+        glass_liner: {amount: "400 m^2", source: "asteroid silicates", from_earth: false}
+        iron_walls: {amount: "50-100 tonnes", source: "extracted iron", from_earth: false}
+        silicone_gasket: {amount: "2 kg", source: "Earth", from_earth: true}
+        airlock_relocation: {amount: "3-5 days labor", source: "4 surface ants", from_earth: false}
+
+      consumables_over_20_years:
+        from_earth: "14 kg silicone gasket material (7 generations x 2 kg)"
+        from_asteroids: "everything else (iron, glass, water, bacteria)"
+        note: "14 kg from Earth over 20 years. Effectively self-sustaining."
+
     what_it_becomes:
       year_0: "a bag with bacteria"
       year_2: "an armored processing station"
@@ -542,10 +624,11 @@ pac_man:
       year_10: "an industrial platform"
       year_20: "the seed of a city"
       note: >
-        From 94 kg of membrane to a multi-thousand-tonne facility,
-        built entirely from asteroid materials. The original bag
-        is still there at the center, still running bacteria,
-        still processing asteroids. The nautilus grew around it.
+        From 94 kg of membrane to a multi-thousand-tonne facility.
+        The original bag is sealed at the center -- the station's heart.
+        The active bioreactor is always the outermost chamber.
+        Old chambers are sealed, inert, stacked like tree rings.
+        14 kg of silicone gaskets is the only Earth supply in 20 years.
 
   economics:
     setup_cost_usd: "10-20M (launch + hardware)"

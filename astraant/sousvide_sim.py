@@ -62,16 +62,23 @@ VALUES = {
     "water": 50_000,
 }
 
-# Nautilus chamber milestones (year -> chamber)
-CHAMBER_MILESTONES = {
-    3: "Storage (sorted metal stockpile)",
-    4: "Water Depot (insulated ice reservoir)",
-    6: "Manufacturing (forge + welder)",
-    8: "Fabrication (assembly bay)",
-    10: "Docking Expansion (multi-berth)",
-    14: "Habitat Module (crew-capable)",
-    18: "Foundry (large-scale casting)",
-}
+# Nautilus chamber lifecycle
+CHAMBER_LIFESPAN_YEARS = 3          # Each active chamber lasts ~3 years
+GLASS_LINING_SINTER_DAYS = 17       # 400 m^2 at 1 m^2/hr
+GASKET_KG_PER_SEAL = 2              # Silicone for bulkhead seal
+AIRLOCK_RELOCATION_DAYS = 5
+
+# Retired chamber specializations (assigned in order)
+CHAMBER_ROLES = [
+    "Storage (sorted metal stockpile)",
+    "Water Depot (insulated ice reservoir)",
+    "Manufacturing (forge + welder)",
+    "Fabrication (assembly bay)",
+    "Docking Expansion (multi-berth)",
+    "Habitat Module (crew-capable)",
+    "Foundry (large-scale casting)",
+    "Refinery Expansion",
+]
 
 
 @dataclass
@@ -92,10 +99,13 @@ class StationState:
     pgm_kg: float = 0.0
     water_kg: float = 1600.0        # Initial propellant supply
 
-    # Shell
+    # Shell + nautilus growth
     shell_iron_used_kg: float = 0.0
     shell_thickness_mm: float = 0.0
-    chambers_built: list = field(default_factory=list)
+    retired_chambers: list = field(default_factory=list)
+    active_chamber_age_hours: float = 0.0
+    active_chamber_number: int = 1  # Core bag is #0
+    gasket_used_kg: float = 0.0     # Only Earth consumable
 
     # Economics
     total_revenue_usd: float = 0.0
@@ -105,7 +115,7 @@ class StationState:
 
     # Bacteria culture
     culture_age_hours: float = 0.0
-    culture_generations: int = 0    # How many asteroids the culture has survived
+    culture_generations: int = 0
 
     @property
     def time_days(self):
@@ -213,16 +223,42 @@ def run_simulation(years=20, customers_per_year=4, verbose=True):
             volume_m3 = state.shell_iron_used_kg / IRON_DENSITY_KG_M3
             state.shell_thickness_mm = (volume_m3 / SHELL_SURFACE_AREA_M2) * 1000
 
-        # --- Chamber milestones ---
-        for milestone_year, chamber_name in CHAMBER_MILESTONES.items():
-            if year >= milestone_year and chamber_name not in state.chambers_built:
-                if state.shell_iron_used_kg > milestone_year * 50_000:  # Need enough iron
-                    state.chambers_built.append(chamber_name)
-                    events.append({
-                        "time_years": state.time_years,
-                        "type": "chamber",
-                        "message": f"New chamber: {chamber_name}"
-                    })
+        # --- Nautilus chamber lifecycle ---
+        # Active chamber ages. When it reaches lifespan, retire it and build new.
+        state.active_chamber_age_hours += dt_hours
+        chamber_lifespan_hours = CHAMBER_LIFESPAN_YEARS * 365.25 * 24
+
+        if (state.active_chamber_age_hours >= chamber_lifespan_hours
+                and state.asteroids_processed >= 2
+                and state.iron_kg > 50_000):  # Need iron for new walls
+            # Retire active chamber
+            role_idx = len(state.retired_chambers)
+            if role_idx < len(CHAMBER_ROLES):
+                role = CHAMBER_ROLES[role_idx]
+            else:
+                role = f"Expansion Module #{role_idx + 1}"
+
+            state.retired_chambers.append({
+                "number": state.active_chamber_number,
+                "role": role,
+                "retired_year": state.time_years,
+            })
+            state.gasket_used_kg += GASKET_KG_PER_SEAL
+            state.iron_kg -= 50_000  # 50 tonnes for new chamber walls
+
+            events.append({
+                "time_years": state.time_years,
+                "type": "chamber",
+                "message": (
+                    f"Chamber #{state.active_chamber_number} retired -> {role}. "
+                    f"Airlock relocated. Glass liner sintered. "
+                    f"New active chamber #{state.active_chamber_number + 1} built. "
+                    f"({state.gasket_used_kg:.0f} kg gasket used total from Earth)"
+                )
+            })
+
+            state.active_chamber_number += 1
+            state.active_chamber_age_hours = 0.0
 
         # --- Customer visits ---
         if state.time_hours >= next_customer_hours and state.asteroids_processed >= 2:
@@ -275,7 +311,9 @@ def run_simulation(years=20, customers_per_year=4, verbose=True):
                 "pgm_kg": state.pgm_kg,
                 "shell_mm": state.shell_thickness_mm,
                 "shell_iron_t": state.shell_iron_used_kg / 1000,
-                "chambers": len(state.chambers_built),
+                "chambers": len(state.retired_chambers),
+                "active_ch": state.active_chamber_number,
+                "gasket_kg": state.gasket_used_kg,
                 "water_t": state.water_kg / 1000,
                 "revenue_m": state.total_revenue_usd / 1e6,
                 "customers": state.customers_served,
@@ -340,9 +378,13 @@ def format_report(state, snapshots, events, years, customers_per_year):
                  f"(culture age: {state.culture_age_hours/24/365:.1f} years)")
     lines.append(f"  Shell thickness:        {state.shell_thickness_mm:.1f} mm "
                  f"({state.shell_iron_used_kg/1000:.0f} tonnes iron)")
-    lines.append(f"  Chambers built:         {len(state.chambers_built)}")
-    for c in state.chambers_built:
-        lines.append(f"    - {c}")
+    lines.append(f"  Active chamber:         #{state.active_chamber_number} "
+                 f"(age: {state.active_chamber_age_hours/24/365:.1f} years)")
+    lines.append(f"  Retired chambers:       {len(state.retired_chambers)}")
+    for c in state.retired_chambers:
+        lines.append(f"    - Ch.#{c['number']} -> {c['role']} (retired year {c['retired_year']:.1f})")
+    lines.append(f"  Gasket from Earth:      {state.gasket_used_kg:.0f} kg "
+                 f"(only Earth consumable in {state.time_years:.0f} years)")
     lines.append(f"  Water reserve:          {state.water_kg/1000:.0f} tonnes")
     lines.append(f"  Customers served:       {state.customers_served} "
                  f"({state.orders_fulfilled} full, {state.orders_partial} partial)")
