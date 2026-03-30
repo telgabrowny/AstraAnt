@@ -262,17 +262,36 @@ reusability:
 
   depleting_consumables:
     xenon:
-      per_hop_kg: 15
-      initial_kg: 50
-      hops_before_resupply: 3-4
-      resupply_cost: "$150K (CubeSat rideshare with 50 kg Xe)"
+      status: "ELIMINATED -- replaced by asteroid water"
+      replacement: >
+        Water electrothermal thruster (resistojet/arcjet, TRL 5-6).
+        800 kg water per 10m asteroid delivery at 800s Isp.
+        Water is FREE from previous asteroid (50 tonnes available).
+        Heritage: Momentus water plasma thruster (flight proven).
     nitrogen:
-      per_asteroid_loss_kg: 12       # 20% loss, 80% recovered
-      initial_kg: 89
-      asteroids_before_depletion: 7
+      status: "ELIMINATED -- replaced by O2/CO2 from asteroid water"
+      replacement: >
+        Electrolysis produces O2 (bacteria need this anyway).
+        CO2 released from heated carbonaceous regolith.
+        O2 + CO2 atmosphere replaces N2 for pressurization.
+        Bacteria evolved in O2/CO2 environments -- compatible.
     membrane:
-      rated_deployments: "5-10"
-      replacement_cost: "$300K (new membrane shipped via rideshare)"
+      rated_deployments: "indefinite in Pac-Man mode (never folds)"
+      replacement: "patch repairs by surface ants as needed"
+      note: "In Pac-Man mode, processing bag never opens. Only airlock bag cycles."
+
+  after_first_asteroid:
+    from_earth: "NOTHING"
+    description: >
+      Water replaces every consumable:
+        1. Bioleaching medium (the soup)
+        2. Propellant (water arcjet, 800 kg per asteroid delivery)
+        3. Oxygen for bacteria (electrolysis)
+        4. Pressurization gas (O2 + CO2 atmosphere)
+        5. Hydrogen byproduct (chemical feedstock)
+      The system is fully self-sustaining from asteroid resources.
+      The only item that eventually needs Earth resupply is the
+      membrane (patch material) and possibly electronics spares.
 
   supply_chain_progression:
     asteroid_1:
@@ -329,5 +348,122 @@ notes: |
   asteroid material, build a metal stockpile at a convenient orbit,
   and pay for the Starship tunnel-mining mission with the profits.
 
-  Effective cost after initial investment: $50-100K per asteroid.
-  That's cheaper than most Earth-based mining operations.
+  Effective cost after initial investment: $50-100K per asteroid
+  (mobile variant). Pac-Man variant: $0 per asteroid after setup.
+  That's cheaper than any mining operation in human history.
+
+# === PAC-MAN VARIANT (Stationary Refinery) ===
+# The final evolved form: a permanent processing station that
+# eats asteroids fed to it by water-powered delivery tugs.
+
+pac_man:
+  description: >
+    Instead of moving the bag to each asteroid, keep the bag
+    stationary and bring asteroids TO it. Two-bag airlock design:
+    Bag A (processing) never opens to vacuum. Bag B (airlock)
+    receives new asteroids from water-powered tugs.
+
+  architecture:
+    bag_a_processing:
+      role: "Permanent bioreactor. Never opens to vacuum."
+      contents: "warm water + active bacteria + current asteroid"
+      state: "always sealed, always pressurized, always warm"
+      note: "Bacteria culture runs continuously for years"
+    bag_b_airlock:
+      role: "Receives new asteroids, equalizes pressure"
+      area_m2: 200
+      mass_kg: 47
+      cycle: "open -> receive asteroid -> close -> pressurize -> transfer to A"
+    connecting_tube:
+      role: "Sealable passage between A and B"
+      diameter_m: 3                  # Wide enough for 10m asteroid chunks
+      gate_type: "inflatable iris or drawstring closure"
+      mass_kg: 15
+
+  cycle:
+    step_1: "Tug pushes new asteroid into Bag B (open to vacuum)"
+    step_2: "Close Bag B drawstring mouth"
+    step_3: "Pump O2/CO2 from Bag A to equalize pressure in B"
+    step_4: "Open connecting tube gate"
+    step_5: "Tug nudges asteroid from B into A"
+    step_6: "Close gate. Bag A processes (already has warm water + bacteria)"
+    step_7: "While A processes: Bag B opens, dumps spent rubble, receives next delivery"
+    step_8: "Repeat. Processing bag NEVER opens. Culture NEVER interrupted."
+    time_per_cycle_days: 120-180     # Depending on asteroid size and composition
+
+  water_powered_tugs:
+    description: >
+      Small delivery vehicles that fetch nearby asteroids and push
+      them to the station. Powered by water from previous asteroids.
+      No xenon, no Earth resupply. Water is free and abundant.
+    count: 2-4
+    per_tug:
+      mass_kg: 120
+      thruster: "electrothermal arcjet (water propellant)"
+      isp_s: 800
+      thrust_n: 0.5
+      water_per_delivery_kg: 800     # For 10 m/s dv on 628-tonne asteroid
+      water_source: "previous asteroid (50 tonnes available)"
+      power_w: 500
+      solar_panel_m2: 2
+      anchor: "4 screw anchors (dock to asteroid surface)"
+      range_km: 500                  # Practical radius for fetching
+      transit_days: 7-30             # Depends on distance and dv
+      cost_usd: "2-5M each"
+    heritage: "Momentus water plasma thruster (flight proven, TRL 5-6)"
+
+  station_mass_budget:
+    bag_a_processing: 94
+    bag_b_airlock: 47
+    connecting_tube_and_gate: 15
+    mothership_core: 310             # Everything minus propulsion and membrane
+    tug_1: 120
+    tug_2: 120
+    initial_water_propellant_kg: 1600  # Enough for 2 deliveries before first asteroid provides water
+    initial_nitrogen_fill_kg: 59
+    nitrogen_tanks_kg: 18
+    total_kg: 943
+    note: "Under 1 tonne. Single Falcon 9 rideshare."
+
+  throughput:
+    asteroids_per_year: 4-6          # No reheating, no reseeding, no downtime
+    metals_per_year_tonnes: 30-45    # High-value metals (Ni, Cu, Co, PGMs)
+    water_surplus_per_year_tonnes: 180-250  # Net water gain after propulsion use
+
+  advantages_over_mobile:
+    - "Membrane NEVER folds (eliminates wear)"
+    - "Processing bag NEVER opens (bacteria culture continuous)"
+    - "No mothership propulsion (station is stationary)"
+    - "No reheating (bag stays warm between asteroids)"
+    - "No reseeding (bacteria already active)"
+    - "Higher throughput (4-6/year vs 1-2/year)"
+    - "Water propellant is FREE (from previous asteroids)"
+    - "Xenon eliminated entirely"
+    - "Nitrogen eliminated (O2/CO2 from asteroid water + regolith)"
+
+  self_sustainability:
+    from_earth_after_setup: "NOTHING"
+    water: "each asteroid adds 50 tonnes, tugs use 0.8 tonnes"
+    bacteria: "continuous culture, never interrupted, improves over time"
+    energy: "solar (permanent panels + concentrators)"
+    metals: "accumulate continuously"
+    propellant: "water from processing"
+    pressurization: "O2/CO2 from electrolysis and regolith heating"
+    maintenance: "4 surface ants handle membrane patches and tug servicing"
+    limiting_factor: "electronics aging and membrane degradation (years)"
+
+  economics:
+    setup_cost_usd: "10-20M (launch + hardware)"
+    per_asteroid_cost_after_setup: "$0 (self-sustaining)"
+    revenue_per_asteroid_at_lunar_orbit:
+      nickel_7300kg_at_50k_per_tonne: "$365K"
+      cobalt_267kg_at_80_per_kg: "$21K"
+      pgm_15kg_at_30k_per_kg: "$450K"
+      total_per_asteroid: "~$836K"
+    revenue_per_year_4_asteroids: "~$3.3M"
+    payback_period: "3-6 years (then pure profit)"
+    note: >
+      These are conservative Earth-market prices. In-space prices
+      (water, metals for construction) would be orders of magnitude
+      higher. 50 tonnes of water at $10K/kg in-space = $500M per
+      asteroid just in water value.
