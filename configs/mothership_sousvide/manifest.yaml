@@ -632,16 +632,91 @@ pac_man:
           Customers take from exterior face of most-recently-retired chamber.
           Station restocks from active chamber production.
 
+      # === BIOLOGICAL GROWTH MODEL (replaces discrete construction) ===
+      biological_growth:
+        principle: >
+          A nautilus doesn't build chambers. It GROWS them. The mantle
+          secretes nacre onto the inner shell surface continuously.
+          Food enters through the aperture (mouth). The shell extends
+          at the leading edge. Our station works the same way.
+
+        electrodeposition:
+          description: >
+            The acid solution electrodeposits iron directly onto the
+            chamber walls from inside. The walls thicken and extend
+            continuously, 24/7. No welding. No construction events.
+            The solution grows the shell itself.
+          mechanism: "chamber walls = cathode, sacrificial iron anode dissolves"
+          rate_kg_per_day: 50
+          quality: "dense, uniform, well-bonded to existing surface"
+          note: "Same process as electro-winning, just plating onto walls instead of cathode blanks"
+
+        aperture_membrane:
+          description: >
+            The active chamber is open-ended with a flexible Kapton
+            flap at the aperture -- the space equivalent of the
+            nautilus' hood. Food (asteroids) enters through the mouth.
+            The shell grows AROUND the mouth.
+          material: "Kapton membrane flap, ~10-15 m^2"
+          seal_method: "magnetic latches or mechanical clips (quick-release)"
+          feeding_cycle:
+            digest: "weeks/months: sealed, pressurized, bacteria working, iron depositing"
+            drain: "hours: pump solution to siphuncle (temporary storage)"
+            open: "minutes: ants unlatch aperture flap"
+            feed: "hours: tug pushes asteroid through aperture"
+            close: "minutes: ants relatch flap"
+            fill: "hours: pump solution back from siphuncle"
+            resume: "bacteria immediately start on new rock (never died)"
+
+        siphuncle:
+          description: >
+            Central utility conduit running through ALL bulkheads from
+            core to aperture. The nautilus' siphuncle controls fluid/gas
+            in every sealed chamber. Ours carries solution, power, data,
+            gas, and temperature sensing through the entire station.
+          carries:
+            - "Solution transfer lines (drain/fill during feeding)"
+            - "Power cables (solar to all systems)"
+            - "Data cables (sensors in every chamber)"
+            - "Gas lines (pressure management)"
+            - "Temperature probes (every chamber)"
+          enables:
+            - "Drain active chamber without losing solution (feeding cycle)"
+            - "Monitor structural health of all chambers from core"
+            - "Temperature control in sealed chambers"
+            - "Access stored materials without opening bulkheads"
+            - "Leak detection anywhere in station"
+          penetration: "sealed O-ring + compression fitting through each bulkhead"
+
+        space_nacre:
+          description: >
+            Alternating layers of electrodeposited iron + sintered
+            glass-ceramic. Like biological nacre (95% aragonite + 5%
+            organic protein = 3000x tougher than pure mineral).
+            Iron provides strength, glass resists crack propagation.
+          layers: "iron (electrodeposited) + glass-ceramic (sintered silicates)"
+          strength: "composite tougher than either material alone"
+          heritage: "Damascus steel, biological nacre, laminated armor"
+
+        continuous_growth:
+          description: >
+            The chamber GROWS, not built in events. Walls extend via
+            electrodeposition. Aperture migrates outward. Each cycle
+            the chamber is slightly bigger (can eat bigger asteroids).
+            Septum sealed only when growth zone needs refreshing.
+          growth_rate: "walls extend ~1mm/week in thickness + outward growth"
+          septum_trigger: "glass liner degraded OR chamber outgrown (~3 years)"
+
       consumables_per_generation:
-        glass_liner: {amount: "400 m^2", source: "asteroid silicates", from_earth: false}
-        iron_walls: {amount: "50-100 tonnes", source: "extracted iron", from_earth: false}
-        silicone_gasket: {amount: "2 kg", source: "Earth", from_earth: true}
-        airlock_relocation: {amount: "3-5 days labor", source: "4 surface ants", from_earth: false}
+        glass_liner: {amount: "sintered incrementally during growth", source: "asteroid silicates", from_earth: false}
+        iron_walls: {amount: "grown via electrodeposition from solution", source: "dissolved asteroid iron", from_earth: false}
+        silicone_gasket: {amount: "2 kg per septum", source: "Earth", from_earth: true}
+        aperture_membrane: {amount: "small Kapton flap, ~2 kg", source: "Earth initially, potentially local long-term", from_earth: true}
 
       consumables_over_20_years:
-        from_earth: "14 kg silicone gasket material (7 generations x 2 kg)"
-        from_asteroids: "everything else (iron, glass, water, bacteria)"
-        note: "14 kg from Earth over 20 years. Effectively self-sustaining."
+        from_earth: "~26 kg total (14 kg gasket + 12 kg aperture flaps)"
+        from_asteroids: "everything else"
+        note: "26 kg from Earth over 20 years for a 50,000-tonne facility."
 
     what_it_becomes:
       year_0: "a bag with bacteria"
