@@ -62,6 +62,11 @@ VALUES = {
     "water": 50_000,
 }
 
+# Equipment lifespans (hours)
+PUMP_LIFESPAN_HOURS = 7 * 365.25 * 24         # ~7 years
+COMPUTE_LIFESPAN_HOURS = 15 * 365.25 * 24     # ~15 years
+MAINTENANCE_CUBESAT_COST = 500_000             # $500K per refresh mission
+
 # Nautilus chamber lifecycle
 CHAMBER_LIFESPAN_YEARS = 3          # Each active chamber lasts ~3 years
 GLASS_LINING_SINTER_DAYS = 17       # 400 m^2 at 1 m^2/hr
@@ -117,6 +122,13 @@ class StationState:
     # Bacteria culture
     culture_age_hours: float = 0.0
     culture_generations: int = 0
+
+    # Equipment lifecycle
+    compute_age_hours: float = 0.0
+    pump_age_hours: float = 0.0
+    maintenance_missions: int = 0
+    maintenance_cost_usd: float = 0.0
+    equipment_failures: int = 0
 
     @property
     def time_days(self):
@@ -281,6 +293,38 @@ def run_simulation(years=20, customers_per_year=4, verbose=True):
             current_asteroid_diameter *= CHAMBER_GROWTH_FACTOR
             metals_per_asteroid = extract_metals_from_asteroid(current_asteroid_diameter)
 
+        # --- Equipment aging & maintenance ---
+        state.compute_age_hours += dt_hours
+        state.pump_age_hours += dt_hours
+
+        # Pump failure: bacteria slow down (no circulation) until replaced
+        if state.pump_age_hours >= PUMP_LIFESPAN_HOURS:
+            state.equipment_failures += 1
+            state.maintenance_missions += 1
+            state.maintenance_cost_usd += MAINTENANCE_CUBESAT_COST
+            state.pump_age_hours = 0.0  # Replacement arrives
+            events.append({
+                "time_years": state.time_years,
+                "type": "maintenance",
+                "message": (
+                    f"Pump replacement CubeSat #{state.maintenance_missions} "
+                    f"(${state.maintenance_cost_usd/1e6:.1f}M cumulative)")
+            })
+
+        # Compute failure: station goes dark until replacement
+        if state.compute_age_hours >= COMPUTE_LIFESPAN_HOURS:
+            state.equipment_failures += 1
+            state.maintenance_missions += 1
+            state.maintenance_cost_usd += MAINTENANCE_CUBESAT_COST
+            state.compute_age_hours = 0.0
+            events.append({
+                "time_years": state.time_years,
+                "type": "maintenance",
+                "message": (
+                    f"Compute refresh CubeSat #{state.maintenance_missions} "
+                    f"(${state.maintenance_cost_usd/1e6:.1f}M cumulative)")
+            })
+
         # --- Customer visits ---
         if state.time_hours >= next_customer_hours and state.asteroids_processed >= 2:
             order = DEFAULT_CUSTOMER_ORDER.copy()
@@ -339,6 +383,8 @@ def run_simulation(years=20, customers_per_year=4, verbose=True):
                 "revenue_m": state.total_revenue_usd / 1e6,
                 "customers": state.customers_served,
                 "culture_gens": state.culture_generations,
+                "maint_missions": state.maintenance_missions,
+                "maint_cost_m": state.maintenance_cost_usd / 1e6,
             })
             last_snapshot_year = year
 
@@ -404,8 +450,11 @@ def format_report(state, snapshots, events, years, customers_per_year):
     lines.append(f"  Retired chambers:       {len(state.retired_chambers)}")
     for c in state.retired_chambers:
         lines.append(f"    - Ch.#{c['number']} -> {c['role']} (retired year {c['retired_year']:.1f})")
-    lines.append(f"  Gasket from Earth:      {state.gasket_used_kg:.0f} kg "
-                 f"(only Earth consumable in {state.time_years:.0f} years)")
+    lines.append(f"  Gasket from Earth:      {state.gasket_used_kg:.0f} kg")
+    lines.append(f"  Maintenance missions:   {state.maintenance_missions} "
+                 f"(${state.maintenance_cost_usd/1e6:.1f}M cumulative)")
+    lines.append(f"  Equipment failures:     {state.equipment_failures} "
+                 f"(all recovered via CubeSat refresh)")
     lines.append(f"  Water reserve:          {state.water_kg/1000:.0f} tonnes")
     lines.append(f"  Customers served:       {state.customers_served} "
                  f"({state.orders_fulfilled} full, {state.orders_partial} partial)")

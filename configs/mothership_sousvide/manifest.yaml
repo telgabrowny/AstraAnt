@@ -320,6 +320,182 @@ reusability:
     everything_else: "$0 (self-replenishing)"
     effective_cost: "~$50-100K per asteroid after initial $7-15M investment"
 
+# === LONG-TERM OPERATIONS & LIFECYCLE ===
+
+retired_chamber_uses:
+  description: >
+    Each retired chamber is a pressure-tight, armored, temperature-controlled
+    room in space. Older (inner) chambers are the most protected -- buried
+    under layers of newer shell. These become leasable infrastructure.
+  by_age:
+    newest_retired:
+      size: "largest"
+      protection: "outer shell only"
+      best_use: "materials warehouse (easy customer access)"
+    mid_age:
+      protection: "several layers of armor"
+      best_use: "manufacturing (forge, 3D printer, assembly bay)"
+    old:
+      protection: "deep inside station"
+      best_use: "data center, comms relay (radiation-shielded)"
+    very_old:
+      protection: "maximum shielding"
+      best_use: "biological lab, seed bank, culture archive"
+    original_bag:
+      protection: "center of entire station"
+      best_use: "the vault (PGMs, critical spares, frozen culture backups)"
+  commercial_uses:
+    fuel_depot: >
+      Water ice in insulated chambers. Any spacecraft refuels here.
+      Water is universal propellant. Thousands of tonnes available.
+    habitat: >
+      Retired chamber with atmosphere, heating, and radiation shielding
+      IS a space habitat. Add life support = crew-rated. Visiting
+      engineers, scientists, or tourists rent a chamber.
+    dry_dock: >
+      Large pressurized chambers where spacecraft are repaired and
+      modified in shirt-sleeve environment. No EVA needed.
+    farm: >
+      Pressurized, lit, warm chambers with water. Grow food with
+      Chlorella vulgaris (already in species catalog). Feed visiting crews.
+    foundry: >
+      Thick-walled retired chambers handle high-temperature metal casting.
+      Pour molten iron into molds. Manufacture structural beams and parts.
+    vault: >
+      PGMs, rare earths, high-value stockpiles in deepest chambers.
+      Literally a bank vault in space.
+
+equipment_lifecycle:
+  description: >
+    The station's iron, membrane, and biology last effectively forever.
+    Only electronics and moving parts age. These are the cheapest and
+    lightest components to replace via periodic CubeSat refresh missions.
+
+  component_lifespans:
+    kevlar_membrane:
+      lifespan_years: "20-30 (but buried under iron by year 3, protected indefinitely)"
+      failure_mode: "UV degradation, fatigue"
+      replacement: "not needed (shielded by iron shell)"
+
+    iron_walls:
+      lifespan_years: "centuries"
+      failure_mode: "corrosion (acid side, but deposition outpaces 3:1)"
+      replacement: "self-repairing (continuous electrodeposition)"
+
+    bacteria_culture:
+      lifespan_years: "indefinite (self-replicating)"
+      failure_mode: "contamination, mutation, temperature crash"
+      replacement: "frozen backup samples in vault chamber"
+      recovery: >
+        Even if active culture dies: warm up ice, inject fresh bacteria
+        (from vault or from Earth), resume processing. Like restarting
+        sourdough from a dried sample.
+
+    solar_concentrators:
+      lifespan_years: "15-20"
+      failure_mode: "Mylar reflectivity degradation"
+      replacement: "iron-framed mirrors built on-site (reflective metal surface)"
+
+    solar_panels:
+      lifespan_years: "20-30"
+      failure_mode: "radiation damage, cell degradation"
+      replacement: "CubeSat delivery of new panels (~$500K)"
+      note: "this is the primary aging component"
+
+    electrowinning_cell:
+      lifespan_years: "10-15"
+      failure_mode: "electrode degradation"
+      replacement: "new electrodes cut from extracted metals (on-site)"
+
+    pumps:
+      lifespan_years: "5-10"
+      failure_mode: "seal wear, motor bearing failure"
+      replacement: "CubeSat delivery of replacement pumps"
+
+    compute:
+      lifespan_years: "10-20"
+      failure_mode: "radiation SEU, component aging"
+      replacement: "CubeSat with new ESP32 + control board (~$500K)"
+
+    siphuncle_seals:
+      lifespan_years: "5-10 per section"
+      failure_mode: "silicone degradation in acid environment"
+      replacement: "2 kg silicone per seal (CubeSat delivery or on-site stockpile)"
+
+  maintenance_schedule:
+    every_5_years: "pump replacement, seal inspection"
+    every_10_years: "compute refresh CubeSat ($500K)"
+    every_15_years: "solar concentrator rebuild (on-site)"
+    every_20_years: "solar panel replacement CubeSat ($500K)"
+    annual_cost_amortized: "~$100K/year in replacement parts"
+    note: "$100K/year to maintain a multi-billion-dollar facility"
+
+  failure_recovery:
+    compute_dies:
+      bacteria_status: "alive for months (stable chemical system, thermal mass keeps warm)"
+      recovery_time: "weeks (CubeSat transit + dock + boot)"
+      recovery_cost: "$500K"
+      what_to_send: "CubeSat with ESP32, solar panel, radio. Docks and takes over."
+
+    pumps_fail:
+      bacteria_status: "alive but dormant (no circulation = diffusion-limited)"
+      recovery_time: "months"
+      recovery_cost: "$1M"
+      what_to_send: "CubeSat with replacement pumps + compute"
+
+    total_system_failure:
+      bacteria_status: "dead (temperature crashed, everything frozen)"
+      structure_status: "intact (iron lasts centuries, water ice preserved)"
+      recovery_time: "1-2 years (transit + reboot)"
+      recovery_cost: "$1.5M"
+      what_to_send: "new CubeSat seed mission with fresh bacteria and compute"
+      note: >
+        Station still has iron shell, water ice, sealed chambers.
+        Just reseed the biology and restart. The infrastructure
+        investment is permanent. Only the biology expires.
+
+    permanent_loss: >
+      Effectively impossible. Even after 50 years of neglect:
+      iron shell is still there, water ice is still there, sealed
+      chambers are still pressure-tight. A $1.5M CubeSat restarts
+      the entire operation. The station is almost unkillable.
+
+  frozen_culture_vault:
+    description: >
+      Deepest, coldest, most radiation-shielded chamber stores frozen
+      culture samples of all bacterial species. Even if the active
+      culture dies, the vault backups survive indefinitely in the
+      near-vacuum cold conditions.
+    location: "original bag (center of station)"
+    samples: "all species at multiple growth stages"
+    storage: "freeze-dried in sealed vials at -80C to -196C"
+    redundancy: "10+ backup vials per species"
+    lifetime: "decades to centuries (freeze-dried bacteria survive)"
+
+  station_evolution:
+    decade_1: "Build. Process asteroids. Grow shell. Station is a mining operation."
+    decade_2: "Lease retired chambers. Fuel depot. Warehouse. Station is a business."
+    decade_3: "Add habitat. Dry dock. Foundry. Farm. Station is an industrial town."
+    decade_4: "Electronics aging. $500K CubeSat refresh every 5 years. Station maintains itself."
+    decade_5_plus: >
+      The station IS the infrastructure. Other projects build FROM it,
+      not TO it. Anchor of a space economy. Effectively permanent.
+      You don't abandon it. You upgrade it. $100K/year forever.
+
+  can_you_build_forever:
+    answer: "yes, for practical purposes"
+    limiting_factor: "electronics and moving parts (cheapest components to replace)"
+    permanent_components: "iron shell (centuries), biology (indefinite with backups), water (permanent)"
+    upgrade_path: "$500K CubeSat every 5-10 years for electronics/pump refresh"
+    note: >
+      The iron and structure outlast everything else by orders of magnitude.
+      The biology is the most resilient part -- it literally evolved to
+      survive. The electronics are the most fragile -- but also the
+      lightest and cheapest to replace. The architecture puts the
+      permanent stuff on the outside (iron) and the replaceable stuff
+      on the inside (electronics, pumps). Like a turtle: hard shell,
+      soft insides that heal.
+
 notes: |
   The Sous Vide approach inverts the problem. Instead of building
   infrastructure INSIDE the asteroid (tunnels, rails, seals), it builds
