@@ -482,6 +482,50 @@ equipment_lifecycle:
       not TO it. Anchor of a space economy. Effectively permanent.
       You don't abandon it. You upgrade it. $100K/year forever.
 
+  electrowinning_details:
+    description: >
+      Metals separated by staged voltage control. Each metal has a
+      different reduction potential -- plate one at a time by adjusting
+      voltage on the DC power supply.
+    voltage_sequence:
+      copper: {voltage_v: "+0.5", order: 1, notes: "plates first (easiest)"}
+      nickel_cobalt: {voltage_v: "-0.3", order: 2, notes: "plate together, separate later"}
+      iron: {voltage_v: "-0.5", order: 3, notes: "bulk (20% of asteroid), last to plate"}
+    pgm_extraction:
+      method: "separate chemistry phase after sulfide leaching"
+      organism: "Chromobacterium violaceum (biogenic cyanide)"
+      alternative: "chemical sodium cyanide (faster, needs Earth supply)"
+      metals: ["platinum", "palladium", "iridium", "gold"]
+    rare_earth_extraction:
+      method: "Aspergillus niger citric acid chelation"
+      recovery: "precipitation as oxide powders (not electro-winning)"
+      metals: ["lanthanum", "cerium", "neodymium", "yttrium"]
+    current_routing:
+      description: >
+        Wall growth and stockpile extraction use SEPARATE electrical
+        circuits from the same dissolved metal pool. Split by adjusting
+        current allocation. NOT mutually exclusive.
+      growth_mode: {walls: "80%", stockpile: "15%", pgm: "5%"}
+      balanced: {walls: "40%", stockpile: "50%", pgm: "10%"}
+      harvest_mode: {walls: "10% (just counter corrosion)", stockpile: "80%", pgm: "10%"}
+      rush_build: {walls: "5% (accept brief thinning)", stockpile: "90%", pgm: "5%"}
+
+  micrometeorite_protection:
+    whipple_shield: >
+      The multi-chamber nautilus shell IS a Whipple shield. An impactor
+      penetrates the outer iron layer but fragments into a debris cloud
+      that spreads across the inner layer (energy distributed, doesn't
+      penetrate). By Gen 5: 4+ iron layers between soup and space.
+    self_healing: >
+      If a micrometeorite punctures through to the soup, the iron-rich
+      acid flows into the hole. The electrodeposition current deposits
+      iron IN the crack, sealing it. The station heals like an organism.
+    additional_strategies:
+      thicker_outer: "deposit extra iron on outermost surface (free from stockpile)"
+      regolith_blanket: "pile asteroid waste rubble on exterior (free, absorbs impacts)"
+      bumper_layer: "thin sheet 10cm ahead of main wall (classic Whipple)"
+      pressure_monitoring: "siphuncle sensors detect leaks, isolate damaged sections"
+
   can_you_build_forever:
     answer: "yes, for practical purposes"
     limiting_factor: "electronics and moving parts (cheapest components to replace)"
