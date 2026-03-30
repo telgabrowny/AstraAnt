@@ -1,0 +1,287 @@
+# Training Pipeline: Sim-to-Real-to-Fleet Learning Architecture
+#
+# Inspired by Disney Imagineering's Olaf robot (100K virtual Olafs trained
+# in 2 days on 1 GPU, zero-shot to real hardware) and Agility Robotics'
+# Digit (<1M param LSTM, decades of sim in 3-4 days, walks in warehouses).
+#
+# The pipeline has 4 phases:
+#   1. Pre-launch training on Earth (MuJoCo MJX, GPU-accelerated)
+#   2. Pre-configured policies uploaded to mothership
+#   3. On-site fine-tuning from real experience (Jetson, Year 3+)
+#   4. Fleet learning across motherships (experience merge on Earth)
+
+pipeline_name: "AstraAnt Sim-to-Real-to-Fleet Learning Pipeline"
+
+# === PHASE 1: PRE-LAUNCH TRAINING (Earth) ===
+phase_1_earth_training:
+  description: >
+    Train foundation policies in MuJoCo MJX before launch. Massive
+    parallelization: 100K virtual ant colonies, each with randomized
+    asteroid conditions. The resulting policy is robust because it's
+    already experienced every condition the real asteroid could present.
+  simulator: "MuJoCo MJX (JAX backend, GPU-accelerated)"
+  hardware: "1x RTX 4090 (or equivalent)"
+  parallel_envs: 4096              # Simultaneous colonies per GPU
+  training_approach: "PPO (Proximal Policy Optimization)"
+
+  domain_randomization:
+    description: >
+      Every training episode randomizes conditions so the policy
+      can't overfit to one specific environment. This is the key to
+      crossing the sim-to-real gap. Disney, Agility, Unitree, and
+      Boston Dynamics all use this approach.
+    randomized_parameters:
+      gravity: "5.8e-6 to 0.06 m/s^2 (Bennu to Psyche range + 20% margin)"
+      surface_friction: "0.2 to 1.0 (loose dust to rough rock)"
+      regolith_density: "1000 to 4000 kg/m^3"
+      surface_roughness: "smooth to heavily cratered"
+      leg_servo_performance: "+/- 15% torque variation per servo"
+      body_mass: "+/- 10% (manufacturing variation)"
+      foot_pad_wear: "0 to 50% microspine degradation"
+      terrain_slope: "0 to 30 degrees"
+      boulder_frequency: "0 to 20% of path"
+      initial_body_orientation: "random within 15 degrees"
+
+  policies_trained:
+
+    locomotion_micro:
+      target_hardware: "RP2040 (worker ant)"
+      purpose: "Walk stably on any surface at any gravity"
+      input_dim: 24                # 8 joint pos + 8 joint vel + 6 body IMU + 2 foot contact
+      output_dim: 8                # 8 joint target angles
+      architecture: "MLP [24, 64, 64, 8]"
+      parameters: "~6K"
+      activation: "tanh"
+      training_time_hours: 4       # On single RTX 4090
+      simulated_experience: "~50 years of walking across all asteroid types"
+      reward_function: >
+        +1.0 per meter forward progress
+        -10.0 per liftoff event (body z > threshold)
+        -0.1 per unit of lateral drift
+        -0.01 per unit of energy consumed (encourages efficiency)
+        +0.5 for maintaining stable body orientation
+      curriculum:
+        stage_1: "flat ground, Earth gravity (learn basic gait)"
+        stage_2: "flat ground, sweep gravity down to micro-g"
+        stage_3: "add terrain roughness and slope"
+        stage_4: "add servo variation and foot pad wear"
+        stage_5: "full randomization (the graduation exam)"
+
+    terrain_adapt:
+      target_hardware: "ESP32-S3 (taskmaster)"
+      purpose: "Classify terrain and optimize squad gait parameters"
+      input_dim: 31                # 11 spectral + 10 lidar features + 10 squad metrics
+      output_dim: 14               # zone class (7) + gait params (7: amplitude, speed, etc.)
+      architecture: "LSTM [31, 128, 128, 14], 2 layers"
+      parameters: "~80K"
+      training_time_hours: 8
+      simulated_experience: "~200 years of terrain encounters"
+      what_it_replaces: >
+        The current lookup table in anomaly_detection.py that maps
+        spectral readings to mineral types. The LSTM learns subtle
+        patterns that fixed thresholds miss (e.g., mixed zones,
+        weathered surfaces, unusual compositions).
+
+    strategic_planner:
+      target_hardware: "Jetson Orin Nano / Thor (mothership)"
+      purpose: "Optimize tunnel expansion and resource allocation"
+      input_dim: 256               # Encoded tunnel map + production metrics
+      output_dim: 32               # Expansion direction + worker allocation + priorities
+      architecture: "Transformer encoder, 4 layers, 128 dim"
+      parameters: "~2M"
+      training_time_hours: 48
+      simulated_experience: "~10,000 complete mining missions"
+      what_it_replaces: >
+        Rule-based tunnel expansion heuristics and fixed rebalancing
+        thresholds. The transformer learns long-range dependencies
+        (e.g., this vein pattern means there's likely a richer deposit
+        200m in that direction).
+
+  output:
+    - "locomotion_micro.tflite (6 KB, for RP2040)"
+    - "terrain_adapt.tflite (320 KB, for ESP32-S3)"
+    - "strategic_planner.onnx (8 MB, for Jetson)"
+    - "training_report.json (metrics, domain randomization params)"
+
+# === PHASE 2: UPLOAD TO MOTHERSHIP ===
+phase_2_upload:
+  description: >
+    Pre-trained policies loaded onto mothership storage before launch.
+    No training happens in transit -- just loaded and ready.
+  storage_required_mb: 10          # All policies + metadata
+  upload_method: "microSD card before launch (or CAN bus update in-transit)"
+  verification: "run built-in test suite on mothership to confirm policies loaded"
+
+# === PHASE 3: ON-SITE FINE-TUNING (Year 3+, requires Jetson) ===
+phase_3_onsite_learning:
+  description: >
+    Once the Jetson upgrade arrives (Year 3 resupply), the mothership
+    can fine-tune policies using real experience data. This is the
+    "learn on Monday, deploy on Tuesday" capability.
+  method: "EdgeOL (efficient edge online learning)"
+  hardware: "Jetson Orin Nano (40 TOPS, 15W)"
+
+  data_collection:
+    source: "all taskmaster reports + worker heartbeats"
+    storage: "rolling 30-day buffer on NVMe (estimated 2 GB/month)"
+    what_gets_recorded:
+      - "per-step joint states and foot contacts (from worker heartbeats)"
+      - "terrain classification results (from taskmaster spectral scans)"
+      - "failure events (stalls, liftoffs, excessive slip)"
+      - "production metrics (material extracted per shift per zone)"
+
+  fine_tuning_schedule:
+    trigger: "every 8 hours (during low-activity period)"
+    duration_min: 15               # On Jetson Orin Nano
+    power_during_update_w: 15
+    what_updates:
+      locomotion_micro: "adapt gait to THIS asteroid's specific terrain"
+      terrain_adapt: "improve mineral classification for THIS rock composition"
+      strategic_planner: "learn tunnel expansion patterns for THIS geology"
+
+  policy_deployment:
+    to_workers: "pushed via radio when worker visits tool dock or charges"
+    to_taskmasters: "pushed via CAN bus (immediate, wired connection)"
+    to_mothership: "updated in-place after fine-tuning completes"
+    rollback: "previous policy version kept as fallback (if new policy degrades performance)"
+
+# === PHASE 4: FLEET LEARNING (Multi-Mission) ===
+phase_4_fleet_learning:
+  description: >
+    Each mothership compresses its experience into a small package
+    and uploads to Earth. Earth merges experience from ALL active
+    motherships and retrains. Next mothership gets combined knowledge.
+    The 5th mission starts dramatically smarter than the 1st.
+  reference: "Robot Fleet Learning via Policy Merging (arXiv 2310.01362)"
+
+  experience_upload:
+    what: "compressed policy weights + terrain encounter logs + failure data"
+    size_mb: 5-20
+    frequency: "weekly (bundled with regular telemetry)"
+    channel: "X-band radio to Earth (low bandwidth, fits in scheduled uplinks)"
+
+  earth_merge:
+    method: "federated policy averaging with domain weighting"
+    description: >
+      Each mothership's experience is weighted by how novel its
+      environment is. A mothership on a C-type rubble pile contributes
+      C-type terrain knowledge. A mothership on metallic Psyche
+      contributes metallic surface knowledge. The merged policy
+      inherits from all environments.
+    retraining_time_days: 2-3      # Full retrain on RTX 4090
+    incremental_update_hours: 4    # When adding one mothership's data
+
+  distribution:
+    to_active_motherships: "upload updated policies via scheduled comm window"
+    to_in_transit_missions: "relay via deep space network"
+    to_next_launch: "pre-loaded on microSD before launch"
+
+  fleet_knowledge_growth:
+    mission_1: "foundation policy only (Earth sim training)"
+    mission_2: "foundation + mission 1 real experience"
+    mission_3: "foundation + missions 1-2 experience"
+    mission_N: "foundation + all previous missions -- each one smarter"
+
+# === WHAT STAYS DETERMINISTIC (No Neural Replacement) ===
+stays_deterministic:
+  description: >
+    Not everything should be neural. Some systems are better as
+    deterministic code because they need to be auditable, predictable,
+    and provably safe.
+  systems:
+    - name: "safety limits"
+      reason: "servo current limits, supercap thresholds, emergency stop -- must be deterministic and auditable"
+    - name: "radio protocol"
+      reason: "message format, heartbeat timing, command parsing -- reliability over adaptability"
+    - name: "material ledger"
+      reason: "every kg tracked -- accounting must be exact, not approximate"
+    - name: "power rail voltage control"
+      reason: "safety-critical -- deterministic PID, not learned"
+    - name: "cargo pod launch sequencing"
+      reason: "orbital mechanics -- use Kepler's equation, not a neural net"
+
+# === COMMAND HIERARCHY WITH NEURAL POLICIES ===
+# The neural policies sit WITHIN the existing hierarchy, not on top of it.
+# The chain of command doesn't change. The decisions just get smarter.
+
+command_hierarchy_with_ai:
+  human_to_mothership:
+    before_ai: "Player sends 'prioritize platinum' -- mothership uses rule-based heuristic to expand toward high-platinum zones"
+    after_ai: "Same command -- but strategic_planner predicts platinum locations from geological patterns, plans 3 branches ahead instead of 1"
+
+  mothership_to_taskmaster:
+    before_ai: "Mothership sends 'retarget squad_3 to sector_7' based on simple zone depletion threshold"
+    after_ai: "Same command format -- but mothership anticipates depletion 2 hours early, pre-positions squad for seamless transition"
+
+  taskmaster_to_worker:
+    before_ai: "Taskmaster sends CMD_DRILL with fixed 3000ms duration"
+    after_ai: "Taskmaster adjusts drill duration per terrain type (hard rock: 4000ms, loose regolith: 1500ms) based on terrain_adapt policy"
+
+  worker_execution:
+    before_ai: "Worker runs sinusoidal gait at fixed amplitude/speed"
+    after_ai: "Worker runs locomotion_micro policy -- adapts stride to local surface. Smoother, more efficient, better grip timing."
+
+  what_does_NOT_change:
+    - "Workers still receive 32-byte binary commands"
+    - "Taskmasters still send heartbeats and event reports"
+    - "CAN bus protocol format stays the same"
+    - "Telemetry structure stays the same"
+    - "The human still never commands individual ants"
+
+# === RELATIONSHIP: TASKMASTER AS SQUAD LEADER ===
+taskmaster_worker_relationship:
+  analogy: >
+    Think of a military platoon. The taskmaster is the sergeant.
+    The workers are privates. The mothership is the company commander.
+    The human is the general. The sergeant has eyes, ears, and a radio.
+    The privates have hands and legs. The privates don't need to see --
+    they do what the sergeant tells them. The sergeant doesn't need to
+    plan the war -- they execute the commander's orders for their squad.
+
+  can_workers_work_blind: >
+    YES. Workers work blind by design. They have:
+    - A physical rail to follow (like a subway track -- no navigation needed)
+    - Position commands from the taskmaster (move to meter mark 14.2)
+    - Simple tool commands (drill for 3 seconds, scoop, dump)
+    - Proximity sensor to avoid bumping into things (the ONE sensor they have)
+    They don't need to see because they don't make decisions about WHERE
+    to go or WHAT to do. They just execute commands and report status.
+
+  does_taskmaster_see_for_workers: >
+    NOT directly. The taskmaster doesn't watch individual workers via
+    camera. The OV7670 camera is for the taskmaster's OWN odometry
+    (self-position tracking). The taskmaster DOES provide:
+    - Work face characterization (spectral sensor classifies minerals)
+    - Zone-level gait parameters (adapts all workers to this terrain)
+    - Task assignments (which worker does what, based on squad state)
+    But it doesn't see what worker #7 is doing in real time. It knows
+    worker #7's state from its heartbeat (position, supercap, hopper).
+
+  supervision_model: >
+    Taskmasters supervise by TELEMETRY, not by VISION.
+    Like a warehouse manager watching a dashboard, not a security camera.
+    "Worker #7 is at position 14.2, 80% supercap, hopper 60% full,
+    drilling." The taskmaster doesn't need to SEE worker #7 drilling.
+    It knows from the heartbeat data.
+
+notes: |
+  The Disney Olaf parallel: Disney trained 100K virtual Olafs in 2 days
+  on a single RTX 4090 using NVIDIA's Newton/Kamino simulator. We use
+  MuJoCo MJX (same paradigm, open-source). Both approaches:
+  - Massive parallelization (thousands of robots training simultaneously)
+  - Domain randomization (robot encounters every possible condition in sim)
+  - Small policy networks (runs on edge hardware without GPU)
+  - Zero-shot transfer (works on real hardware without fine-tuning)
+
+  The key difference: Disney's Olaf walks on theme park floors (predictable).
+  Our ants walk on asteroid surfaces (unpredictable). So we need:
+  - More aggressive domain randomization
+  - On-site fine-tuning (the real asteroid will surprise us)
+  - Fleet learning (each mission teaches the next)
+
+  The training pipeline is designed so that a mothership can be
+  launched with ONLY Phase 1 (pre-trained on Earth) and still work.
+  Phases 3 and 4 are upgrades that make it better over time, not
+  prerequisites for operation. The Year 0 colony works fine on
+  deterministic code + pre-trained policies. Learning makes it
+  better, not functional.

@@ -1,126 +1,348 @@
-# Mothership Module: Colony Brain (Raspberry Pi 4)
-# The strategic intelligence for the entire colony.
-# Taskmasters handle local decisions. The Pi4 handles everything else.
+# Mothership Module: Colony Brain
+# Strategic intelligence for the entire colony.
+# Upgrades from deterministic Pi4 to learning-capable Jetson over time.
 
 module: compute
-name: "Colony Brain -- Raspberry Pi 4 Compute Module"
+name: "Colony Brain -- Compute Module"
 type: compute
 
-hardware:
-  part_id: raspberry_pi_4_8gb
-  processor: "BCM2711 quad-core ARM Cortex-A72 @ 1.5 GHz"
-  ram_gb: 8
-  storage: "256 GB microSD (mission logs, maps, ML models)"
-  power_draw_w: 6                      # Typical under load
-  mass_g: 50                           # Board only
-  cost_usd: 75
-  os: "Raspberry Pi OS Lite (headless)"
-  connectivity:
-    can_bus: "CAN 2.0B via MCP2515 HAT -- backbone to all taskmasters"
-    ethernet: "For local diagnostics if crew present"
-    wifi: "Disabled (power saving, no use case)"
+# === HARDWARE UPGRADE PATH ===
+# Year 0: Pi4 (deterministic, proven, cheap)
+# Year 3+: Jetson Orin Nano (on-site learning, policy fine-tuning)
+# Year 5+: Jetson Thor (foundation models, full autonomy)
 
-# The four-level intelligence hierarchy
+hardware:
+  year_0:
+    part_id: raspberry_pi_4_8gb
+    processor: "BCM2711 quad-core ARM Cortex-A72 @ 1.5 GHz"
+    ram_gb: 8
+    storage: "256 GB microSD"
+    power_draw_w: 6
+    mass_g: 50
+    cost_usd: 75
+    ml_capability: "inference only (TFLite, <1M param models)"
+    training_capability: "none (not enough compute)"
+    note: "Runs deterministic sim engine + statistical anomaly detection"
+
+  year_3_upgrade:
+    part_id: jetson_orin_nano_8gb
+    processor: "6-core ARM Cortex-A78AE + 1024 CUDA cores"
+    ram_gb: 8
+    storage: "256 GB NVMe"
+    power_draw_w: 15
+    mass_g: 90
+    cost_usd: 200
+    ml_capability: "40 TOPS inference (INT8), runs 1-10M param models"
+    training_capability: "on-site fine-tuning of small policies (<1M params)"
+    note: >
+      This is the critical upgrade. Enables on-site learning from real
+      experience data. Fine-tunes locomotion and classification policies
+      using EdgeOL approach (64% less compute than full training).
+      Delivered via resupply CubeSat.
+
+  year_5_upgrade:
+    part_id: jetson_thor
+    processor: "Blackwell GPU + Grace CPU"
+    ram_gb: 128
+    power_draw_w: 40
+    mass_g: 200
+    cost_usd: 500
+    ml_capability: "2070 TFLOPS (FP4), foundation model inference"
+    training_capability: "full on-site training of new policies"
+    note: >
+      Runs small LLMs (Gemma 2B class) for natural language mission
+      planning. Full on-site RL training. Radiation-tested variants
+      exist (Wallaroo + Loft Orbital orbital testing).
+
+  connectivity:
+    can_bus: "CAN 2.0B via MCP2515 -- wired backbone to all taskmasters"
+    can_bandwidth_kbps: 1000
+    earth_link: "X-band 8.4 GHz, 40W transmitter"
+    earth_delay_min: 5-30
+
+# === INTELLIGENCE HIERARCHY ===
+# Each level makes decisions appropriate to its capabilities.
+# Neural policies make each level better at its EXISTING job,
+# they don't give levels NEW jobs.
+
 intelligence_hierarchy:
 
   level_1_worker:
     hardware: "RP2040 (133 MHz, 264 KB SRAM)"
     role: "Reflexes -- execute commands, report status"
+    sensors: "VL53L0x LiDAR only (proximity/collision avoidance)"
+    vision: "NONE -- workers are blind by design"
+    why_blind: >
+      Workers don't need eyes. They follow a power rail (physical guide
+      path), execute position commands from the taskmaster, and report
+      simple state. Navigation is the taskmaster's job. This keeps workers
+      cheap ($39) and simple (fewer failure modes).
     decisions:
-      - "Am I stalled? (servo current monitoring)"
-      - "Is my supercap low? (ADC voltage check)"
+      - "Am I stalled? (servo current spike)"
+      - "Is my supercap low? (ADC voltage)"
       - "Is my hopper full? (strain gauge)"
-      - "Did I arrive at the commanded position?"
+      - "Did I arrive at commanded position? (timer-based)"
     does_NOT_decide:
-      - "What to do next (waits for taskmaster command)"
+      - "What to do next (waits for taskmaster)"
       - "Where to go (follows commanded rail position)"
-      - "When to stop drilling (taskmaster says DRILL_STOP)"
-    response_time_ms: 1                # Reflex-level
-    note: "Dumb on purpose. A broken worker just stops. It doesn't improvise."
+      - "When to stop drilling (taskmaster sends DRILL_STOP)"
+    response_time_ms: 1
+    comm_to_taskmaster: "nRF24L01 radio, 250 kbps, 50m range"
+    heartbeat_interval_s: 5
+    failure_timeout_s: 15          # 3 missed heartbeats
+    note: "Dumb on purpose. A broken worker just stops. Doesn't improvise."
+
+    # Neural policy upgrade (Year 0 -- shipped pre-trained)
+    neural_policy:
+      name: "locomotion_micro"
+      replaces: "hand-tuned sinusoidal gait (firmware/worker/gait.py)"
+      input: "8 joint positions + 8 joint velocities + body IMU (24 values)"
+      output: "8 joint targets (next gait step)"
+      architecture: "2-layer MLP, 64 hidden units"
+      parameters: "~10K"
+      memory_footprint_kb: 40      # Fits in RP2040's 264 KB
+      inference_time_us: 200       # <1ms on ARM Cortex-M0+
+      trained_by: "MuJoCo MJX on Earth (pre-launch)"
+      updated_by: "mothership pushes new weights at tool dock visits"
+      what_it_improves: >
+        Adapts gait to local terrain instead of fixed sinusoidal pattern.
+        Better grip engagement timing, smoother transitions, less energy
+        waste. The worker still can't navigate -- it just walks better.
 
   level_2_taskmaster:
     hardware: "ESP32-S3 (240 MHz dual-core, 512 KB SRAM)"
-    role: "Local scout -- fast decisions for individual workers"
+    role: "Squad leader -- commands ~20 workers, local sensor platform"
+    sensors:
+      imu: "BNO055 9-axis -- tunnel navigation (heading, orientation)"
+      lidar: "VL53L0x -- proximity, tunnel wall mapping (~2-3m range)"
+      camera: "OV7670 low-res -- visual odometry (self-position tracking)"
+      spectral: "AS7341 11-channel -- mineral classification at work face"
+      temp: "DS18B20 -- thermal monitoring"
+    camera_purpose: >
+      The OV7670 is for VISUAL ODOMETRY -- tracking the taskmaster's own
+      movement through the tunnel. It does NOT watch individual workers,
+      scout ahead, or do reconnaissance. Combined with IMU, it estimates
+      the taskmaster's position and heading. Workers have no camera feed.
     decisions:
-      - "Should worker #14 drill or haul? (hopper fill + supercap level)"
+      - "Which worker should drill vs haul? (hopper + supercap analysis)"
       - "Is this servo current normal? (threshold comparison)"
-      - "What mineral is at the work face? (spectral sensor lookup table)"
-      - "Which worker should collect debris? (nearest available)"
-      - "Worker #7 missed 3 heartbeats -- flag as failed"
+      - "What mineral is at the work face? (spectral sensor classification)"
+      - "Which idle worker should collect debris? (nearest available)"
+      - "Worker missed 3 heartbeats -- flag as failed, dispatch recovery"
     escalates_to_mothership:
-      - "New zone type detected at work face (spectral classification)"
-      - "Worker failure requiring recovery (dispatch from another squad?)"
-      - "Tunnel branch decision (which direction to dig next?)"
-      - "Squad is idle -- need more work assignments"
-    response_time_ms: 10               # Real-time local decisions
+      - "New zone type detected (spectral classification result)"
+      - "Worker failure requiring cross-squad recovery"
+      - "Tunnel branch decision (which direction to dig?)"
+      - "Squad is idle -- need work assignments"
+    response_time_ms: 10
     workers_per_taskmaster: 20
+    comm_to_workers: "nRF24L01 radio, 250 kbps, 50m"
+    comm_to_mothership: "CAN bus wired backbone, 1000 kbps"
+
+    # Neural policy upgrade (Year 0 -- shipped pre-trained)
+    neural_policy:
+      name: "terrain_adapt"
+      replaces: "lookup table mineral classification + fixed gait parameters"
+      input: "11-channel spectral + lidar scan + squad performance metrics"
+      output: "zone classification + per-worker gait parameter adjustments"
+      architecture: "small LSTM, 2 layers"
+      parameters: "~80K"
+      memory_footprint_kb: 320     # Fits in ESP32-S3's 512 KB
+      inference_time_ms: 5
+      what_it_improves: >
+        Better mineral classification than lookup tables (learns subtle
+        spectral patterns). Adjusts worker gait parameters per-zone
+        (softer steps on loose regolith, harder on consolidated rock).
+        The taskmaster still doesn't watch workers -- it classifies
+        terrain and dispatches optimized parameters.
 
   level_3_mothership:
-    hardware: "Raspberry Pi 4 (1.5 GHz quad-core, 8 GB RAM)"
+    hardware: "See hardware section above (Pi4 → Jetson upgrade path)"
     role: "Colony brain -- strategic decisions for all squads"
     decisions:
-      - "Which tunnel branch should we expand? (voxel grid analysis)"
-      - "Reassign 5 workers from mining to plastering (squad rebalancing)"
-      - "This zone is depleted, redirect to new vein (composition mapping)"
-      - "Start manufacturing batch of 10 new ants (production scheduling)"
-      - "Schedule cargo pod launches (revenue optimization)"
-      - "Thermal sorter vs crusher throughput balancing"
+      - "Which tunnel branch to expand? (voxel grid + composition analysis)"
+      - "Squad rebalancing (shift workers between mining/plastering/hauling)"
+      - "Zone depletion detection (redirect to new veins)"
+      - "Manufacturing schedule (build ants, cargo pods, tools)"
+      - "Cargo pod launch timing (revenue optimization)"
       - "Power rail routing for new tunnel branches"
-      - "Route planning to avoid tunnel traffic congestion"
-      - "Failure pattern analysis (are we losing too many servos in sector 3?)"
+      - "Traffic congestion avoidance (route planning)"
+      - "Failure pattern analysis (systemic vs random failures)"
     data_managed:
       - "Complete 3D tunnel map (voxel grid + topology)"
       - "All worker position and health histories"
-      - "Material ledger (every kg tracked)"
+      - "Material ledger (every kg tracked mine-face to cargo-pod)"
       - "Manufacturing queue and spare parts inventory"
       - "Cargo pod launch schedule and revenue forecast"
-    response_time_s: 1                 # Strategic, can take a second to think
-    notes: >
-      The Pi4 runs the same simulation engine that drives our GUI.
-      The colony brain IS the AstraAnt simulator, running on-site.
-      It sees the same data the player sees, just without the comm delay.
+      - "Neural policy versions and performance metrics"
+    response_time_s: 1
+
+    # Neural policy upgrade (Year 3 -- after Jetson upgrade)
+    neural_policy:
+      name: "strategic_planner"
+      replaces: "rule-based tunnel expansion + fixed rebalancing heuristics"
+      input: "tunnel map + mineral distribution + ant health + production metrics"
+      output: "expansion priorities, worker allocation, manufacturing schedule"
+      architecture: "transformer encoder, 4 layers"
+      parameters: "~2M"
+      what_it_improves: >
+        Learns optimal tunnel expansion patterns from experience.
+        Discovers non-obvious correlations (e.g., certain failure
+        patterns predict nearby void cavities). Plans ahead instead
+        of reacting. Each mission's mothership starts smarter than
+        the last via fleet learning.
+
+    # On-site learning capability (Year 3+)
+    on_site_learning:
+      method: "EdgeOL (efficient edge online learning)"
+      trigger: "every 8 hours (batch update from accumulated experience)"
+      data_source: "all taskmaster reports + worker heartbeats + production logs"
+      what_gets_updated:
+        - "locomotion_micro policy (pushed to workers at dock visits)"
+        - "terrain_adapt policy (pushed to taskmasters via CAN bus)"
+        - "strategic_planner policy (updated in-place)"
+      compute_time_per_update_min: 15  # On Jetson Orin Nano
+      power_during_update_w: 15
 
   level_4_earth:
-    hardware: "Human player + ground control"
-    role: "High-level goals -- environmental pressure"
+    hardware: "Human player + ground control + GPU training cluster"
+    role: "High-level goals + fleet-wide training"
     decisions:
-      - "Prioritize platinum over copper"
-      - "Send resupply mission with 4 more motherships"
-      - "Start chamber excavation"
-      - "Deploy humanoid construction crew"
-      - "Set endgame target: 224m radius habitat"
-    comm_delay_minutes: 5-30           # Earth-asteroid light travel time
+      - "Mining priorities (which metals to focus on)"
+      - "Resupply missions and manifest planning"
+      - "Endgame targets (habitat radius, population goals)"
+      - "Fleet-wide policy updates (merge experience from all motherships)"
+    comm_delay_minutes: 5-30
     response_time: "minutes to hours"
+
+    # Fleet learning (Earth-side)
+    fleet_learning:
+      method: "policy merge from distributed mothership experience"
+      trigger: "new experience upload from any mothership"
+      what_happens: >
+        Earth receives compressed experience packages from all active
+        motherships. Merges experience data. Retrains policies in
+        MuJoCo MJX with combined knowledge. Uploads updated policies
+        to all motherships (and any in-transit missions).
+        The 5th mothership is dramatically smarter than the 1st.
+      training_hardware: "1x RTX 4090 (or equivalent)"
+      training_time: "2-3 days for full retrain, hours for incremental"
+      experience_package_size_mb: 5-20  # Compressed policy weights + terrain maps
+
     note: >
-      The human player is the slowest level but sets the overall direction.
-      The colony operates autonomously between human commands.
-      If Earth goes silent, the colony continues on its last directives.
+      The human sets direction. The GPU trains policies. The mothership
+      deploys them. The ants execute them. Each layer does what it's
+      best at. The human never micromanages individual ants.
 
-software_running_on_pi4:
-  - "astraant simulation engine (headless mode)"
-  - "tunnel mapping and route planning"
-  - "material ledger and production scheduling"
-  - "failure analysis and predictive maintenance"
-  - "cargo pod launch optimizer"
-  - "CAN bus message router (taskmaster communication)"
-  - "telemetry aggregation for Earth uplink"
-  - "mission log and data recorder"
+# === COMMAND FLOW ===
+# Human → Mothership → Taskmaster → Worker (goals become commands)
+# Worker → Taskmaster → Mothership → Human (status becomes telemetry)
 
-mass_total_kg: 0.2                     # Pi4 + case + microSD + CAN HAT
-power_total_w: 6
-cost_total_usd: 100                    # Pi4 + accessories
+command_flow:
+  downward:
+    human_to_mothership:
+      channel: "X-band radio (5-30 min delay)"
+      format: "high-level directives"
+      examples:
+        - "prioritize: platinum"
+        - "build_ants: 20"
+        - "scan_area: sector_7"
+        - "set_endgame_target: radius_224m"
+      note: "Player never commands individual ants or taskmasters"
+
+    mothership_to_taskmaster:
+      channel: "CAN bus wired backbone (1000 kbps, <1ms)"
+      format: "squad-level orders"
+      examples:
+        - "RETARGET squad_3 to sector_7_vein"
+        - "REBALANCE squad_1: 5 miners -> plasterers"
+        - "EMERGENCY_STOP all_squads"
+        - "POLICY_UPDATE: locomotion_micro v2.3 (binary payload)"
+
+    taskmaster_to_worker:
+      channel: "nRF24L01 radio (250 kbps, 50m range)"
+      format: "32-byte binary commands"
+      commands:
+        CMD_MOVE_TO: "0x10 -- move to rail position (float32)"
+        CMD_DRILL: "0x20 -- drill for duration_ms"
+        CMD_SCOOP: "0x22 -- load hopper"
+        CMD_DUMP_HOPPER: "0x23 -- empty at dump site"
+        CMD_SWAP_TOOL: "0x30 -- go to dock, pick up tool_type"
+        CMD_HALT: "0xFF -- hard stop"
+      note: >
+        Workers receive simple, concrete commands. They don't interpret
+        goals. "Move to position 14.2" not "go find some platinum."
+        The taskmaster translates strategy into actions.
+
+  upward:
+    worker_to_taskmaster:
+      channel: "nRF24L01 radio"
+      heartbeat: "every 5 seconds, 32 bytes"
+      heartbeat_fields:
+        - "worker_id, rail_position, supercap_pct, hopper_pct"
+        - "state (idle/moving/drilling/scooping/hauling/failed)"
+        - "servo_health_bitmask (8 bits, one per servo)"
+      event_reports:
+        - "RPT_DRILL_DONE -- drill burst completed"
+        - "RPT_HOPPER_FULL -- time to dump"
+        - "RPT_SUPERCAP_LOW -- battery critical"
+        - "RPT_STALL -- servo stalled (servo_id, current_mA)"
+        - "RPT_TOOL_SEATED -- tool swap complete"
+
+    taskmaster_to_mothership:
+      channel: "CAN bus (UART 115200 baud)"
+      report_fields:
+        - "squad_id, total_workers, alive, dead"
+        - "workers_by_role: {miner: N, hauler: N, plasterer: N, ...}"
+        - "total_drill_cycles, zone_type_at_face"
+        - "anomaly flags (spectral outliers, void detections)"
+
+    mothership_to_earth:
+      channel: "X-band radio (5-30 min delay)"
+      telemetry_interval_min: 15
+      telemetry_fields:
+        - "elapsed_time, ants_active, ants_failed"
+        - "tunnel_length_m, branches, sealed_pct"
+        - "material_extracted_kg (by type)"
+        - "water_recovered_kg, revenue_estimate"
+        - "experience_package (compressed policy + terrain data)"
+
+# === SOFTWARE ===
+software_running:
+  deterministic:
+    - "AstraAnt simulation engine (headless mode)"
+    - "tunnel mapping and route planning"
+    - "material ledger and production scheduling"
+    - "failure analysis and predictive maintenance"
+    - "cargo pod launch optimizer"
+    - "CAN bus message router"
+    - "telemetry aggregation for Earth uplink"
+    - "mission log and data recorder"
+  neural:
+    - "policy inference server (serves locomotion_micro to docking workers)"
+    - "terrain_adapt inference (classifies taskmaster spectral data)"
+    - "strategic_planner inference (tunnel expansion decisions)"
+    - "on-site fine-tuning daemon (8-hour batch update cycle)"
+
+mass_total_kg: 0.2                     # Year 0: Pi4 + case + CAN HAT
+power_total_w: 6                       # Year 0 (15W after Jetson upgrade)
+cost_total_usd: 100                    # Year 0 (300 after Jetson upgrade)
 
 notes: |
-  The Pi4 is already on the mothership (part of the comms module).
-  This config just documents what software it runs and its role
-  in the intelligence hierarchy.
+  The colony brain runs the SAME simulation engine as the player's GUI.
+  What you see in the game is what the Pi4 sees on the asteroid.
 
-  Key insight: the colony brain runs the SAME code as the simulator.
-  The AstraAnt simulation engine is both the design tool AND the
-  operational control software. What you see in the GUI is what
-  the Pi4 sees in real-time on the asteroid.
+  Key principle: neural policies make each level better at its EXISTING
+  job. Workers don't suddenly become independent navigators -- they just
+  walk better. Taskmasters don't become scouts -- they classify minerals
+  better. The mothership doesn't become sentient -- it plans tunnels better.
 
-  If the Pi4 fails, taskmasters can operate independently with
-  reduced capability (local decisions only, no strategic coordination).
-  Workers can operate with just their taskmaster's commands.
-  The hierarchy degrades gracefully.
+  Workers are blind on purpose. They follow a physical rail, execute
+  simple commands, and report simple state. This is the right design:
+  cheap, reliable, replaceable. The intelligence lives in the taskmaster
+  and mothership where sensors and compute can justify the cost.
+
+  Graceful degradation: if any level fails, levels below continue
+  working with reduced capability. Workers survive without taskmaster
+  (stop and wait). Taskmasters survive without mothership (local work
+  continues). Mothership survives without Earth (last directives).
