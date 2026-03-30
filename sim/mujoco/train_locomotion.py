@@ -1,16 +1,17 @@
-"""AstraAnt Locomotion Policy Training -- CPU-Optimized
+"""AstraAnt Locomotion Training -- Evolutionary Strategy (ES)
 
-Uses regular MuJoCo (not MJX) for physics -- 1000x faster on CPU.
-64 parallel environments via vectorized numpy. PPO from scratch.
+Trains a 6K-param MLP to walk the 8-leg worker ant using OpenAI-style
+evolutionary strategy. No gradients needed -- just evaluate perturbed
+policies and move toward the ones that walk better.
 
-Trains a 6K-param MLP to walk the 8-leg worker ant on all asteroid
-surfaces. Domain randomization across gravity, friction, servo torque.
+OpenAI (2017) showed ES matches PPO on MuJoCo locomotion tasks.
+ES is simpler, naturally parallel, and works great on CPU.
 
-Expected: ~50K steps/s on CPU. 50M steps in ~17 minutes.
-With full evaluation suite: 1-2 hours for thorough training + analysis.
+Expected: ~32K steps/s on CPU. 50M steps in ~30 minutes.
+With domain randomization + curriculum: 1-2 hours total.
 
 Usage:
-    python train_locomotion.py          # Train (runs ~1-2 hours)
+    python train_locomotion.py          # Train
     python train_locomotion.py --eval   # Evaluate best policy
 """
 
@@ -34,361 +35,164 @@ DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(DIR, "worker_ant_8leg.xml")
 OUTPUT_DIR = os.path.join(DIR, "training_output")
 
-# ============================================================================
-# Configuration
-# ============================================================================
-NUM_ENVS = 64
-ROLLOUT_LENGTH = 256           # Steps per rollout
-NUM_EPOCHS = 4                 # PPO epochs per batch
-MINIBATCH_SIZE = 1024
-LEARNING_RATE = 3e-4
-GAMMA = 0.99
-GAE_LAMBDA = 0.95
-CLIP_EPS = 0.2
-ENTROPY_COEFF = 0.005
-VALUE_COEFF = 0.5
-MAX_GRAD_NORM = 0.5
+# ES Hyperparameters
+POP_SIZE = 64                  # Perturbations per generation
+SIGMA = 0.02                   # Noise standard deviation
+LEARNING_RATE = 0.01           # ES learning rate
+NUM_GENERATIONS = 3000         # Total generations
+EVAL_STEPS = 300               # Control steps per evaluation (6 seconds)
+PHYSICS_STEPS = 10             # Substeps per control
+CONTROL_DT = 0.02
 
-TOTAL_TIMESTEPS = 50_000_000   # 50M steps
-CHECKPOINT_INTERVAL = 300      # Seconds between checkpoints (5 min)
-LOG_INTERVAL = 5               # Iterations between prints
-EVAL_INTERVAL = 50             # Iterations between full evaluations
+# Policy
+OBS_DIM = 34
+ACT_DIM = 8
+HIDDEN = 64
 
-CONTROL_DT = 0.02             # 50 Hz control
-PHYSICS_STEPS = 10             # Physics substeps per control step
-EPISODE_LENGTH = 500           # 10 seconds per episode
-
-OBS_DIM = 34                   # joint_pos(8)+joint_vel(8)+quat(4)+angvel(3)+linvel(3)+contacts(8)
-ACT_DIM = 8                   # 8 leg joints
-
-# Reward
+# Reward (same as before)
 FWD_REWARD = 2.0
 ALIVE_BONUS = 0.05
 ENERGY_COST = 0.003
 LIFTOFF_COST = 10.0
 TILT_COST = 0.3
 JERK_COST = 0.005
-LATERAL_COST = 0.05
 
 # Domain randomization
-GRAVITY_LOG_MIN = math.log(5.8e-6)   # Bennu
-GRAVITY_LOG_MAX = math.log(0.06)     # Psyche
+GRAVITY_LOG_MIN = math.log(5.8e-6)
+GRAVITY_LOG_MAX = math.log(0.06)
 FRICTION_MIN, FRICTION_MAX = 0.3, 0.8
 GRIP_MIN, GRIP_MAX = 0.08, 0.30
-TORQUE_NOISE = 0.15
-CURRICULUM_WARMUP = 0.2
+CURRICULUM_WARMUP = 0.25
 
-# Foot body indices in MuJoCo (from XML structure)
 FOOT_IDS = [3, 5, 7, 9, 11, 13, 15, 17]
+CHECKPOINT_INTERVAL = 300
 
 
 # ============================================================================
-# Vectorized Environment
+# Policy as flat parameter vector
 # ============================================================================
-class VecEnv:
-    """64 parallel MuJoCo environments with domain randomization."""
+def make_policy_shape():
+    """Define policy architecture: MLP [34, 64, 64, 8]."""
+    shapes = [
+        ("pw1", (OBS_DIM, HIDDEN)),
+        ("pb1", (HIDDEN,)),
+        ("pw2", (HIDDEN, HIDDEN)),
+        ("pb2", (HIDDEN,)),
+        ("pw3", (HIDDEN, ACT_DIM)),
+        ("pb3", (ACT_DIM,)),
+    ]
+    total = sum(s[0] * s[1] if len(s) == 2 else s[0]
+                for _, s in shapes)
+    return shapes, total
 
-    def __init__(self, num_envs):
-        self.n = num_envs
-        self.mj_model = mujoco.MjModel.from_xml_path(MODEL_PATH)
-        self.envs = [mujoco.MjData(self.mj_model) for _ in range(num_envs)]
-        self.step_count = np.zeros(num_envs, dtype=int)
-        self.prev_actions = np.zeros((num_envs, ACT_DIM))
-        self.episode_rewards = np.zeros(num_envs)
-        self.completed_rewards = []
 
-        # Per-env domain randomization parameters
-        self.gravities = np.zeros(num_envs)
-        self.frictions = np.zeros(num_envs)
-        self.grips = np.zeros(num_envs)
-        self.torque_scales = np.ones((num_envs, ACT_DIM))  # Per-servo noise
+def init_params():
+    """Initialize flat parameter vector."""
+    shapes, total = make_policy_shape()
+    params = np.random.randn(total).astype(np.float32) * 0.02
+    return params
 
-        self.progress = 0.0  # Curriculum progress 0-1
 
-    def randomize_env(self, idx):
-        """Set random gravity/friction/grip for one environment."""
-        # Gravity curriculum
-        if self.progress < CURRICULUM_WARMUP:
-            frac = self.progress / CURRICULUM_WARMUP
-            log_min = GRAVITY_LOG_MAX * (1 - frac) + GRAVITY_LOG_MIN * frac
-        else:
-            log_min = GRAVITY_LOG_MIN
-        g = np.exp(np.random.uniform(log_min, GRAVITY_LOG_MAX))
-        self.gravities[idx] = g
+def unpack_params(flat):
+    """Unpack flat vector into weight matrices."""
+    shapes, _ = make_policy_shape()
+    params = {}
+    idx = 0
+    for name, shape in shapes:
+        size = 1
+        for s in shape:
+            size *= s
+        params[name] = flat[idx:idx + size].reshape(shape)
+        idx += size
+    return params
 
-        self.frictions[idx] = np.random.uniform(FRICTION_MIN, FRICTION_MAX)
-        self.grips[idx] = np.random.uniform(GRIP_MIN, GRIP_MAX)
 
-        # Per-servo torque variation
-        self.torque_scales[idx] = 1.0 + np.random.uniform(
-            -TORQUE_NOISE, TORQUE_NOISE, ACT_DIM)
-
-    def reset_env(self, idx):
-        """Reset one environment."""
-        mujoco.mj_resetData(self.mj_model, self.envs[idx])
-        self.step_count[idx] = 0
-        self.prev_actions[idx] = 0.0
-        self.randomize_env(idx)
-
-        if self.episode_rewards[idx] != 0:
-            self.completed_rewards.append(float(self.episode_rewards[idx]))
-        self.episode_rewards[idx] = 0.0
-
-    def reset_all(self):
-        for i in range(self.n):
-            self.reset_env(i)
-        return self._get_obs_batch()
-
-    def _get_obs(self, data):
-        """Get observation from one MjData."""
-        joint_pos = data.qpos[7:15].copy()
-        joint_vel = data.qvel[6:14].copy() * 0.1
-        body_quat = data.qpos[3:7].copy()
-        body_angvel = data.qvel[3:6].copy() * 0.1
-        body_linvel = data.qvel[0:3].copy() * 0.1
-        foot_contacts = np.array([
-            1.0 if data.xpos[fid, 2] < 0.012 else 0.0 for fid in FOOT_IDS])
-        return np.concatenate([joint_pos, joint_vel, body_quat,
-                               body_angvel, body_linvel, foot_contacts])
-
-    def _get_obs_batch(self):
-        return np.array([self._get_obs(e) for e in self.envs])
-
-    def step(self, actions):
-        """Step all environments. actions: (num_envs, ACT_DIM)."""
-        obs_batch = np.zeros((self.n, OBS_DIM))
-        rewards = np.zeros(self.n)
-        dones = np.zeros(self.n, dtype=bool)
-
-        for i in range(self.n):
-            data = self.envs[i]
-
-            # Apply domain-randomized gravity
-            self.mj_model.opt.gravity[:] = [0, 0, -self.gravities[i]]
-
-            # Set ground friction
-            gid = 0  # ground is first geom
-            self.mj_model.geom_friction[gid, 0] = self.frictions[i]
-
-            # Scale actions by per-servo torque variation
-            scaled_action = actions[i] * self.torque_scales[i]
-            data.ctrl[:ACT_DIM] = np.clip(scaled_action, -0.524, 0.524)
-
-            # Apply grip to grounded feet
-            data.xfrc_applied[:] = 0.0
-            for fid in FOOT_IDS:
-                if data.xpos[fid, 2] < 0.012:
-                    data.xfrc_applied[fid, 2] = -self.grips[i]
-
-            # Physics substeps
-            prev_x = float(data.qpos[0])
-            for _ in range(PHYSICS_STEPS):
-                mujoco.mj_step(self.mj_model, data)
-
-            # Observation
-            obs_batch[i] = self._get_obs(data)
-
-            # Reward
-            fwd_vel = (float(data.qpos[0]) - prev_x) / CONTROL_DT
-            body_z = float(data.qpos[2])
-            quat = data.qpos[3:7]
-            up_z = 1.0 - 2.0 * (quat[1]**2 + quat[2]**2)
-            tilt = math.acos(max(-1, min(1, up_z)))
-            lat_vel = abs(float(data.qvel[1]))
-            torque_sq = float(np.sum(data.qfrc_actuator[6:14]**2))
-            action_diff = float(np.sum((actions[i] - self.prev_actions[i])**2))
-
-            r = (FWD_REWARD * fwd_vel
-                 + ALIVE_BONUS
-                 - ENERGY_COST * torque_sq
-                 - LIFTOFF_COST * max(0, body_z - 0.07)
-                 - TILT_COST * tilt
-                 - JERK_COST * action_diff
-                 - LATERAL_COST * lat_vel)
-            rewards[i] = r
-            self.episode_rewards[i] += r
-
-            # Done check
-            self.step_count[i] += 1
-            done = (body_z > 0.15 or body_z < -0.01 or
-                    tilt > 1.5 or self.step_count[i] >= EPISODE_LENGTH)
-            if done:
-                self.reset_env(i)
-                obs_batch[i] = self._get_obs(self.envs[i])
-            dones[i] = done
-
-        self.prev_actions[:] = actions
-        return obs_batch, rewards, dones
+def policy_forward(params, obs):
+    """Forward pass. obs: (batch, 34) -> actions: (batch, 8)."""
+    x = np.tanh(obs @ params["pw1"] + params["pb1"])
+    x = np.tanh(x @ params["pw2"] + params["pb2"])
+    return np.tanh(x @ params["pw3"] + params["pb3"]) * 0.524
 
 
 # ============================================================================
-# Policy Network (numpy)
+# Environment evaluation
 # ============================================================================
-class Policy:
-    """Tiny MLP policy + value network. Pure numpy."""
+def evaluate_policy(flat_params, mj_model, gravity, friction, grip,
+                    eval_steps=EVAL_STEPS):
+    """Run one episode, return total reward."""
+    params = unpack_params(flat_params)
+    data = mujoco.MjData(mj_model)
+    mujoco.mj_resetData(mj_model, data)
+    mj_model.opt.gravity[:] = [0, 0, -gravity]
 
-    def __init__(self):
-        s = 0.02
-        self.params = {
-            "pw1": np.random.randn(OBS_DIM, 64).astype(np.float32) * s,
-            "pb1": np.zeros(64, dtype=np.float32),
-            "pw2": np.random.randn(64, 64).astype(np.float32) * s,
-            "pb2": np.zeros(64, dtype=np.float32),
-            "pw3": np.random.randn(64, ACT_DIM).astype(np.float32) * s,
-            "pb3": np.zeros(ACT_DIM, dtype=np.float32),
-            "log_std": np.full(ACT_DIM, -1.0, dtype=np.float32),
-            "vw1": np.random.randn(OBS_DIM, 64).astype(np.float32) * s,
-            "vb1": np.zeros(64, dtype=np.float32),
-            "vw2": np.random.randn(64, 64).astype(np.float32) * s,
-            "vb2": np.zeros(64, dtype=np.float32),
-            "vw3": np.random.randn(64, 1).astype(np.float32) * s,
-            "vb3": np.zeros(1, dtype=np.float32),
-        }
-        self.optimizer = {k: {"m": np.zeros_like(v), "v": np.zeros_like(v), "t": 0}
-                          for k, v in self.params.items()}
+    gid = 0
+    mj_model.geom_friction[gid, 0] = friction
 
-    def forward(self, obs):
-        """Policy forward: returns action mean. obs: (batch, OBS_DIM)."""
-        p = self.params
-        x = np.tanh(obs @ p["pw1"] + p["pb1"])
-        x = np.tanh(x @ p["pw2"] + p["pb2"])
-        mean = np.tanh(x @ p["pw3"] + p["pb3"]) * 0.524
-        return mean
+    total_reward = 0.0
+    prev_action = np.zeros(ACT_DIM)
 
-    def value(self, obs):
-        """Value forward: returns scalar. obs: (batch, OBS_DIM)."""
-        p = self.params
-        x = np.tanh(obs @ p["vw1"] + p["vb1"])
-        x = np.tanh(x @ p["vw2"] + p["vb2"])
-        v = (x @ p["vw3"] + p["vb3"]).squeeze(-1)
-        return v
+    for step in range(eval_steps):
+        # Observation
+        obs = np.zeros(OBS_DIM, dtype=np.float32)
+        obs[:8] = data.qpos[7:15]
+        obs[8:16] = data.qvel[6:14] * 0.1
+        obs[16:20] = data.qpos[3:7]
+        obs[20:23] = data.qvel[3:6] * 0.1
+        obs[23:26] = data.qvel[0:3] * 0.1
+        for j, fid in enumerate(FOOT_IDS):
+            obs[26 + j] = 1.0 if data.xpos[fid, 2] < 0.012 else 0.0
 
-    def sample(self, obs):
-        """Sample actions. Returns actions, means, log_probs, values."""
-        mean = self.forward(obs)
-        std = np.exp(self.params["log_std"])
-        noise = np.random.randn(*mean.shape).astype(np.float32)
-        actions = np.clip(mean + std * noise, -0.524, 0.524)
-        log_probs = self._log_prob(mean, std, actions)
-        values = self.value(obs)
-        return actions, mean, log_probs, values
+        # Action
+        action = policy_forward(params, obs.reshape(1, -1)).squeeze()
+        data.ctrl[:ACT_DIM] = action
 
-    def _log_prob(self, mean, std, action):
-        var = std ** 2
-        lp = -0.5 * ((action - mean)**2 / var + np.log(var) + np.log(2 * np.pi))
-        return lp.sum(axis=-1)
+        # Grip
+        data.xfrc_applied[:] = 0.0
+        for fid in FOOT_IDS:
+            if data.xpos[fid, 2] < 0.012:
+                data.xfrc_applied[fid, 2] = -grip
 
-    def param_count(self):
-        return sum(v.size for v in self.params.values())
+        # Physics
+        prev_x = float(data.qpos[0])
+        for _ in range(PHYSICS_STEPS):
+            mujoco.mj_step(mj_model, data)
 
-    def save(self, path):
-        np.savez(path, **self.params)
+        # Reward
+        fwd_vel = (float(data.qpos[0]) - prev_x) / CONTROL_DT
+        body_z = float(data.qpos[2])
+        quat = data.qpos[3:7]
+        up_z = 1.0 - 2.0 * (quat[1]**2 + quat[2]**2)
+        tilt = math.acos(max(-1, min(1, up_z)))
+        torque_sq = float(np.sum(data.qfrc_actuator[6:14]**2))
+        jerk = float(np.sum((action - prev_action)**2))
 
-    def load(self, path):
-        data = np.load(path)
-        for k in self.params:
-            if k in data:
-                self.params[k] = data[k]
+        reward = (FWD_REWARD * fwd_vel
+                  + ALIVE_BONUS
+                  - ENERGY_COST * torque_sq
+                  - LIFTOFF_COST * max(0, body_z - 0.07)
+                  - TILT_COST * tilt
+                  - JERK_COST * jerk)
+        total_reward += reward
+        prev_action = action
 
+        # Early termination
+        if body_z > 0.15 or body_z < -0.01 or tilt > 1.5:
+            total_reward -= 50  # Harsh penalty for catastrophic failure
+            break
 
-# ============================================================================
-# PPO (numpy, finite differences for gradients)
-# ============================================================================
-def compute_gae(rewards, values, dones, last_value):
-    """Generalized Advantage Estimation."""
-    T = len(rewards)
-    advantages = np.zeros(T, dtype=np.float32)
-    gae = 0.0
-    for t in reversed(range(T)):
-        next_val = last_value if t == T - 1 else values[t + 1]
-        delta = rewards[t] + GAMMA * next_val * (1 - dones[t]) - values[t]
-        gae = delta + GAMMA * GAE_LAMBDA * (1 - dones[t]) * gae
-        advantages[t] = gae
-    returns = advantages + values
-    return advantages, returns
-
-
-def ppo_update(policy, rollout_data):
-    """One PPO update using numerical gradients (simple but works)."""
-    obs_all, act_all, old_lp_all, adv_all, ret_all = rollout_data
-    N = len(obs_all)
-
-    # Normalize advantages
-    adv_all = (adv_all - adv_all.mean()) / (adv_all.std() + 1e-8)
-
-    total_loss = 0.0
-    for epoch in range(NUM_EPOCHS):
-        indices = np.random.permutation(N)
-        for start in range(0, N, MINIBATCH_SIZE):
-            end = min(start + MINIBATCH_SIZE, N)
-            idx = indices[start:end]
-            mb_obs = obs_all[idx]
-            mb_act = act_all[idx]
-            mb_old_lp = old_lp_all[idx]
-            mb_adv = adv_all[idx]
-            mb_ret = ret_all[idx]
-
-            # Compute current policy outputs
-            mean = policy.forward(mb_obs)
-            std = np.exp(policy.params["log_std"])
-            new_lp = policy._log_prob(mean, std, mb_act)
-            values = policy.value(mb_obs)
-
-            # PPO loss components
-            ratio = np.exp(new_lp - mb_old_lp)
-            clipped = np.clip(ratio, 1 - CLIP_EPS, 1 + CLIP_EPS)
-            policy_loss = -np.mean(np.minimum(ratio * mb_adv, clipped * mb_adv))
-            value_loss = VALUE_COEFF * np.mean((values - mb_ret) ** 2)
-            entropy = 0.5 * ACT_DIM * (1 + np.log(2 * np.pi)) + np.sum(policy.params["log_std"])
-            loss = policy_loss + value_loss - ENTROPY_COEFF * entropy
-
-            # Numerical gradient update (parameter perturbation)
-            eps = 1e-4
-            lr = LEARNING_RATE
-            for key in policy.params:
-                param = policy.params[key]
-                grad = np.zeros_like(param)
-                flat = param.ravel()
-                # Approximate gradient for a random subset of params
-                n_sample = min(50, len(flat))
-                sample_idx = np.random.choice(len(flat), n_sample, replace=False)
-                for si in sample_idx:
-                    old_val = flat[si]
-                    flat[si] = old_val + eps
-                    mean_p = policy.forward(mb_obs)
-                    lp_p = policy._log_prob(mean_p, np.exp(policy.params["log_std"]), mb_act)
-                    r_p = np.exp(lp_p - mb_old_lp)
-                    loss_p = -np.mean(np.minimum(r_p * mb_adv,
-                                                  np.clip(r_p, 1-CLIP_EPS, 1+CLIP_EPS) * mb_adv))
-                    flat[si] = old_val - eps
-                    mean_m = policy.forward(mb_obs)
-                    lp_m = policy._log_prob(mean_m, np.exp(policy.params["log_std"]), mb_act)
-                    r_m = np.exp(lp_m - mb_old_lp)
-                    loss_m = -np.mean(np.minimum(r_m * mb_adv,
-                                                  np.clip(r_m, 1-CLIP_EPS, 1+CLIP_EPS) * mb_adv))
-                    flat[si] = old_val
-                    grad.ravel()[si] = (loss_p - loss_m) / (2 * eps)
-
-                # Adam update
-                opt = policy.optimizer[key]
-                opt["t"] += 1
-                opt["m"] = 0.9 * opt["m"] + 0.1 * grad
-                opt["v"] = 0.999 * opt["v"] + 0.001 * grad**2
-                m_hat = opt["m"] / (1 - 0.9**opt["t"])
-                v_hat = opt["v"] / (1 - 0.999**opt["t"])
-                policy.params[key] -= lr * m_hat / (np.sqrt(v_hat) + 1e-8)
-
-            total_loss += float(loss)
-
-    return total_loss / (NUM_EPOCHS * max(1, N // MINIBATCH_SIZE))
+    return total_reward
 
 
 # ============================================================================
-# Main Training
+# Training
 # ============================================================================
 def train():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     log_path = os.path.join(OUTPUT_DIR, "training_log.txt")
+
+    # Clear old log
+    with open(log_path, "w") as f:
+        pass
 
     def log(msg):
         ts = datetime.now().strftime("%H:%M:%S")
@@ -398,182 +202,216 @@ def train():
             f.write(line + "\n")
 
     log("=" * 70)
-    log("AstraAnt Locomotion Training (CPU-Optimized)")
+    log("AstraAnt Locomotion Training (Evolutionary Strategy)")
     log("=" * 70)
 
-    env = VecEnv(NUM_ENVS)
-    policy = Policy()
-    log(f"Envs: {NUM_ENVS}, Policy params: {policy.param_count():,}")
-    log(f"Total steps: {TOTAL_TIMESTEPS:,}")
+    mj_model = mujoco.MjModel.from_xml_path(MODEL_PATH)
+    flat_params = init_params()
+    _, param_count = make_policy_shape()
+
+    log(f"Policy params: {param_count:,} ({param_count * 4 / 1024:.1f} KB)")
+    log(f"Population: {POP_SIZE}, Generations: {NUM_GENERATIONS}")
+    log(f"Eval: {EVAL_STEPS} steps/episode ({EVAL_STEPS * CONTROL_DT:.0f}s)")
+    log(f"Sigma: {SIGMA}, LR: {LEARNING_RATE}")
     log("")
 
-    obs = env.reset_all()
-    total_steps = 0
-    iteration = 0
-    best_ep_reward = -float("inf")
+    best_reward = -float("inf")
+    best_params = flat_params.copy()
+    reward_history = []
     last_ckpt = time.time()
     start_time = time.time()
-    reward_history = []
 
-    while total_steps < TOTAL_TIMESTEPS:
-        iteration += 1
-        env.progress = total_steps / TOTAL_TIMESTEPS
+    for gen in range(NUM_GENERATIONS):
+        progress = gen / NUM_GENERATIONS
 
-        # Collect rollout
-        rollout_obs = []
-        rollout_act = []
-        rollout_lp = []
-        rollout_rew = []
-        rollout_val = []
-        rollout_done = []
+        # Domain randomization for this generation
+        if progress < CURRICULUM_WARMUP:
+            frac = progress / CURRICULUM_WARMUP
+            log_min = GRAVITY_LOG_MAX * (1 - frac) + GRAVITY_LOG_MIN * frac
+        else:
+            log_min = GRAVITY_LOG_MIN
 
-        for _ in range(ROLLOUT_LENGTH):
-            actions, means, log_probs, values = policy.sample(obs)
-            next_obs, rewards, dones = env.step(actions)
+        # Each member gets different conditions
+        gravities = np.exp(np.random.uniform(log_min, GRAVITY_LOG_MAX, POP_SIZE))
+        frictions = np.random.uniform(FRICTION_MIN, FRICTION_MAX, POP_SIZE)
+        grips = np.random.uniform(GRIP_MIN, GRIP_MAX, POP_SIZE)
 
-            rollout_obs.append(obs)
-            rollout_act.append(actions)
-            rollout_lp.append(log_probs)
-            rollout_rew.append(rewards)
-            rollout_val.append(values)
-            rollout_done.append(dones.astype(np.float32))
+        # Generate noise perturbations (mirrored sampling for variance reduction)
+        noise = np.random.randn(POP_SIZE // 2, param_count).astype(np.float32)
+        noise = np.concatenate([noise, -noise], axis=0)  # Mirrored
 
-            obs = next_obs
+        # Evaluate all perturbations
+        rewards = np.zeros(POP_SIZE)
+        for i in range(POP_SIZE):
+            perturbed = flat_params + SIGMA * noise[i]
+            rewards[i] = evaluate_policy(
+                perturbed, mj_model, gravities[i], frictions[i], grips[i])
 
-        steps_this_iter = ROLLOUT_LENGTH * NUM_ENVS
-        total_steps += steps_this_iter
+        # Rank-based fitness shaping (more robust than raw rewards)
+        ranks = np.zeros(POP_SIZE)
+        sorted_idx = np.argsort(rewards)
+        for rank, idx in enumerate(sorted_idx):
+            ranks[idx] = rank
+        # Normalize ranks to [-0.5, 0.5]
+        shaped = (ranks / (POP_SIZE - 1)) - 0.5
 
-        # Stack rollout
-        R_obs = np.array(rollout_obs).reshape(-1, OBS_DIM)
-        R_act = np.array(rollout_act).reshape(-1, ACT_DIM)
-        R_lp = np.array(rollout_lp).reshape(-1)
-        R_rew = np.array(rollout_rew)
-        R_val = np.array(rollout_val)
-        R_done = np.array(rollout_done)
+        # ES gradient estimate
+        gradient = np.dot(shaped, noise) / (POP_SIZE * SIGMA)
 
-        # GAE per environment
-        last_values = policy.value(obs)
-        all_adv = np.zeros_like(R_rew)
-        all_ret = np.zeros_like(R_rew)
-        for i in range(NUM_ENVS):
-            adv, ret = compute_gae(R_rew[:, i], R_val[:, i],
-                                    R_done[:, i], last_values[i])
-            all_adv[:, i] = adv
-            all_ret[:, i] = ret
+        # Update parameters
+        flat_params += LEARNING_RATE * gradient
 
-        R_adv = all_adv.reshape(-1)
-        R_ret = all_ret.reshape(-1)
+        # Adaptive learning rate decay
+        if gen > NUM_GENERATIONS * 0.7:
+            lr_scale = 1.0 - (gen / NUM_GENERATIONS - 0.7) / 0.3
+            flat_params += (LEARNING_RATE * lr_scale - LEARNING_RATE) * gradient
 
-        # PPO update
-        loss = ppo_update(policy, (R_obs, R_act, R_lp, R_adv, R_ret))
+        # Track stats
+        mean_reward = rewards.mean()
+        max_reward = rewards.max()
+        reward_history.append(float(mean_reward))
 
-        # Stats
-        mean_reward = float(R_rew.mean())
-        reward_history.append(mean_reward)
-
-        # Episode reward tracking
-        ep_rewards = env.completed_rewards[-100:] if env.completed_rewards else [0]
-        mean_ep = np.mean(ep_rewards)
-
-        if mean_ep > best_ep_reward and len(env.completed_rewards) > 10:
-            best_ep_reward = mean_ep
-            policy.save(os.path.join(OUTPUT_DIR, "best_policy.npz"))
+        if max_reward > best_reward:
+            best_reward = max_reward
+            best_params = (flat_params + SIGMA * noise[rewards.argmax()]).copy()
 
         # Logging
-        if iteration % LOG_INTERVAL == 0:
+        if gen % 5 == 0:
             elapsed = time.time() - start_time
-            sps = total_steps / elapsed
-            eta = (TOTAL_TIMESTEPS - total_steps) / max(sps, 1)
+            gens_per_sec = (gen + 1) / elapsed
+            eta = (NUM_GENERATIONS - gen) / max(gens_per_sec, 0.01)
+            steps_done = (gen + 1) * POP_SIZE * EVAL_STEPS
+            sps = steps_done / elapsed
 
-            gravity_str = f"{env.gravities.mean():.2e}"
-            log(f"  iter {iteration:5d} | {total_steps:>10,}/{TOTAL_TIMESTEPS:,} "
-                f"| step_r {mean_reward:>7.3f} | ep_r {mean_ep:>7.1f} "
-                f"| loss {loss:>7.3f} | g={gravity_str} "
-                f"| {sps:,.0f} sps | ETA {timedelta(seconds=int(eta))}")
+            g_mean = f"{gravities.mean():.2e}"
+            log(f"  gen {gen:5d}/{NUM_GENERATIONS} | mean_r {mean_reward:>7.1f} "
+                f"| max_r {max_reward:>7.1f} | best {best_reward:>7.1f} "
+                f"| g={g_mean} | {sps:,.0f} sps "
+                f"| ETA {timedelta(seconds=int(eta))}")
 
         # Checkpoint
         if time.time() - last_ckpt > CHECKPOINT_INTERVAL:
-            policy.save(os.path.join(OUTPUT_DIR, "checkpoint.npz"))
+            np.savez(os.path.join(OUTPUT_DIR, "checkpoint.npz"),
+                     params=flat_params, best_params=best_params,
+                     generation=gen, best_reward=best_reward)
+            np.savez(os.path.join(OUTPUT_DIR, "best_policy.npz"),
+                     params=best_params)
             with open(os.path.join(OUTPUT_DIR, "reward_history.json"), "w") as f:
                 json.dump(reward_history, f)
             last_ckpt = time.time()
-            log(f"  ** Checkpoint (best_ep={best_ep_reward:.1f})")
+            log(f"  ** Checkpoint (gen={gen}, best={best_reward:.1f})")
 
     # Final save
     elapsed = time.time() - start_time
-    policy.save(os.path.join(OUTPUT_DIR, "final_policy.npz"))
+    np.savez(os.path.join(OUTPUT_DIR, "best_policy.npz"), params=best_params)
+    np.savez(os.path.join(OUTPUT_DIR, "final_policy.npz"), params=flat_params)
     with open(os.path.join(OUTPUT_DIR, "reward_history.json"), "w") as f:
         json.dump(reward_history, f)
 
+    total_steps = NUM_GENERATIONS * POP_SIZE * EVAL_STEPS
     log("")
     log("=" * 70)
     log("  TRAINING COMPLETE")
     log("=" * 70)
     log(f"  Time: {timedelta(seconds=int(elapsed))}")
-    log(f"  Steps: {total_steps:,}")
-    log(f"  Best episode reward: {best_ep_reward:.2f}")
-    log(f"  Policies: {OUTPUT_DIR}/best_policy.npz, final_policy.npz")
-    log(f"  To evaluate: python train_locomotion.py --eval")
+    log(f"  Generations: {NUM_GENERATIONS}")
+    log(f"  Total env steps: {total_steps:,}")
+    log(f"  Best reward: {best_reward:.2f}")
+    log(f"  Policy: {OUTPUT_DIR}/best_policy.npz ({param_count * 4 / 1024:.1f} KB)")
+    log(f"  Evaluate: python train_locomotion.py --eval")
     log("=" * 70)
 
 
 def evaluate():
-    """Evaluate saved policy across asteroids."""
+    """Evaluate saved policy across all asteroids."""
     path = os.path.join(OUTPUT_DIR, "best_policy.npz")
-    if not os.path.exists(path):
-        path = os.path.join(OUTPUT_DIR, "final_policy.npz")
     if not os.path.exists(path):
         print("No policy found. Train first.")
         return
 
-    policy = Policy()
-    policy.load(path)
-    print(f"Loaded policy from {path}")
+    data = np.load(path)
+    flat_params = data["params"]
+    params = unpack_params(flat_params)
+    _, pc = make_policy_shape()
+    print(f"Policy: {pc:,} params")
 
-    model = mujoco.MjModel.from_xml_path(MODEL_PATH)
+    mj_model = mujoco.MjModel.from_xml_path(MODEL_PATH)
     asteroids = [
-        ("Bennu", 5.8e-6), ("Itokawa", 8.6e-6), ("Ryugu", 1.1e-4),
-        ("Didymos", 3.6e-4), ("Eros", 5.9e-3), ("Psyche", 0.06),
+        ("Bennu", 5.8e-6), ("Itokawa", 8.6e-6), ("2008 EV5", 1.4e-5),
+        ("Ryugu", 1.1e-4), ("Didymos", 3.6e-4),
+        ("Eros", 5.9e-3), ("Psyche", 0.06),
     ]
 
-    print(f"\n{'Asteroid':>10} | {'Forward mm':>11} | {'Max Tilt':>9} | {'Ep Reward':>10}")
-    print("-" * 50)
+    print(f"\n{'Asteroid':>10} | {'Forward':>10} | {'Tilt':>8} | {'Reward':>8} | {'Stable':>6}")
+    print("-" * 55)
 
     for name, g in asteroids:
-        model.opt.gravity[:] = [0, 0, -g]
-        data = mujoco.MjData(model)
-        mujoco.mj_resetData(model, data)
-
-        total_r = 0
-        max_tilt = 0
-        x0 = float(data.qpos[0])
-
+        reward = evaluate_policy(flat_params, mj_model, g, 0.5, 0.15,
+                                  eval_steps=500)
+        # Quick forward/tilt check
+        mj_model.opt.gravity[:] = [0, 0, -g]
+        mj_data = mujoco.MjData(mj_model)
+        mj_data.ctrl[:] = 0
+        x0 = 0.0
+        max_tilt = 0.0
         for step in range(500):
-            obs = np.zeros(OBS_DIM)
-            obs[:8] = data.qpos[7:15]
-            obs[8:16] = data.qvel[6:14] * 0.1
-            obs[16:20] = data.qpos[3:7]
-            obs[20:23] = data.qvel[3:6] * 0.1
-            obs[23:26] = data.qvel[0:3] * 0.1
-            obs[26:34] = [1.0 if data.xpos[fid, 2] < 0.012 else 0.0
-                          for fid in FOOT_IDS]
-
-            action = policy.forward(obs.reshape(1, -1)).squeeze()
-            data.ctrl[:8] = action
-            data.xfrc_applied[:] = 0
+            obs = np.zeros((1, OBS_DIM), dtype=np.float32)
+            obs[0, :8] = mj_data.qpos[7:15]
+            obs[0, 8:16] = mj_data.qvel[6:14] * 0.1
+            obs[0, 16:20] = mj_data.qpos[3:7]
+            obs[0, 20:23] = mj_data.qvel[3:6] * 0.1
+            obs[0, 23:26] = mj_data.qvel[0:3] * 0.1
+            for j, fid in enumerate(FOOT_IDS):
+                obs[0, 26+j] = 1.0 if mj_data.xpos[fid, 2] < 0.012 else 0.0
+            action = policy_forward(params, obs).squeeze()
+            mj_data.ctrl[:ACT_DIM] = action
+            mj_data.xfrc_applied[:] = 0
             for fid in FOOT_IDS:
-                if data.xpos[fid, 2] < 0.012:
-                    data.xfrc_applied[fid, 2] = -0.15
+                if mj_data.xpos[fid, 2] < 0.012:
+                    mj_data.xfrc_applied[fid, 2] = -0.15
             for _ in range(PHYSICS_STEPS):
-                mujoco.mj_step(model, data)
-
-            quat = data.qpos[3:7]
+                mujoco.mj_step(mj_model, mj_data)
+            quat = mj_data.qpos[3:7]
             up_z = 1 - 2*(quat[1]**2 + quat[2]**2)
-            tilt = math.degrees(math.acos(max(-1, min(1, up_z))))
-            max_tilt = max(max_tilt, tilt)
+            t = math.degrees(math.acos(max(-1, min(1, up_z))))
+            max_tilt = max(max_tilt, t)
 
-        fwd = (float(data.qpos[0]) - x0) * 1000
-        print(f"{name:>10} | {fwd:>9.1f} mm | {tilt:>7.1f} deg | {'--':>10}")
+        fwd = float(mj_data.qpos[0]) * 1000
+        stable = "YES" if max_tilt < 15 else "NO"
+        print(f"{name:>10} | {fwd:>8.1f} mm | {max_tilt:>6.1f} | "
+              f"{reward:>8.1f} | {stable:>6}")
+
+    # Compare to sinusoidal baseline
+    print("\n--- Sinusoidal Baseline (hand-tuned) ---")
+    print(f"{'Asteroid':>10} | {'Forward':>10} | {'Tilt':>8} | {'Stable':>6}")
+    print("-" * 45)
+
+    for name, g in asteroids:
+        mj_model.opt.gravity[:] = [0, 0, -g]
+        mj_data = mujoco.MjData(mj_model)
+        GROUP_A = [0, 3, 4, 7]
+        phase = 0.0
+        max_tilt = 0.0
+        for step in range(500):
+            phase = (phase + CONTROL_DT / 0.4) % 1.0
+            for i in range(8):
+                gp = phase if i in GROUP_A else (phase + 0.5) % 1.0
+                mj_data.ctrl[i] = 0.524 * math.sin(gp * 2 * math.pi)
+            mj_data.xfrc_applied[:] = 0
+            for fid in FOOT_IDS:
+                if mj_data.xpos[fid, 2] < 0.012:
+                    mj_data.xfrc_applied[fid, 2] = -0.15
+            for _ in range(PHYSICS_STEPS):
+                mujoco.mj_step(mj_model, mj_data)
+            quat = mj_data.qpos[3:7]
+            up_z = 1 - 2*(quat[1]**2 + quat[2]**2)
+            t = math.degrees(math.acos(max(-1, min(1, up_z))))
+            max_tilt = max(max_tilt, t)
+        fwd = float(mj_data.qpos[0]) * 1000
+        stable = "YES" if max_tilt < 15 else "NO"
+        print(f"{name:>10} | {fwd:>8.1f} mm | {max_tilt:>6.1f} | {stable:>6}")
+
+    print("\nDone.")
 
 
 def main():
