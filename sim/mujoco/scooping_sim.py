@@ -218,6 +218,44 @@ def main():
               f"{'YES' if r_on['stable'] else 'NO':>6}")
         print("-" * len(hdr3))
 
+    # --- Test 4: Multi-ant drilling (brace ant doubles grip) ---
+    print()
+    print("--- TEST 4: Multi-Ant Drilling (brace ant behind driller) ---")
+    print("  Brace ant grips driller's abdomen socket + adds 8 feet of grip.")
+    print("  Mandible link: 1.5 N. Effectively doubles grip force per foot")
+    print("  (brace ant's feet on the same surface, sharing load).")
+    print()
+    hdr4 = (f"{'Asteroid':>10} | {'Config':>18} | {'Grip/ft':>8} | "
+            f"{'Slide mm':>9} | {'Lift mm':>8} | {'Tilt':>6} | {'Stable':>6}")
+    print(hdr4)
+    print("-" * len(hdr4))
+
+    for ast in ASTEROIDS:
+        # Solo ant drilling (baseline)
+        r1 = run_work_face_test(ast["gravity"], DRILL_FORCE_N, 0.15,
+                                duration_s=5.0, tool_name="drill")
+        stable1 = "YES" if r1["stable"] else "NO"
+        print(f"{ast['name']:>10} | {'solo (1 ant)':>18} | {'0.15 N':>8} | "
+              f"{r1['backward_mm']:>9.1f} | {r1['lift_mm']:>8.1f} | "
+              f"{r1['tilt_deg']:>5.1f} | {stable1:>6}")
+
+        # Two-ant team: double grip (16 feet total)
+        r2 = run_work_face_test(ast["gravity"], DRILL_FORCE_N, 0.30,
+                                duration_s=5.0, tool_name="drill")
+        stable2 = "YES" if r2["stable"] else "NO"
+        print(f"{'':>10} | {'2-ant team':>18} | {'0.30 N':>8} | "
+              f"{r2['backward_mm']:>9.1f} | {r2['lift_mm']:>8.1f} | "
+              f"{r2['tilt_deg']:>5.1f} | {stable2:>6}")
+
+        # Three-ant team: triple grip (24 feet)
+        r3 = run_work_face_test(ast["gravity"], DRILL_FORCE_N, 0.45,
+                                duration_s=5.0, tool_name="drill")
+        stable3 = "YES" if r3["stable"] else "NO"
+        print(f"{'':>10} | {'3-ant team':>18} | {'0.45 N':>8} | "
+              f"{r3['backward_mm']:>9.1f} | {r3['lift_mm']:>8.1f} | "
+              f"{r3['tilt_deg']:>5.1f} | {stable3:>6}")
+        print("-" * len(hdr4))
+
     # --- Summary ---
     print()
     print("=" * 85)
@@ -238,6 +276,20 @@ def main():
     print("  The ant sculpts the tunnel wall directly. Each drill/scoop pass")
     print("  removes a thin layer. The tunnel grows by the wall receding.")
     print("  Like a sculptor removing marble, not a miner digging a hole.")
+    print()
+    print("  MULTI-ANT DRILLING:")
+    print("  At the work face, drilling is a team sport:")
+    print("    Driller ant: faces wall, extends drill tool, pushes into rock")
+    print("    Brace ant: parks behind driller, grips abdomen socket (1.5 N)")
+    print("    Scoop ant: follows behind, catches cuttings floating from drill")
+    print("  The brace ant's 8 feet double the total grip. This is how real")
+    print("  ants work too -- leaf-cutters brace each other while cutting.")
+    print()
+    print("  TUNNEL ADVANCE CONVOY (4-5 ants):")
+    print("    1. Driller + brace ant at the face (team of 2)")
+    print("    2. Plasterer 2-3m behind (sealing walls with paste_nozzle)")
+    print("    3. Rail layer 1-2m behind (pressing copper/steel tape)")
+    print("    4. Scoop ant shuttling cuttings to thermal sorter")
     print("=" * 85)
 
 

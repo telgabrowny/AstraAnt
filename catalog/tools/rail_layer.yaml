@@ -1,0 +1,103 @@
+id: "rail_layer"
+name: "Power Rail Layer Tool Head"
+category: "tool_head"
+description: >
+  Tape-dispenser-style tool head that unrolls pre-laminated copper/steel
+  tape and presses it into wet regolith paste on the tunnel wall.
+  The copper conducts power, the steel foil provides a magnetic walking
+  surface for ant foot pads. Spring-loaded roller maintains pressure
+  for bond adhesion while the ant walks forward along the wall.
+
+  Used by the third worker in the three-worker tunnel convoy:
+    1. Miner (drill_head): excavates rock face
+    2. Plasterer (paste_nozzle): seals wall with regolith paste (2-3m behind)
+    3. Rail layer (this tool): presses tape into soft paste (1-2m behind)
+
+specs:
+  mass_g: 18
+  power_draw_mw: 0                # Passive tool -- no motor needed
+  cost_usd: 5
+  mounting: magnetic_clip          # Same universal mount as all tool heads
+
+  tape_spool:
+    description: >
+      Pre-laminated tape: 0.1mm steel foil + 1mm copper strip,
+      bonded back-to-back. Steel faces the wall (magnetic surface
+      for ant feet). Copper faces outward (power rail contact surface).
+    tape_width_mm: 12              # Slightly wider than copper alone for margin
+    tape_thickness_mm: 1.1         # 1mm copper + 0.1mm steel
+    spool_capacity_m: 8            # Meters of tape per spool reload
+    spool_diameter_mm: 25          # Compact enough to clip between mandibles
+    spool_mass_per_load_g: 80      # 8m of copper/steel tape
+
+  roller:
+    type: "spring-loaded press roller"
+    description: >
+      Roller presses tape into wet paste as the ant walks forward.
+      Spring provides ~2 N of contact pressure (enough for adhesion,
+      not enough to push the ant off the wall in microgravity).
+    roller_diameter_mm: 10
+    roller_width_mm: 14            # Wider than tape for full coverage
+    spring_force_n: 2.0            # Contact pressure against wall
+    material: "PTFE coated steel (doesn't stick to paste)"
+
+  guide_channel:
+    description: >
+      V-groove channel feeds tape from spool to roller. Keeps the
+      tape aligned and prevents kinking. Tape enters from above
+      (spool), passes through guide, exits under roller against wall.
+    channel_width_mm: 13           # Tape width + 1mm clearance
+    channel_material: "PETG (3D printed, integral with tool body)"
+
+operation:
+  workflow:
+    - "Ant clips rail_layer tool at nearest dock"
+    - "Walks 1-2m behind the paste_nozzle ant in the convoy"
+    - "Positions roller against wet paste on tunnel wall"
+    - "Walks forward at 10 m/hr (convoy pace)"
+    - "Roller unspools tape and presses it into paste continuously"
+    - "When spool is empty (8m), ant returns to dock for reload"
+    - "Two rails needed per tunnel section (+ and - strips)"
+  installation_rate_m_per_hour: 10 # Matches convoy pace
+  rails_per_tunnel: 2              # Positive and negative power rails
+  total_tape_per_tunnel_m: 2400    # 1.2 km tunnel × 2 rails
+  spool_reloads_per_km: 150        # 1000m / 8m per spool × 2 rails
+
+  two_rail_options:
+    option_a:
+      description: "One ant lays both rails (two passes)"
+      efficiency: "simpler, one tool head"
+      time: "2x per section"
+    option_b:
+      description: "Two ants lay rails simultaneously (opposite walls)"
+      efficiency: "faster, needs two ants + two tools"
+      time: "1x per section"
+
+sourcing:
+  suppliers:
+    - name: "In-house assembly"
+      url: ""
+      part_number: "RAIL-LAYER-V1"
+      price_usd: 5.00
+      date_checked: "2026-03-29"
+      note: "3D printed PETG frame + PTFE roller + spring"
+  price_history:
+    - date: "2026-03-29"
+      price_usd: 5.00
+      source: "BOM estimate"
+
+notes: |
+  The rail layer is a passive tool -- no motor, no power draw.
+  It's essentially a tape dispenser with a spring-loaded roller.
+  The ant provides the motive force (walking) and the spring
+  provides the bonding pressure.
+
+  The pre-laminated tape (copper + steel foil) is manufactured on
+  Earth and shipped as spools. Each spool is 8m of tape, weighing
+  ~80g. For 1.2 km of tunnel with 2 rails, that's 300 spools
+  (24 kg of tape + spool mass). This is included in the copper
+  supply budget already spec'd in the power rail section.
+
+  Steel foil backing serves dual purpose:
+  1. Magnetic walking surface for ant foot pads
+  2. Structural reinforcement for the copper strip
