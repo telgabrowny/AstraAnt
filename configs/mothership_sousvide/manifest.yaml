@@ -1,0 +1,206 @@
+# Sous Vide Asteroid Mining -- Track D Mothership Manifest
+# Wraps a 10m C-type asteroid in a membrane, melts interior ice,
+# seeds bioleaching bacteria, harvests dissolved metals.
+# 466 kg total. Fits on Falcon 9 rideshare. $7-15M per mission.
+#
+# The asteroid IS the bioreactor. No tunnels, no ants (except 4 for wrapping),
+# no drill, no sealing problem, no power rails, no manufacturing.
+
+track: sousvide
+name: "Sous Vide Asteroid Mining Mothership"
+target: "10m diameter C-type asteroids (water-bearing rubble piles)"
+
+target_asteroid_specs:
+  diameter_m: 10
+  mass_tonnes: 628
+  density_kg_per_m3: 1200
+  porosity_pct: 57
+  water_ice_pct: 8
+  water_mass_tonnes: 50
+  sulfide_minerals_pct: 2
+  extractable_metal_tonnes: 12.6
+
+mission_architecture:
+  description: >
+    Land on small asteroid, wrap in membrane, heat interior to melt
+    ice, seed with bioleaching bacteria, pump pregnant solution through
+    electro-winning cell, plate out metal cathodes. When done, recover
+    membrane, hop to next same-size target. Repeat.
+  reusable_between_targets: true
+  targets_per_membrane_lifetime: 5-10
+  time_per_asteroid_days: 180
+  asteroids_per_year: 1-2          # Depending on transit time
+
+# === MASS BUDGET ===
+systems:
+
+  structure:
+    description: "Compact plug hull that seals into membrane gasket"
+    dimensions: "0.8m dia x 1.5m tall cylinder"
+    material: "aluminum 6061, 2mm wall"
+    mass_kg: 23
+
+  solar_concentrators:
+    description: "Inflatable Mylar parabolic reflectors for heating asteroid"
+    area_m2: 42
+    diameter_m: 7.3                # Or 2x 5.2m dishes
+    heating_power_kw: 23           # Thermal, at 1 AU
+    heating_time_days: 30          # -40C to 30C for 628 tonnes
+    mass_kg: 10
+    heritage: "L'Garde inflatable antenna, NASA solar thermal propulsion"
+
+  membrane:
+    description: "Kapton/Kevlar wrap for entire asteroid"
+    area_m2: 314
+    areal_density_g_per_m2: 300
+    pressure_rating_kpa: 100       # 2x safety factor over 50 kPa operating
+    mass_kg: 94
+    reusable: true
+    includes: "gasket ports, seam reinforcements, deployment mechanism"
+
+  electrolysis:
+    description: "PEM electrolyzer -- splits asteroid water into O2 (for bacteria) + H2"
+    o2_production_kg_per_day: 0.5
+    mass_kg: 7.5
+
+  pump_system:
+    description: "Circulates bacteria-laden solution through rubble pile"
+    pumps: 3                       # Inject, recirculate, drain
+    flow_rate_liters_per_hour: 100
+    includes: "acid-resistant tubing, filters, pH/ORP/temp sensors"
+    mass_kg: 7.8
+
+  electrowinning:
+    description: "Plates dissolved metals from solution onto cathode blanks"
+    cell_volume_liters: 5
+    metals_recovered: ["copper", "nickel", "cobalt"]
+    includes: "rectifier, starter cathodes, stripping jig"
+    mass_kg: 13.5
+    heritage: "200-year-old industrial technique, TRL 9"
+
+  bacteria:
+    description: "Freeze-dried bioleaching cultures"
+    species:
+      - "Acidithiobacillus ferrooxidans (iron/copper/nickel/cobalt)"
+      - "Acidithiobacillus thiooxidans (sulfur oxidation, acid generation)"
+    mass_kg: 1.0
+    includes: "10 vials x 2 species, revival medium, shielded storage"
+    note: "50g of culture contains billions of cells. They self-replicate to fill 50,000L in weeks."
+
+  nutrients:
+    description: "Initial kickstart nutrients for bacteria (4 asteroid supply)"
+    contents:
+      - "ferrous sulfate heptahydrate: 5 kg"
+      - "ammonium sulfate: 3 kg"
+      - "potassium phosphate: 1 kg"
+      - "sulfuric acid (pH adjustment): 3 kg"
+      - "spare packs for 3 more asteroids: 5 kg"
+    mass_kg: 17
+    note: "After initial seeding, bacteria feed on the asteroid's own iron sulfides"
+
+  nitrogen:
+    description: "Pressurization gas (50 kPa target, 80% recoverable between targets)"
+    initial_fill_kg: 59
+    tank_mass_kg: 18
+    makeup_for_3_more_asteroids_kg: 30
+    extra_tank_kg: 10
+    mass_kg: 119
+    optimization_note: >
+      If bacteria tolerate 10 kPa (needs biological testing), nitrogen
+      drops to 24 kg total. This single test could save 95 kg (20% of
+      entire mothership mass).
+
+  compute:
+    description: "Raspberry Pi 4 -- monitor sensors, control pumps, telemetry"
+    mass_kg: 0.2
+    note: "Much simpler than tunnel colony brain. No ants to coordinate."
+
+  comms:
+    description: "X-band Earth link (same as tunnel mothership)"
+    mass_kg: 4.5
+
+  power:
+    description: "GaAs solar panels for electrical systems"
+    panel_area_m2: 3.5
+    power_w: 1000
+    battery_kwh: 5
+    mass_kg: 20.1
+
+  propulsion:
+    description: "Hall-effect SEP for hopping between 10m asteroid targets"
+    thrust_n: 0.1
+    isp_s: 1500
+    xenon_kg: 50
+    delta_v_ms: 1400               # Generous margin for multiple hops
+    mass_kg: 71
+
+  surface_ants:
+    description: "4 vacuum-rated ants for wrapping, monitoring, membrane repair"
+    count: 4
+    per_unit_mass_g: 430
+    includes: "membrane gripper tool, seam welder, patch kit, inspection camera"
+    mass_kg: 3.0
+
+  cargo:
+    description: "Storage for extracted metal cathodes"
+    capacity_kg: 200
+    mass_kg: 13
+
+# === TOTALS ===
+mass_subtotal_kg: 405.1
+mass_margin_pct: 15
+mass_total_kg: 466
+
+# === LAUNCH OPTIONS ===
+launch:
+  recommended: "Falcon 9 rideshare to GTO, then SEP spiral to NEA"
+  cost_launch_usd: "2-5M"
+  cost_hardware_usd: "5-10M"
+  cost_total_usd: "7-15M"
+  comparison: "35x lighter, 10x cheaper than Starship tunnel mining mission"
+
+# === EXPECTED YIELD PER ASTEROID ===
+yield_per_10m_asteroid:
+  iron_tonnes: 125.6               # Too much to carry, mostly left behind
+  nickel_kg: 7300                  # At 85% extraction
+  copper_kg: 64
+  cobalt_kg: 267
+  pgm_kg: 15                      # Needs separate C. violaceum phase
+  total_high_value_kg: 7646
+  note: >
+    200 kg cargo capacity per trip. High-value metals (PGMs, cobalt)
+    prioritized. Nickel stockpiled at asteroid for later bulk retrieval.
+    Or use micro-pod return vehicles to ship continuously.
+
+# === COMPARISON TO TUNNEL MINING ===
+versus_tunnel:
+  mothership_mass_ratio: "35x lighter (466 kg vs 16,000 kg)"
+  cost_ratio: "10x cheaper ($7-15M vs $81-163M)"
+  ant_count_ratio: "27x fewer (4 vs 108+)"
+  sealing_problem: "eliminated (membrane IS the seal)"
+  water_from_earth: "zero (asteroid has 50 tonnes)"
+  bioreactor: "the asteroid itself (no centrifuge vats)"
+  mechanical_complexity: "minimal (no tunneling, no drilling, no power rails)"
+  throughput: "slower per day, but processes entire body (628 tonnes)"
+  reusability: "membrane hops between targets"
+  tradeoff: >
+    Sous Vide is the scout/bootstrapper mission. Cheap, simple,
+    proves the biology, builds a metal stockpile. Tunnel mining
+    is the industrial-scale follow-on for 500m+ bodies once the
+    technology and stockpile justify a Starship-class investment.
+
+notes: |
+  The Sous Vide approach inverts the problem. Instead of building
+  infrastructure INSIDE the asteroid (tunnels, rails, seals), it builds
+  infrastructure AROUND the asteroid (membrane, concentrators) and lets
+  biology do the extraction.
+
+  It's heap leaching -- the most productive mining technique on Earth --
+  adapted for space. The asteroid is already crushed into rubble (nature
+  did the grinding). The water is already there (8% ice on C-types).
+  The minerals are already exposed (57% porosity = massive surface area).
+  We just add warmth, bacteria, and time.
+
+  This could be the Phase 0 mission: prove bioleaching works on real
+  asteroid material, build a metal stockpile at a convenient orbit,
+  and pay for the Starship tunnel-mining mission with the profits.
