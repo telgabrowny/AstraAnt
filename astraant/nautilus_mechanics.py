@@ -34,7 +34,7 @@ STEFAN_BOLTZMANN = 5.67e-8 # W/m^2/K^4
 SOLAR_FLUX_1AU = 1361.0    # W/m^2
 
 # === Process Parameters ===
-CONCENTRATOR_AREA_M2 = 42          # Solar concentrator collecting area
+CONCENTRATOR_AREA_M2 = 120         # Solar concentrator area (3x original for faster heating)
 CONCENTRATOR_EFFICIENCY = 0.40     # Net thermal efficiency to asteroid
 EMISSIVITY = 0.15                  # MLI-insulated exterior
 MEMBRANE_AREA_M2 = 314             # Exterior radiating surface (membrane, not chamber)
@@ -81,7 +81,7 @@ class NautilusState:
     phase: str = "heating"          # heating, digesting, draining, feeding, filling
 
     # Geometry
-    wall_thickness_mm: float = 0.5  # Initial thin framework built by ants
+    wall_thickness_mm: float = 0.0  # Starts at zero (membrane holds pressure initially)
     chamber_radius_m: float = 6.0   # Inner radius of active chamber
     aperture_width_m: float = INITIAL_APERTURE_M
     chamber_length_m: float = 12.0  # Cylinder length
@@ -119,7 +119,11 @@ class NautilusState:
 
     @property
     def hoop_stress_mpa(self):
-        t_m = self.wall_thickness_mm / 1000
+        # Membrane (Kevlar) provides baseline: ~3000 MPa tensile at 0.3mm
+        # Iron shell adds on top. Combined effective thickness:
+        membrane_equiv_mm = 0.3 * (3000 / IRON_YIELD_MPA)  # Kevlar equiv in iron terms
+        total_equiv_mm = self.wall_thickness_mm + membrane_equiv_mm  # ~3.9mm equiv
+        t_m = total_equiv_mm / 1000
         if t_m < 0.0001:
             return float('inf')
         return (self.pressure_kpa * 1000 * self.chamber_radius_m) / (t_m * 1e6)
@@ -230,7 +234,7 @@ def simulate_cycle(state, asteroid_diameter_m=10, dt_hours=24.0, verbose=False):
                 state.dissolved_iron_g_per_l += dFe
 
             # Electrodeposition (iron from solution onto walls)
-            if state.dissolved_iron_g_per_l > 0.1:  # Minimum concentration
+            if state.dissolved_iron_g_per_l > 0.001:  # Copper seed enables immediate deposition
                 deposited_kg = min(dep_rate_kg_per_hr * dt_hours,
                                    state.dissolved_iron_g_per_l * state.solution_volume_l / 1000 * 0.1)
                 state.iron_deposited_total_kg += deposited_kg
@@ -297,7 +301,7 @@ def simulate_cycle(state, asteroid_diameter_m=10, dt_hours=24.0, verbose=False):
             state.septa_sealed += 1
             old_wall = state.wall_thickness_mm
             # New chamber: reset geometry, keep chemistry
-            state.wall_thickness_mm = 0.5  # Thin framework for new chamber
+            state.wall_thickness_mm = 0.0  # New membrane + copper seed (iron grows from zero again)
             state.chamber_radius_m *= 1.1  # Slightly bigger
             state.chamber_length_m *= 1.1
             state.aperture_width_m = state.chamber_radius_m * 2 + 4  # New full aperture
