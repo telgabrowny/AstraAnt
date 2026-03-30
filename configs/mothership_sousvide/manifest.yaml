@@ -452,6 +452,101 @@ pac_man:
     maintenance: "4 surface ants handle membrane patches and tug servicing"
     limiting_factor: "electronics aging and membrane degradation (years)"
 
+  # === NAUTILUS GROWTH (Long-Term Station Evolution) ===
+  nautilus_growth:
+    description: >
+      The station grows an exoskeleton from extracted metals, then expands
+      outward like a nautilus shell. Each new chamber is larger, specialized,
+      and shares walls with its neighbors. The original processing bag
+      becomes the innermost protected chamber -- the "heart."
+
+    engineering_risks:
+      thermal_fatigue:
+        severity: "HIGH"
+        description: >
+          Thermal cycling (+120C to -150C in LEO, less extreme in deep space)
+          gradually cracks welds. ISS Service Module has leaked 5 years from this.
+          Iron is more brittle at low temps than aluminum.
+        mitigation: "MLI insulation (reduces swing to +/-30C) + deep space location (slower cycling)"
+      weld_quality:
+        severity: "HIGH"
+        description: >
+          Every pressure vessel weld is a potential catastrophic failure.
+          Can't X-ray in vacuum. Quality verification is the hardest problem.
+        mitigation: >
+          Friction stir welding (proven on meteorite iron, solid-state, high quality).
+          Automated ultrasonic inspection by surface ants.
+          Non-critical structures first, pressure vessels only after proven.
+      alloy_variation:
+        severity: "MODERATE"
+        description: "Different asteroids = different iron composition = inconsistent welds"
+        mitigation: "Sort by source. Same-batch for pressure walls. Mixed OK for armor."
+      center_of_mass:
+        severity: "LOW"
+        description: "Asymmetric growth shifts CoM, complicates attitude control"
+        mitigation: "Nautilus spiral keeps CoM near center. Symmetric chamber placement."
+
+    growth_phases:
+      year_0_2:
+        name: "The Seed"
+        structure: "processing bag + iron armor shell"
+        mass_tonnes: 200
+        capabilities: "bioleaching, electro-winning, water depot"
+      year_3_4:
+        name: "First Iron Chamber"
+        structure: "welded iron pressure vessel attached to shell"
+        new_chamber: "Storage (sorted metal stockpile)"
+        wall_thickness_mm: 5
+        test_case: true
+        note: "Small chamber, prove welding and pressure integrity before scaling"
+      year_5_7:
+        name: "Multi-Chamber Station"
+        new_chambers: ["Manufacturing (forge, welder)", "Water depot (insulated)", "Docking frame"]
+        mass_tonnes: 500-1000
+        capabilities: "processing + storage + manufacturing + visiting ship berth"
+      year_10_plus:
+        name: "Industrial Platform"
+        new_chambers: ["Fabrication (assembly)", "Energy (expanded solar)", "Additional processing"]
+        mass_tonnes: 2000+
+        capabilities: "full in-space manufacturing, materials depot, fuel station"
+        note: >
+          At this point the station is a permanent space industrial facility.
+          The original 94 kg membrane bag is the protected core of a
+          multi-thousand-tonne structure built entirely from asteroid materials.
+
+    chamber_specs:
+      processing: {built: "year 0", material: "membrane + iron armor", pressure_kpa: 50, temp_c: 30, function: "bioreactor core"}
+      storage: {built: "year 3", material: "welded iron 5mm", pressure_kpa: 0, temp_c: "ambient", function: "sorted metal stockpile"}
+      water: {built: "year 4", material: "welded iron insulated", pressure_kpa: 10, temp_c: 5, function: "ice reservoir + propellant"}
+      manufacturing: {built: "year 6", material: "welded iron 8mm", pressure_kpa: 50, temp_c: 20, function: "forge, welder, 3D printer"}
+      fabrication: {built: "year 8", material: "welded iron 10mm", pressure_kpa: 50, temp_c: 20, function: "assembly of products"}
+      docking: {built: "year 5", material: "iron frame", pressure_kpa: 0, function: "visiting spacecraft berth"}
+
+    farm_table:
+      description: >
+        Exterior surface organized as self-service materials depot.
+        Visiting spacecraft dock, surface ants load requested materials.
+        Like a drive-through warehouse. Metered and priced.
+      zones:
+        iron: "structural tiles, I-beams, plate stock, powder"
+        nickel: "corrosion-resistant plate, alloy ingots"
+        copper: "wire coils, bus bars, sheet"
+        cobalt: "battery-grade ingots"
+        pgm: "sealed containers (highest security zone)"
+        water: "insulated ice blocks + liquid for refueling"
+
+    what_it_becomes:
+      year_0: "a bag with bacteria"
+      year_2: "an armored processing station"
+      year_5: "a materials depot with docking"
+      year_10: "an industrial platform"
+      year_20: "the seed of a city"
+      note: >
+        From 94 kg of membrane to a multi-thousand-tonne facility,
+        built entirely from asteroid materials. The original bag
+        is still there at the center, still running bacteria,
+        still processing asteroids. The nautilus grew around it.
+
   economics:
     setup_cost_usd: "10-20M (launch + hardware)"
     per_asteroid_cost_after_setup: "$0 (self-sustaining)"
