@@ -1,0 +1,157 @@
+<!-- AstraAnt Surface Ant - MuJoCo Model
+     Vacuum-rated exterior specialist. Aluminum chassis, Maxon actuators.
+     6 legs (currently), 430g, operates on raw asteroid surface.
+     Much more powerful servos (1.0 N*m vs 0.176 N*m for SG90).
+     Dims from configs/ants/surface_ant.yaml -->
+
+<mujoco model="astraant_surface_ant">
+
+  <compiler angle="degree" coordinate="local"/>
+  <option timestep="0.001" gravity="0 0 -9.81">
+    <flag contact="enable"/>
+  </option>
+
+  <default>
+    <joint damping="0.005" armature="0.0001" limited="true"/>
+    <geom condim="3" friction="0.8 0.005 0.001" solref="0.02 1"/>
+  </default>
+
+  <asset>
+    <material name="body_silver" rgba="0.75 0.78 0.75 1"/>
+    <material name="abdomen_color" rgba="0.65 0.70 0.65 1"/>
+    <material name="head_color" rgba="0.70 0.73 0.70 1"/>
+    <material name="solar_panel" rgba="0.10 0.10 0.35 1"/>
+    <material name="leg_metal" rgba="0.55 0.58 0.55 1"/>
+    <material name="foot_pad_mat" rgba="0.20 0.20 0.22 1"/>
+    <material name="mandible_color" rgba="0.60 0.60 0.55 1"/>
+    <material name="regolith" rgba="0.42 0.40 0.36 1"/>
+  </asset>
+
+  <worldbody>
+    <light diffuse="0.9 0.9 0.85" dir="-0.2 -0.3 -1" pos="0.2 0.3 0.5"/>
+    <light diffuse="0.3 0.3 0.35" dir="0.5 0.5 -0.3" pos="-0.3 -0.3 0.3"/>
+
+    <geom name="ground" type="plane" size="1 1 0.01"
+          material="regolith" friction="0.5 0.01 0.001"/>
+
+    <!-- Surface ant: 160mm body, 240mm span, 40mm clearance -->
+    <body name="torso" pos="0 0 0.058">
+      <freejoint name="root"/>
+      <camera name="track" pos="0 -0.4 0.2" xyaxes="1 0 0 0 0.5 1" mode="track"/>
+
+      <!-- Thorax: 70x45x25mm, aluminum -->
+      <geom name="thorax" type="box" size="0.035 0.0225 0.0125"
+            mass="0.145" material="body_silver"/>
+
+      <!-- Abdomen: 60x40x22mm -->
+      <geom name="abdomen" type="ellipsoid" size="0.030 0.020 0.011"
+            pos="-0.055 0 0" mass="0.085" material="abdomen_color"/>
+
+      <!-- Head: 22mm sphere -->
+      <geom name="head" type="sphere" size="0.011"
+            pos="0.045 0 0.005" mass="0.015" material="head_color"/>
+
+      <!-- Solar panel on dorsal surface: 70x70mm -->
+      <geom name="solar" type="box" size="0.035 0.035 0.001"
+            pos="0 0 0.014" mass="0.035" material="solar_panel"/>
+
+      <!-- 6 LEGS: 3 pairs with Maxon vacuum actuators -->
+      <!-- Pair 1: front -->
+      <body name="leg_0_FL" pos="0.024 0.0225 -0.006">
+        <joint name="j_leg_0" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_0" type="capsule" fromto="0 0 0  0 0.0975 -0.046"
+              size="0.005" mass="0.012" material="leg_metal"/>
+        <body name="foot_0" pos="0 0.0975 -0.046">
+          <geom name="foot_0_pad" type="cylinder" size="0.006 0.002"
+                mass="0.003" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+      <body name="leg_1_FR" pos="0.024 -0.0225 -0.006">
+        <joint name="j_leg_1" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_1" type="capsule" fromto="0 0 0  0 -0.0975 -0.046"
+              size="0.005" mass="0.012" material="leg_metal"/>
+        <body name="foot_1" pos="0 -0.0975 -0.046">
+          <geom name="foot_1_pad" type="cylinder" size="0.006 0.002"
+                mass="0.003" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- Pair 2: mid -->
+      <body name="leg_2_ML" pos="0 0.0225 -0.006">
+        <joint name="j_leg_2" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_2" type="capsule" fromto="0 0 0  0 0.0975 -0.046"
+              size="0.005" mass="0.012" material="leg_metal"/>
+        <body name="foot_2" pos="0 0.0975 -0.046">
+          <geom name="foot_2_pad" type="cylinder" size="0.006 0.002"
+                mass="0.003" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+      <body name="leg_3_MR" pos="0 -0.0225 -0.006">
+        <joint name="j_leg_3" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_3" type="capsule" fromto="0 0 0  0 -0.0975 -0.046"
+              size="0.005" mass="0.012" material="leg_metal"/>
+        <body name="foot_3" pos="0 -0.0975 -0.046">
+          <geom name="foot_3_pad" type="cylinder" size="0.006 0.002"
+                mass="0.003" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- Pair 3: rear -->
+      <body name="leg_4_RL" pos="-0.024 0.0225 -0.006">
+        <joint name="j_leg_4" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_4" type="capsule" fromto="0 0 0  0 0.0975 -0.046"
+              size="0.005" mass="0.012" material="leg_metal"/>
+        <body name="foot_4" pos="0 0.0975 -0.046">
+          <geom name="foot_4_pad" type="cylinder" size="0.006 0.002"
+                mass="0.003" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+      <body name="leg_5_RR" pos="-0.024 -0.0225 -0.006">
+        <joint name="j_leg_5" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_5" type="capsule" fromto="0 0 0  0 -0.0975 -0.046"
+              size="0.005" mass="0.012" material="leg_metal"/>
+        <body name="foot_5" pos="0 -0.0975 -0.046">
+          <geom name="foot_5_pad" type="cylinder" size="0.006 0.002"
+                mass="0.003" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- Mandibles: Maxon vacuum-rated, 2-DOF, stronger grip -->
+      <body name="mandible_L" pos="0.045 0.010 0.005">
+        <joint name="j_mandible_L" type="hinge" axis="0 0 1" range="-30 30"/>
+        <geom name="mandible_L_arm" type="capsule" fromto="0 0 0  0.045 0.010 0"
+              size="0.004" mass="0.012" material="mandible_color"/>
+      </body>
+      <body name="mandible_R" pos="0.045 -0.010 0.005">
+        <joint name="j_mandible_R" type="hinge" axis="0 0 -1" range="-30 30"/>
+        <geom name="mandible_R_arm" type="capsule" fromto="0 0 0  0.045 -0.010 0"
+              size="0.004" mass="0.012" material="mandible_color"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- Maxon vacuum-rated brushless: ~1.0 N*m stall torque (5.7x SG90) -->
+    <position name="servo_leg_0" joint="j_leg_0" kp="20.0" kv="0.05" ctrlrange="-30 30" forcerange="-1.0 1.0"/>
+    <position name="servo_leg_1" joint="j_leg_1" kp="20.0" kv="0.05" ctrlrange="-30 30" forcerange="-1.0 1.0"/>
+    <position name="servo_leg_2" joint="j_leg_2" kp="20.0" kv="0.05" ctrlrange="-30 30" forcerange="-1.0 1.0"/>
+    <position name="servo_leg_3" joint="j_leg_3" kp="20.0" kv="0.05" ctrlrange="-30 30" forcerange="-1.0 1.0"/>
+    <position name="servo_leg_4" joint="j_leg_4" kp="20.0" kv="0.05" ctrlrange="-30 30" forcerange="-1.0 1.0"/>
+    <position name="servo_leg_5" joint="j_leg_5" kp="20.0" kv="0.05" ctrlrange="-30 30" forcerange="-1.0 1.0"/>
+    <position name="servo_mandible_L" joint="j_mandible_L" kp="10.0" kv="0.03" ctrlrange="-30 30" forcerange="-0.5 0.5"/>
+    <position name="servo_mandible_R" joint="j_mandible_R" kp="10.0" kv="0.03" ctrlrange="-30 30" forcerange="-0.5 0.5"/>
+  </actuator>
+
+  <sensor>
+    <framepos name="torso_pos" objtype="body" objname="torso"/>
+    <framequat name="torso_quat" objtype="body" objname="torso"/>
+    <framelinvel name="torso_linvel" objtype="body" objname="torso"/>
+  </sensor>
+
+</mujoco>
