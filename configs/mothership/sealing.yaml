@@ -1,109 +1,329 @@
 # Mothership Module: Tunnel Sealing & Pressurization
 # Seals tunnels to 1-10 kPa for COTS component protection.
+#
+# CRITICAL FINDING (2026-03-30): Rubble pile asteroids (Bennu, Ryugu)
+# have 57-58% porosity, near-zero cohesion (<10 Pa), and NO consolidation
+# with depth. Tunnel walls in this material are like cheesecloth --
+# gas blows straight through. The "coffee grounds problem."
+#
+# This file now includes 5 alternative sealing strategies rated by
+# readiness level. The project MUST physically test regolith sealing
+# before committing to a rubble-pile target.
 
 module: sealing
 name: "Tunnel Sealing & Pressurization System"
 type: tunnel_pressurization
 
+# === READINESS ASSESSMENT ===
+readiness:
+  overall: "NEEDS_PHYSICAL_TEST"
+  priority: "HIGHEST -- mission-critical unknown"
+  coffee_grounds_problem:
+    description: >
+      Bennu/Ryugu have 57-58% bulk porosity and near-zero cohesion.
+      OSIRIS-REx sank 50cm into Bennu. The subsurface is LESS dense
+      than the bulk asteroid (half-density near surface). No consolidation
+      with depth -- loose all the way through.
+    source: "Science Advances, 2022 (OSIRIS-REx contact analysis)"
+    impact: >
+      All surface-coating sealants (spray, paste, sintering) may fail
+      on rubble-pile asteroids because the substrate is too porous and
+      weak. Sealant soaks into voids instead of forming a surface layer.
+      Gas permeates through the porous wall behind any surface coating.
+    required_tests:
+      - "Regolith simulant pressurization test (lab, Earth)"
+      - "Spray foam penetration test on analog granular material"
+      - "Microwave sintering test on carbonaceous chondrite simulant"
+      - "Inflatable bladder deployment test in granular bed"
+      - "MoS2 dry lubricant SG90 servo vacuum endurance test"
+  monolithic_asteroids:
+    status: "LIKELY_OK"
+    note: >
+      Eros-class monolithic fractured rock has much higher cohesion
+      and lower porosity. Standard spray/sinter sealing should work.
+      The coffee grounds problem is specific to rubble piles.
+
+target_pressure_kpa: 5              # Default, configurable 1-10
+pressure_tolerance_kpa: 1
+
+# === WHY PRESSURIZE? ===
+# Before exploring alternatives, understand what pressure gives us:
+pressurization_benefits:
+  servo_lubricant:
+    problem: "SG90 grease outgasses in vacuum, gears seize"
+    solution_with_pressure: "5 kPa stops outgassing, extends MTBF 100x"
+    solution_without_pressure: "MoS2 dry lubricant (see option E below)"
+  thermal_management:
+    problem: "No convection in vacuum, components overheat"
+    solution_with_pressure: "5 kPa air enables fans and convective cooling"
+    solution_without_pressure: "Conductive cooling through regolith contact + radiative"
+  dust_control:
+    problem: "Drill cuttings float in microgravity, coat electronics"
+    solution_with_pressure: "Fans + filters in pressurized tunnel"
+    solution_without_pressure: "Electrostatic dust capture, sealed electronics enclosures"
+
 entrance_seal:
   type: inflatable_gasket
   material: silicone_rubber
   mass_kg: 5
-  seal_diameter_mm: 250             # Matches drill bore
-  pressure_rating_kpa: 20           # Well above target 1-10 kPa
-  inflation_method: mechanical      # Spring-loaded, no pump needed
+  seal_diameter_mm: 250
+  pressure_rating_kpa: 20
+  inflation_method: mechanical
   spare_gaskets: 2
   spare_mass_kg: 2
 
-sealing_options:
+# === SEALING STRATEGIES (ranked by reliability on coffee-grounds) ===
+
+strategies:
+
+  # ----- STRATEGY A: INFLATABLE TUNNEL BLADDER (RECOMMENDED) -----
+  inflatable_bladder:
+    readiness: "NEEDS_SIM_VALIDATION"
+    reliability_on_coffee_grounds: "EXCELLENT -- decoupled from wall properties"
+    description: >
+      Pre-fabricated polymer tube (nylon + urethane) inserted into the
+      tunnel bore and inflated to target pressure. The bladder holds gas,
+      not the walls. Regolith walls provide structural support only.
+      Based on Bigelow BEAM technology (TRL 9 on ISS since 2016).
+    material: "nylon bladder with urethane coating (same as TransHab design)"
+    mass_per_meter_kg: 0.3           # For 400mm diameter tube
+    mass_for_200m_tunnel_kg: 60
+    cost_usd_per_meter: 5
+    installation:
+      method: "ants deploy rolled bladder sections, connect with couplings"
+      section_length_m: 5            # Pre-cut sections, coupling every 5m
+      coupling_type: "compression ring (PETG, 3D-printable on site)"
+      time_per_section_min: 15
+    advantages:
+      - "Works on ANY asteroid type regardless of porosity"
+      - "Decoupled from wall properties -- coffee grounds, gravel, rock all the same"
+      - "Proven materials (Vectran/nylon/Kevlar fabrics, TRL 9)"
+      - "Repairable -- patch kit for punctures"
+      - "Sections replaceable independently"
+    disadvantages:
+      - "Must be shipped from Earth (60 kg for 200m)"
+      - "Puncture risk from sharp regolith or drill debris"
+      - "Coupling joints are potential leak points"
+      - "Reduces effective tunnel diameter slightly (~10mm wall thickness)"
+    recommended_for: "ALL rubble-pile asteroids. Primary sealing method."
+
+  # ----- STRATEGY B: SPRAY FOAM PORE-FILLING -----
+  spray_foam:
+    readiness: "NEEDS_PHYSICAL_TEST"
+    reliability_on_coffee_grounds: "GOOD -- fills voids instead of coating surface"
+    description: >
+      2-part expanding polyurethane foam injected into the porous tunnel
+      walls. Unlike surface coatings that sit ON the porous substrate,
+      foam expands INTO the pore spaces, creating a gas-tight composite
+      of foam + regolith. Like injecting epoxy into cracked concrete.
+    material: "low-outgassing 2-part polyurethane (NASA-qualified blends exist)"
+    mix_ratio: "20:1 regolith to binder by mass"
+    penetration_depth_mm: 5-15       # Foam expands into this depth of wall
+    binder_per_meter_kg: 0.32        # For 5mm penetration, 400mm tunnel
+    binder_for_200m_tunnel_kg: 64
+    seal_effectiveness: 0.95         # Higher than surface spray because pores are FILLED
+    application:
+      tool: "foam_nozzle (new tool head variant of paste_nozzle)"
+      two_part_mixing: "in-nozzle static mixer (no powered components)"
+      set_time_minutes: 5            # Fast-setting formulation
+      coverage_rate_m2_per_hour: 3
+    advantages:
+      - "Addresses porosity directly -- fills voids, doesn't coat over them"
+      - "Creates structural composite (stronger than raw regolith)"
+      - "95% seal effectiveness (better than sintering's 85%)"
+      - "Fast set time (5 minutes vs 4 hours for waste plaster)"
+      - "20:1 ratio means mostly local material"
+    disadvantages:
+      - "Binder must be shipped from Earth (64 kg for 200m)"
+      - "Foam may expand unpredictably in microgravity (needs testing)"
+      - "Not self-replenishing (finite supply)"
+    recommended_for: "Critical sections where bladder can't be used"
+
+  # ----- STRATEGY C: ZONED PRESSURIZATION -----
+  zoned_pressurization:
+    readiness: "PROVEN_CONCEPT"
+    reliability_on_coffee_grounds: "EXCELLENT -- avoids the problem for 70% of tunnel"
+    description: >
+      Don't seal the entire tunnel to 5 kPa. Only pressurize critical
+      zones (bioreactor bay, manufacturing deck, tool docks) with
+      inflatable bladders. Main transit tunnels operate at 1-2 kPa
+      with continuous compressor makeup. Work face extensions are
+      unpressurized (ants operate on 2-min supercap window).
+    zones:
+      critical:
+        pressure_kpa: 5
+        sealing: "inflatable bladder (Strategy A)"
+        areas: "bioreactor bay, manufacturing, tool docks, mothership interior"
+        fraction_of_tunnel: 0.15      # ~15% of total tunnel length
+      transit:
+        pressure_kpa: 1-2
+        sealing: "waste slurry + compressor makeup"
+        areas: "main tunnel branches between critical zones"
+        fraction_of_tunnel: 0.55
+        leak_rate_acceptable_pa_per_hour: 200  # Higher threshold, compensated
+      work_face:
+        pressure_kpa: 0               # Unpressurized
+        sealing: "none"
+        areas: "active excavation zones, last 5-10m before rock face"
+        fraction_of_tunnel: 0.30
+        note: "Ants operate on supercap (2 min off-rail window)"
+    advantages:
+      - "Reduces bladder mass from 60 kg to ~10 kg (critical zones only)"
+      - "Transit tunnels tolerate leaks (compressor compensates)"
+      - "Work face needs no sealing at all"
+      - "Progressive: start zoned, upgrade to full sealing as supply allows"
+    disadvantages:
+      - "Ants crossing zone boundaries need airlock-like transitions"
+      - "Worker servo MTBF reduced in low-pressure transit zones"
+      - "Dust management harder in partially-pressurized zones"
+    recommended_for: "First missions with limited Earth supply mass"
+
+  # ----- STRATEGY D: BIOFILM SELF-HEALING SEAL -----
+  biofilm_seal:
+    readiness: "OPEN_RESEARCH"
+    reliability_on_coffee_grounds: "UNKNOWN -- promising but unproven"
+    description: >
+      Intentionally cultivate gas-barrier biofilm on tunnel walls.
+      Bacteria from the bioreactor (already present in waste slurry
+      at 3% concentration) grow cellulose + calcium carbonate that
+      fills micro-pores and creates a self-healing gas barrier.
+      Based on lunar "bio-brick" research (Sporosarcina pasteurii).
+    bacteria: "Sporosarcina pasteurii + bioreactor consortium"
+    mechanism: "urea hydrolysis -> calcium carbonate precipitation + cellulose production"
+    development_time_days: 7-14      # Full biofilm establishment
+    seal_effectiveness: 0.60-0.80    # Variable, improves over time
+    self_repair: true                # Damaged areas recolonized automatically
+    cost: "zero (bioreactor waste product)"
+    advantages:
+      - "Zero Earth supply (grows from bioreactor waste)"
+      - "Self-repairing (damaged areas recolonize)"
+      - "Fills micro-pores that other methods miss"
+      - "Improves over time as biofilm matures"
+      - "Already partially in the design (waste slurry bacteria)"
+    disadvantages:
+      - "Slow (7-14 days to establish vs minutes for foam)"
+      - "Variable effectiveness (60-80%, depends on conditions)"
+      - "Requires living bioreactor (not available on Track A/mechanical)"
+      - "TRL 3-4 for this application"
+    recommended_for: "Supplement to other methods. Free micro-pore sealing."
+
+  # ----- STRATEGY E: ELIMINATE PRESSURIZATION (MoS2 DRY LUBE) -----
+  vacuum_compatible_servos:
+    readiness: "NEEDS_PHYSICAL_TEST"
+    reliability_on_coffee_grounds: "N/A -- eliminates the sealing problem entirely"
+    description: >
+      Replace SG90 grease lubricant with MoS2 (molybdenum disulfide)
+      dry film lubricant. MoS2 performs BETTER in vacuum than in air
+      (water vapor degrades it). If the servos work in vacuum, there
+      is NO NEED to pressurize the tunnel AT ALL.
+    modification:
+      process: "disassemble SG90, degrease gears, apply MoS2 PVD coating, reassemble"
+      cost_per_servo_usd: 20-50      # Custom coating + labor
+      worker_ant_cost_delta: "+$136 (8 servos x $17 upcharge)"
+      new_worker_cost_usd: 175       # Up from $39
+    mos2_performance:
+      friction_coefficient: 0.05-0.22  # Comparable to grease
+      temperature_range_c: [-226, 399] # Extreme range
+      vacuum_performance: "BETTER than atmosphere (MoS2 is a dry lubricant)"
+      life_cycles: ">45 million cycles in vacuum (published test data)"
+      heritage: "Flight-qualified for spacecraft mechanisms (reaction wheels, gimbals)"
+    remaining_pressure_needs:
+      thermal: "solved by conductive cooling through regolith contact"
+      dust: "solved by sealed electronics enclosures + electrostatic capture"
+      bioreactor: "STILL needs pressurization (bacteria need atmosphere)"
+    advantages:
+      - "ELIMINATES the sealing problem for 95% of tunnel"
+      - "MoS2 is flight-proven (TRL 7-8 for general mechanisms)"
+      - "Worker cost still cheap ($175 vs $1500 surface ant)"
+      - "Dramatically simplifies mission architecture"
+      - "No Earth-supply sealant needed"
+    disadvantages:
+      - "TRL 0 for SG90 specifically (needs lab testing)"
+      - "4.5x cost increase per worker ($175 vs $39)"
+      - "Bioreactor bay still needs local pressurization"
+      - "Thermal management needs redesign (no convection)"
+    recommended_for: >
+      HIGHEST-VALUE PHYSICAL TEST. If SG90+MoS2 works in vacuum,
+      it changes the entire mission architecture. Test this FIRST.
+
+  # ----- ORIGINAL METHODS (kept for reference) -----
   polymer_spray:
+    readiness: "PROVEN"
+    reliability_on_coffee_grounds: "POOR -- soaks into porous substrate"
     method: "spray_applied_sealant"
     material: silicone_conformal_coating
-    consumable_per_m2_kg: 0.1       # ~100g of spray per m2 of tunnel wall
-    seal_effectiveness: 0.98         # 98% pressure retention per day
+    consumable_per_m2_kg: 0.1
+    seal_effectiveness: 0.98         # On solid substrate. Much lower on coffee grounds.
+    note: "Works great on monolithic asteroids. Fails on rubble piles."
     application:
       tool: spray_nozzle_on_arm
       power_w: 50
       mass_kg: 2
       coverage_rate_m2_per_hour: 5
-    advantages:
-      - "Highly reliable seal"
-      - "Quick application"
-      - "Proven technology"
-    disadvantages:
-      - "Consumable — must be launched from Earth"
-      - "Limited by supply quantity"
-    initial_supply_kg: 10            # Enough for ~100 m2 of tunnel wall
+    initial_supply_kg: 10
     resupply_per_cycle_kg: 5
 
   regolith_sintering:
+    readiness: "NEEDS_PHYSICAL_TEST"
+    reliability_on_coffee_grounds: "MODERATE -- melts surface into glass but only 5mm deep"
     method: "microwave_sintering"
-    power_w: 2000                    # Microwave emitter
+    power_w: 2000
     emitter_mass_kg: 8
-    frequency_ghz: 2.45             # Standard microwave frequency
-    seal_effectiveness: 0.85         # 85% — more porous than spray
-    sintering_rate_m2_per_hour: 1    # Slow but zero consumables
+    frequency_ghz: 2.45
+    seal_effectiveness: 0.85
+    sintering_rate_m2_per_hour: 1
     penetration_depth_mm: 5
-    advantages:
-      - "Zero consumables from Earth"
-      - "Uses local material"
-      - "Indefinitely sustainable"
-    disadvantages:
-      - "High power requirement (2 kW)"
-      - "Slow coverage rate"
-      - "Lower seal quality than spray"
-      - "May not work on all regolith compositions"
-
-  ice_regolith_paste:
-    method: "ice_binder_paste"
-    requires: "c_type_asteroid"      # Must have water ice available
-    consumable_per_m2_kg: 0          # Uses asteroid water ice + regolith
-    seal_effectiveness: 0.70         # Lowest — sublimation losses in low pressure
-    application:
-      tool: paste_applicator
-      power_w: 30                    # Heating to soften ice
-      mass_kg: 1
-    advantages:
-      - "Uses only local materials"
-      - "Lightweight equipment"
-    disadvantages:
-      - "Only works on water-bearing asteroids"
-      - "Seal degrades via sublimation"
-      - "Requires ongoing maintenance"
+    sintering_temperature_c: 1100-1200  # For silicate regolith
+    note: >
+      Creates glass-ceramic shell that IS gas-tight. But the 5mm shell
+      sits on unconsolidated substrate. Structural integrity depends on
+      whether the shell can span the pores beneath it. Best combined
+      with foam pore-filling (Strategy B) underneath.
 
   waste_slurry_plaster:
+    readiness: "NEEDS_PHYSICAL_TEST"
+    reliability_on_coffee_grounds: "POOR -- paste absorbs into pores"
     method: "bioreactor_waste_paste"
-    requires: "bioreactor_module"        # Only available with Track B/C
-    consumable_per_m2_kg: 0              # Made entirely from mining waste
-    seal_effectiveness: 0.75             # Lower than spray but FREE
-    application:
-      tool: "plasterer_ant"              # Specialized ant caste
-      power_w: 0                         # Ant power, not module power
-      mass_kg: 0                         # Ants carry their own tools
+    requires: "bioreactor_module"
+    seal_effectiveness: 0.75
+    note: "Good as bulk filler. Poor as gas seal on porous substrate."
     composition:
-      rock_fines_pct: 70                 # Depleted mineral particles from bioleaching
-      water_pct: 25                      # Binder — evaporates at 5 kPa
-      residual_bacteria_pct: 3           # May form biofilm that improves seal
-      reagent_traces_pct: 2              # CaO traces act as natural cement
+      rock_fines_pct: 70
+      water_pct: 25
+      residual_bacteria_pct: 3
+      reagent_traces_pct: 2
     properties:
       setting_time_hours: 4
       compressive_strength_mpa: 2
-      coats_recommended: 2               # Double coat for reliable seal
-    advantages:
-      - "Zero consumable cost — made from mining waste"
-      - "Infinite supply — scales with mining output"
-      - "CaO reagent traces act as natural cement (Portland cement chemistry)"
-      - "Residual biofilm may seal micro-pores over time"
-      - "Closes the waste disposal loop completely"
-      - "Applied by dedicated plasterer ants — organic, distributed"
-    disadvantages:
-      - "Lower seal quality than polymer spray (75% vs 98%)"
-      - "Slow setting time (4 hours per coat)"
-      - "Needs 2+ coats for reliable pressure retention"
-    recommended_combination: >
-      Best results: waste slurry as bulk filler (plasterer ants, 2 coats),
-      then polymer spray as final topcoat on critical sections.
-      This uses minimal polymer consumable while achieving 90%+ seal quality.
+      coats_recommended: 3           # Increased from 2 for porous walls
+
+# === RECOMMENDED APPROACH BY ASTEROID TYPE ===
+recommended_strategy:
+  rubble_pile_c_type:
+    asteroids: ["Bennu", "Ryugu", "2008 EV5"]
+    primary: "zoned_pressurization + inflatable_bladder (critical zones)"
+    secondary: "spray_foam for transit tunnel walls"
+    supplement: "biofilm_seal (free, self-repairing)"
+    game_changer: "vacuum_compatible_servos (test MoS2 SG90 first!)"
+    mass_from_earth_kg: 70-130      # Bladder + foam binder
+
+  rubble_pile_s_type:
+    asteroids: ["Itokawa", "Didymos"]
+    primary: "zoned_pressurization + inflatable_bladder"
+    note: "Same as C-type. S-type rubble is still porous."
+    mass_from_earth_kg: 70-130
+
+  monolithic_s_type:
+    asteroids: ["Eros"]
+    primary: "polymer_spray + regolith_sintering"
+    note: "Original approach works fine on consolidated rock."
+    mass_from_earth_kg: 15-30
+
+  metallic_m_type:
+    asteroids: ["Psyche"]
+    primary: "polymer_spray"
+    note: "Metallic substrate is inherently non-porous. Easiest case."
+    mass_from_earth_kg: 10-15
 
 compressor:
   type: mini_diaphragm_compressor
@@ -111,47 +331,63 @@ compressor:
   power_w: 20
   flow_rate_liters_per_minute: 5
   max_output_pressure_kpa: 20
-  fill_gas: nitrogen                 # Inert, safe, available
-  purpose: "initial pressurization and leak makeup"
+  fill_gas: nitrogen
+  purpose: "initial pressurization and continuous leak makeup"
+  note: >
+    With zoned pressurization, the compressor runs continuously
+    for transit zones (compensating 1-2 kPa leaks). Critical zones
+    with bladders need compressor only for initial fill.
 
 fill_gas_supply:
   type: compressed_nitrogen_cylinder
-  initial_mass_kg: 5                 # Gas mass
-  cylinder_mass_kg: 3                # Container
+  initial_mass_kg: 5
+  cylinder_mass_kg: 3
   pressure_bar: 200
-  volume_at_stp_liters: 4000         # Enough for ~800 m3 at 5 kPa
+  volume_at_stp_liters: 4000
   purpose: "fills ~200m of tunnel at 5 kPa target pressure"
+  note: >
+    With zoned approach, gas supply lasts much longer because
+    only 15% of tunnel is at full pressure. Transit zones at
+    1-2 kPa use less gas. Work face uses none.
 
 pressure_monitoring:
   sensors:
     - type: mems_pressure_sensor
-      locations: "every 20m along tunnel"
+      locations: "every 20m along tunnel + at each zone boundary"
       mass_per_sensor_g: 5
       power_per_sensor_mw: 10
       accuracy_pa: 10
   leak_detection:
     method: pressure_decay_monitoring
-    alarm_threshold_pa_per_hour: 50  # Alert if losing >50 Pa/hr
+    alarm_threshold_critical_pa_per_hour: 50
+    alarm_threshold_transit_pa_per_hour: 200
 
-target_pressure_kpa: 5              # Default — configurable 1-10
-pressure_tolerance_kpa: 1           # Acceptable range: target ± 1 kPa
-
-total_mass_kg: 18                   # Base system without consumables
-total_mass_with_consumables_kg: 33  # With spray sealant + gas supply
-total_power_w_spray: 70             # Compressor + spray applicator
-total_power_w_sintering: 2020       # Compressor + microwave sintering
+total_mass_kg: 18                   # Base system
+total_mass_with_bladder_kg: 78      # Base + 60 kg bladder for 200m
+total_mass_with_foam_kg: 82         # Base + 64 kg foam binder
+total_mass_zoned_kg: 38             # Base + 10 kg bladder (critical only) + foam
 
 notes: |
-  The sealing module follows behind the drill, coating tunnel walls as
-  they are excavated. The sequence is: drill → seal → pressurize → operate.
+  The coffee grounds problem is the highest-priority physical test
+  item in the entire project. Before committing to a rubble-pile
+  asteroid (which includes ALL the cheapest, most accessible targets),
+  we MUST know:
 
-  Polymer spray is recommended for initial missions (reliable, fast).
-  Sintering is the long-term goal for self-sustaining operations.
-  Ice paste is a bonus option for C-type asteroids with water ice.
+  1. Can spray foam create a gas-tight composite in analog regolith?
+  2. Can an inflatable bladder deploy and hold pressure inside loose gravel?
+  3. Can MoS2-coated SG90 servos survive vacuum for >1000 hours?
 
-  At 5 kPa target pressure:
-  - COTS servo lubricants stop outgassing → MTBF extends ~100x
-  - Convective heat transfer works → thermal management simplified
-  - Fans and filters work → dust management enabled
-  - No structural strength needed — tunnels don't need to be pressure vessels
-    because microgravity means no differential pressure loading on walls
+  If test #3 passes: the whole sealing architecture simplifies
+  dramatically. Unpressurized tunnels with MoS2 servos. Only the
+  bioreactor bay needs local pressurization (bacteria need atmosphere).
+
+  The zoned approach is the pragmatic first step: seal only what
+  you must, accept leaks elsewhere, compensate with the compressor.
+  This buys time to test and refine sealing methods in the field.
+
+  Historical parallel: early submarine designers faced the same
+  challenge -- sealing a pressurized tube inside a hostile environment.
+  They solved it with gaskets and welded steel hulls, not by trying
+  to make the ocean waterproof. The bladder approach follows the
+  same logic: bring your own sealed environment, don't depend on
+  the local material to be gas-tight.
