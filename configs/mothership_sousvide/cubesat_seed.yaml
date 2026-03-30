@@ -1,0 +1,205 @@
+# Sous Vide Phase 0: CubeSat Seed Mission
+# The absolute minimum package to prove asteroid bioleaching in space.
+# 51 kg, 12U CubeSat, $1-2M total. Targets a 5m C-type NEA.
+# If bacteria eat rock in a bag in space, everything else follows.
+
+mission: cubesat_seed
+name: "Phase 0 -- CubeSat Seed: Prove Bioleaching Works"
+target: "5m C-type NEA (78.5 tonnes, 8% water)"
+total_mass_kg: 51
+form_factor: "12U CubeSat + deployable membrane payload"
+mission_cost_usd: "1-2M"
+launch_cost_usd: "300-500K (rideshare to heliocentric trajectory)"
+mission_duration_months: 6
+
+target_asteroid:
+  diameter_m: 5
+  mass_tonnes: 78.5
+  water_tonnes: 6.3
+  iron_yield_tonnes: 13.4
+  nickel_yield_kg: 868
+  copper_yield_kg: 8
+  cobalt_yield_kg: 33
+  note: "Not profitable. Proof of concept only."
+
+# === MASS BUDGET ===
+systems:
+  membrane:
+    description: "Kapton/Kevlar bag for 5m asteroid"
+    area_m2: 78.5
+    mass_kg: 24.0
+    deployment: "spring-loaded mechanical unfurling (no ants needed)"
+    heritage: "TransAstra capture bag (ISS tested Oct 2025)"
+    note: "One side has reflective coating -- acts as solar concentrator"
+
+  bacteria:
+    description: "Freeze-dried bioleaching cultures"
+    species: ["A. ferrooxidans", "A. thiooxidans"]
+    vials: 10
+    mass_kg: 0.1
+    note: "100g of culture = billions of cells. Self-replicate to fill 6,300L."
+
+  nutrients:
+    description: "Initial kickstart only"
+    contents: "ferrous sulfate + ammonium sulfate + potassium phosphate"
+    mass_kg: 3.0
+    note: "After seeding, bacteria feed on asteroid's own iron sulfides"
+
+  electrolyzer:
+    description: "PEM cell -- splits asteroid water into O2 + H2"
+    mass_kg: 2.0
+    output: "O2 feeds bacteria AND pressurizes bag. No nitrogen needed."
+    note: "The asteroid provides its own pressurization gas via electrolysis"
+
+  pump:
+    description: "Single peristaltic pump for solution circulation"
+    mass_kg: 1.0
+
+  electrowinning:
+    description: "1-liter mini cell -- proves metal extraction from leachate"
+    mass_kg: 2.0
+    note: "Not sized for throughput. Just proves the chemistry works."
+
+  solar_panel:
+    area_m2: 0.6
+    power_w: 170
+    mass_kg: 0.5
+
+  battery:
+    type: "LiFePO4"
+    capacity_kwh: 1
+    mass_kg: 3.0
+
+  compute:
+    type: "ESP32-S3"
+    mass_kg: 0.05
+    note: "Monitor pH, temp, ORP. Telemetry to Earth. That's it."
+
+  comms:
+    type: "UHF radio"
+    mass_kg: 0.5
+    note: "Report results home. Low bandwidth fine."
+
+  structure:
+    description: "Minimal frame + gasket port (the 'cork')"
+    mass_kg: 5.0
+
+  propulsion:
+    description: "Cold gas thruster for final approach"
+    type: "compressed N2"
+    delta_v_ms: 2
+    thruster_mass_kg: 3.0
+    propellant_kg: 2.0
+
+  sensors:
+    description: "pH, temperature, ORP probes"
+    mass_kg: 0.3
+
+mass_subtotal_kg: 46.5
+margin_pct: 10
+mass_total_kg: 51
+
+# === WHAT IT ELIMINATES ===
+not_needed:
+  nitrogen_gas: "O2 from electrolysis pressurizes the bag"
+  surface_ants: "mechanical spring deployment (no robots)"
+  tugs: "single asteroid, no hopping"
+  cargo_return: "proof of concept, telemetry results home"
+  solar_concentrators: "reflective membrane coating acts as concentrator"
+  manufacturing: "nothing to build"
+  rail_infrastructure: "no tunnels"
+
+# === MISSION TIMELINE ===
+timeline:
+  month_0: "Launch as rideshare secondary payload"
+  month_1_3: "Transit to NEA (cold gas for final approach)"
+  month_3: "Arrive. Spring-deploy membrane around 5m asteroid."
+  month_3_4: "Heat interior via reflective membrane (60 days)"
+  month_4: "Ice melts. Electrolyze water -> O2 pressurizes bag to 10 kPa."
+  month_4: "Seed bacteria through gasket port. Add nutrients."
+  month_4_8: "Monitor bioleaching. Telemetry pH, metal concentration, biomass."
+  month_7_8: "Run mini electro-winning cell. Prove metal plates out."
+  month_8: "Mission success if: bacteria grew + metals dissolved + metal plated."
+
+# === SUCCESS CRITERIA ===
+success_criteria:
+  minimum_success:
+    - "Membrane holds pressure around real asteroid for 30+ days"
+    - "Water ice melts and creates solution"
+    - "Bacteria multiply (biomass increase detected via ORP)"
+    - "Iron concentration in solution increases over time"
+  full_success:
+    - "All minimum criteria met"
+    - "Electro-winning cell plates measurable copper/nickel"
+    - "Culture survives 90+ days (multiple doubling cycles)"
+    - "pH stabilizes at 2.0-2.5 (bacteria controlling environment)"
+  bonus:
+    - "Iron extraction exceeds 50% of theoretical maximum"
+    - "Culture still viable at 6 months"
+
+# === PHASE PROGRESSION ===
+phases:
+  phase_0:
+    name: "CubeSat Seed"
+    cost_usd: "1-2M"
+    mass_kg: 51
+    target: "5m asteroid"
+    goal: "prove biology works in space"
+    output: "13t iron, 6t water, 868 kg Ni, live bacteria culture"
+    status: "still operational after mission success -- stockpile sits waiting"
+
+  phase_0b:
+    name: "CubeSat Upgrade"
+    cost_usd: "1-2M"
+    mass_kg: 51
+    target: "same location as Phase 0"
+    carries: "94 kg membrane (for 10m asteroids) + second processing unit"
+    uses_from_phase_0:
+      water: "6 tonnes (free propellant for any future tug)"
+      iron: "13 tonnes (builds first chamber walls)"
+      bacteria: "live culture (already space-adapted, no reseeding)"
+      acid: "sulfuric acid (bacteria already produced it)"
+    goal: "bootstrap Phase 1 capability using Phase 0 stockpile"
+    note: >
+      Mission 2 doesn't need its own bacteria, nutrients, or
+      pressurization gas. Mission 1 already produced all of that.
+      Total cost to Phase 1 capability: ~$3M instead of $15M.
+
+  phase_1:
+    name: "Operational Station"
+    cost_usd: "$0 (self-funded from Phase 0+0b stockpile)"
+    target: "10m asteroids"
+    goal: "begin exponential nautilus growth"
+    note: "Iron from Phase 0 builds first chamber walls. Water powers first tug."
+
+  phase_2:
+    name: "Exponential Growth"
+    cost_usd: "$0"
+    target: "10m -> 12m -> 15m -> 20m+ (growing)"
+    goal: "50,000 tonnes stockpile by year 20"
+
+  total_earth_investment:
+    phase_0: "$1-2M"
+    phase_0b: "$1-2M"
+    everything_after: "$0"
+    total: "~$3M to bootstrap a self-sustaining asteroid mining operation"
+    comparison: "cost of a nice house in a major city"
+
+notes: |
+  The CubeSat Seed is the minimum viable product for asteroid mining.
+
+  It answers ONE question: do bacteria eat asteroid rock inside a bag
+  in space? If yes, everything else is engineering. If no, we save
+  $billions in failed large-scale missions.
+
+  The 51 kg package costs less than a mid-range car. The rideshare
+  launch costs less than a studio apartment in San Francisco. The
+  total mission costs less than a house.
+
+  Phase 0 isn't designed to be profitable. It's designed to be the
+  cheapest possible experiment that validates the entire concept.
+  The stockpile it produces (13t iron, 6t water) sits in space
+  waiting for Phase 0b to arrive and use it.
+
+  Two houses worth of investment. A self-replicating mining operation.
+  From 51 kg to 50,000 tonnes in 20 years.
