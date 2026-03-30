@@ -827,5 +827,30 @@ def dashboard():
     subprocess.run(["streamlit", "run", str(dashboard_path)], check=False)
 
 
+# -- Sous Vide station lifecycle ------------------------------------------
+
+@main.command()
+@click.option("--years", default=20, help="Simulation duration in years")
+@click.option("--customers", default=4, help="Customer visits per year (after year 2)")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def sousvide(years: int, customers: int, output: str):
+    """Simulate Sous Vide Nautilus station growth over decades."""
+    from .sousvide_sim import run_simulation, format_report
+
+    click.echo(f"Simulating {years}-year Sous Vide station lifecycle...")
+    click.echo(f"  Customers: {customers}/year after year 2")
+    click.echo()
+
+    state, snapshots, events = run_simulation(
+        years=years, customers_per_year=customers)
+
+    report = format_report(state, snapshots, events, years, customers)
+    click.echo(report)
+
+    if output:
+        Path(output).write_text(report)
+        click.echo(f"\nReport saved to {output}")
+
+
 if __name__ == "__main__":
     main()
