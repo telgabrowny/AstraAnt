@@ -1,0 +1,100 @@
+<!-- AstraAnt Mothership Landing Model
+     1.6m dia x 4m tall cylinder, ~900 kg, conical base.
+     4 screw anchors at base perimeter (deploy on contact).
+     Tests touchdown dynamics: bounce vs stick vs sink. -->
+
+<mujoco model="astraant_mothership_landing">
+
+  <compiler angle="degree" coordinate="local"/>
+  <option timestep="0.002" gravity="0 0 -9.81">
+    <flag contact="enable"/>
+  </option>
+
+  <default>
+    <geom condim="4" friction="0.6 0.01 0.001"/>
+  </default>
+
+  <asset>
+    <material name="hull_aluminum" rgba="0.72 0.74 0.72 1"/>
+    <material name="base_cone" rgba="0.60 0.62 0.60 1"/>
+    <material name="anchor_steel" rgba="0.45 0.45 0.48 1"/>
+    <material name="drill_tip" rgba="0.35 0.35 0.38 1"/>
+    <material name="solar_blue" rgba="0.10 0.15 0.45 1"/>
+    <material name="regolith" rgba="0.42 0.40 0.36 1"/>
+  </asset>
+
+  <worldbody>
+    <light diffuse="0.9 0.9 0.85" dir="-0.2 -0.3 -1" pos="0 0 10"/>
+    <light diffuse="0.3 0.3 0.35" dir="0.5 0.5 -0.3" pos="-5 -5 5"/>
+
+    <!-- Asteroid surface. solref controls softness:
+         [timeconst, damping]: larger timeconst = softer surface
+         Rubble pile: solref="0.05 0.9" (soft, sinks in)
+         Consolidated: solref="0.01 1.0" (hard, bounces)
+         Metallic: solref="0.005 1.0" (very hard) -->
+    <geom name="ground" type="plane" size="20 20 0.1"
+          material="regolith" friction="0.5 0.01 0.001"
+          solref="0.02 0.9" solimp="0.9 0.95 0.001"/>
+
+    <!-- ============ MOTHERSHIP ============ -->
+    <body name="mothership" pos="0 0 5">
+      <freejoint name="root"/>
+      <camera name="side" pos="5 0 3" xyaxes="0 1 0 -0.3 0 1" mode="track"/>
+      <camera name="top" pos="0 0 15" xyaxes="1 0 0 0 1 0" mode="track"/>
+
+      <!-- Main hull cylinder: 1.6m dia x 3.2m (upper portion) -->
+      <geom name="hull" type="cylinder" size="0.8 1.6"
+            pos="0 0 1.2" mass="650" material="hull_aluminum"/>
+
+      <!-- Conical base section (landing cone): ~0.8m tall -->
+      <!-- Approximated as a tapered stack of cylinders -->
+      <geom name="base_upper" type="cylinder" size="0.75 0.15"
+            pos="0 0 -0.25" mass="60" material="base_cone"/>
+      <geom name="base_mid" type="cylinder" size="0.55 0.15"
+            pos="0 0 -0.55" mass="40" material="base_cone"/>
+      <geom name="base_lower" type="cylinder" size="0.35 0.1"
+            pos="0 0 -0.75" mass="30" material="base_cone"
+            friction="0.8 0.01 0.001"/>
+
+      <!-- Base plate (contact ring for gasket seal) -->
+      <geom name="base_plate" type="cylinder" size="0.40 0.02"
+            pos="0 0 -0.87" mass="20" material="anchor_steel"
+            friction="0.8 0.02 0.005"/>
+
+      <!-- Drill tip (extends below base plate during boring) -->
+      <geom name="drill_tip" type="cylinder" size="0.10 0.05"
+            pos="0 0 -0.94" mass="15" material="drill_tip"
+            friction="0.4 0.01 0.001"/>
+
+      <!-- 4 Screw anchor feet at base perimeter (90deg apart) -->
+      <!-- These are the first contact points -->
+      <geom name="anchor_0" type="sphere" size="0.05"
+            pos="0.35 0 -0.89" mass="2.5" material="anchor_steel"
+            friction="1.5 0.05 0.01"/>
+      <geom name="anchor_1" type="sphere" size="0.05"
+            pos="0 0.35 -0.89" mass="2.5" material="anchor_steel"
+            friction="1.5 0.05 0.01"/>
+      <geom name="anchor_2" type="sphere" size="0.05"
+            pos="-0.35 0 -0.89" mass="2.5" material="anchor_steel"
+            friction="1.5 0.05 0.01"/>
+      <geom name="anchor_3" type="sphere" size="0.05"
+            pos="0 -0.35 -0.89" mass="2.5" material="anchor_steel"
+            friction="1.5 0.05 0.01"/>
+
+      <!-- Solar panel wings (deployed, for visual reference) -->
+      <geom name="solar_L" type="box" size="1.5 0.5 0.005"
+            pos="0 1.3 2.0" mass="15" material="solar_blue"/>
+      <geom name="solar_R" type="box" size="1.5 0.5 0.005"
+            pos="0 -1.3 2.0" mass="15" material="solar_blue"/>
+
+    </body>
+  </worldbody>
+
+  <sensor>
+    <framepos name="mothership_pos" objtype="body" objname="mothership"/>
+    <framequat name="mothership_quat" objtype="body" objname="mothership"/>
+    <framelinvel name="mothership_vel" objtype="body" objname="mothership"/>
+    <frameangvel name="mothership_angvel" objtype="body" objname="mothership"/>
+  </sensor>
+
+</mujoco>
