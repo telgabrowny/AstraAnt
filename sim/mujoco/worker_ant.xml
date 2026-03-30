@@ -1,6 +1,6 @@
-<!-- AstraAnt Worker Ant - MuJoCo Verification Model
-     6-legged hexapod with 2 mandible arms
-     Dimensions from configs/ants/worker.yaml
+<!-- AstraAnt Worker Ant - LEGACY 6-Leg Baseline Model
+     Kept for comparison tests. Primary design is now 8-leg
+     (worker_ant_8leg.xml). See leg_comparison.py for results.
      Total mass: 120g
      Leg DOF: 1 per leg (SG90 servo, 0.176 N*m stall)
      Mandible DOF: 1 per arm (SG51R servo, 0.098 N*m stall) -->

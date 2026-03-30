@@ -1,5 +1,5 @@
-<!-- AstraAnt Worker Ant - Grip Foot Pad MuJoCo Model
-     Universal hybrid foot pad: magnet + microspines + penetrator studs
+<!-- AstraAnt Worker Ant - LEGACY 6-Leg Grip Foot Model
+     Kept for comparison tests. Primary design is worker_ant_8leg.xml.
      Each foot: 8mm dia cylinder, 1.1g, multi-mechanism passive grip
      Tests grip-pull locomotion across all asteroid surface types.
      See catalog/parts/foot_pad.yaml for hardware specs. -->

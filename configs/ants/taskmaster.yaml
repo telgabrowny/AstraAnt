@@ -1,11 +1,12 @@
 # Taskmaster Ant — Squad leader with full sensor suite
-# Same body plan as worker (6 legs + 2 mandibles) but with ESP32-S3
+# Same body plan as worker (8 legs + 2 mandibles) but with ESP32-S3
 # and rich sensor loadout. Permanently equipped with sensor cluster —
 # does not swap tools. Commands a squad of ~20 workers.
+# Upgraded to 8 legs (same as worker) per MuJoCo verification.
 
 caste: taskmaster
 chassis:
-  type: hexapod_with_mandibles
+  type: octopod_with_mandibles    # 8 legs, matching worker upgrade
   base_mass_g: 25
   mass_budget_g: 400
 
@@ -16,12 +17,13 @@ compute:
   cost_usd: 5
 
 locomotion:
-  legs: 6
+  legs: 8                          # 4 pairs (upgraded from 6, same as worker)
   leg_dof: 1
   part_id: sg90_servo
   per_unit_mass_g: 9
   per_unit_power_mw: 600
   per_unit_cost_usd: 3
+  gait: alternating_quadruplet     # Group A: 0,3,4,7 / Group B: 1,2,5,6
 
 mandibles:
   count: 2
@@ -130,4 +132,4 @@ notes: |
   - Anomaly detection (monitors for unusual patterns)
   - Mothership communication (wired backbone relay)
 
-  Servo count: 6 leg + 2 mandible = 8 total (same as worker)
+  Servo count: 8 leg + 2 mandible = 10 total (same as worker)

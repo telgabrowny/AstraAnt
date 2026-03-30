@@ -1,7 +1,6 @@
-<!-- AstraAnt Surface Ant - MuJoCo Model
-     Vacuum-rated exterior specialist. Aluminum chassis, Maxon actuators.
-     6 legs (currently), 430g, operates on raw asteroid surface.
-     Much more powerful servos (1.0 N*m vs 0.176 N*m for SG90).
+<!-- AstraAnt Surface Ant - LEGACY 6-Leg Model
+     Kept for comparison tests. Primary design is surface_ant_8leg.xml.
+     MuJoCo sim showed only 2x grip margin with 6 legs (insufficient).
      Dims from configs/ants/surface_ant.yaml -->
 
 <mujoco model="astraant_surface_ant">

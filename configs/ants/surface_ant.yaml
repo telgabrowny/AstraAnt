@@ -1,7 +1,9 @@
 # Surface Ant (Super Ant) — Hardened exterior operations specialist
-# Same 6+2 body plan but built with vacuum-rated materials throughout.
+# Same 8+2 body plan but built with vacuum-rated materials throughout.
 # Handles all surface and space operations: cargo staging, mothership
-# maintenance, return vehicle loading, and end-of-life guidance duty.
+# maintenance, return vehicle loading, tethered landing, and guidance duty.
+# Upgraded to 8 legs per MuJoCo sim: 6-leg had only 2x grip margin,
+# 8-leg has 7x margin. Critical for $1500 asset on exposed surface.
 
 caste: surface_ant
 chassis:
@@ -18,12 +20,17 @@ compute:
   cost_usd: 5
 
 locomotion:
-  legs: 6
+  legs: 8                          # 4 pairs (upgraded from 6 per MuJoCo sim)
   leg_dof: 1
   part_id: vacuum_actuator_maxon   # Vacuum-rated brushless — no grease outgassing
   per_unit_mass_g: 35
   per_unit_power_mw: 800
   per_unit_cost_usd: 150
+  gait: alternating_quadruplet
+  rationale: >
+    MuJoCo sim showed 6-leg surface ant had only 2x grip margin (0.1 N/foot
+    needed, 0.2 N provided). 8-leg cuts requirement to 0.029 N/foot = 7x margin.
+    +$300 for 2 extra Maxon actuators on a $1500 ant is trivial insurance.
 
 mandibles:
   count: 2
