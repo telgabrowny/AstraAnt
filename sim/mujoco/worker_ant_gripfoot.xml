@@ -1,0 +1,192 @@
+<!-- AstraAnt Worker Ant - Grip Foot Pad MuJoCo Model
+     Universal hybrid foot pad: magnet + microspines + penetrator studs
+     Each foot: 8mm dia cylinder, 1.1g, multi-mechanism passive grip
+     Tests grip-pull locomotion across all asteroid surface types.
+     See catalog/parts/foot_pad.yaml for hardware specs. -->
+
+<mujoco model="astraant_worker_gripfoot">
+
+  <compiler angle="degree" coordinate="local"/>
+
+  <option timestep="0.001" gravity="0 0 -9.81">
+    <flag contact="enable"/>
+  </option>
+
+  <default>
+    <joint damping="0.001" armature="0.00001" limited="true"/>
+    <geom condim="3" friction="0.8 0.005 0.001" solref="0.02 1"/>
+  </default>
+
+  <asset>
+    <material name="body_orange" rgba="0.92 0.55 0.12 1"/>
+    <material name="abdomen_color" rgba="0.78 0.42 0.08 1"/>
+    <material name="head_color" rgba="0.85 0.45 0.10 1"/>
+    <material name="leg_brown" rgba="0.60 0.30 0.05 1"/>
+    <material name="foot_pad_mat" rgba="0.20 0.20 0.22 1"/>
+    <material name="mandible_color" rgba="0.70 0.35 0.05 1"/>
+    <material name="regolith" rgba="0.42 0.40 0.36 1"/>
+  </asset>
+
+  <worldbody>
+    <light diffuse="0.9 0.9 0.85" dir="-0.2 -0.3 -1" pos="0.2 0.3 0.5"/>
+    <light diffuse="0.3 0.3 0.35" dir="0.5 0.5 -0.3" pos="-0.3 -0.3 0.3"/>
+
+    <!-- Asteroid surface. Friction set at runtime per surface type:
+         C-type rubble: 0.4  |  S-type rubble: 0.5
+         S-type monolith: 0.7  |  M-type metallic: 0.6 -->
+    <geom name="ground" type="plane" size="0.5 0.5 0.01"
+          material="regolith" friction="0.5 0.01 0.001"/>
+
+    <!-- ============ TORSO ============ -->
+    <body name="torso" pos="0 0 0.045">
+      <freejoint name="root"/>
+      <camera name="track" pos="0 -0.25 0.12" xyaxes="1 0 0 0 0.5 1" mode="track"/>
+      <camera name="top" pos="0 0 0.3" xyaxes="1 0 0 0 1 0" mode="track"/>
+
+      <!-- Thorax: 55 x 35 x 20 mm (mass adjusted for lighter feet) -->
+      <geom name="thorax" type="box" size="0.0275 0.0175 0.01"
+            mass="0.0594" material="body_orange"/>
+
+      <!-- Abdomen: 45 x 30 x 18 mm -->
+      <geom name="abdomen" type="ellipsoid" size="0.0225 0.015 0.009"
+            pos="-0.040 0 0" mass="0.020" material="abdomen_color"/>
+
+      <!-- Head: 18 mm sphere -->
+      <geom name="head" type="sphere" size="0.009"
+            pos="0.035 0 0.005" mass="0.008" material="head_color"/>
+
+      <!-- ============ LEG 0: Front-Left (Group A) ============ -->
+      <body name="leg_0_FL" pos="0.018 0.0175 -0.005">
+        <joint name="j_leg_0" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_0" type="capsule"
+              fromto="0 0 0  0 0.0725 -0.035" size="0.003"
+              mass="0.003" material="leg_brown"/>
+        <body name="foot_0" pos="0 0.0725 -0.035">
+          <geom name="foot_0_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.0011" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6"
+                solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- ============ LEG 1: Front-Right (Group B) ============ -->
+      <body name="leg_1_FR" pos="0.018 -0.0175 -0.005">
+        <joint name="j_leg_1" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_1" type="capsule"
+              fromto="0 0 0  0 -0.0725 -0.035" size="0.003"
+              mass="0.003" material="leg_brown"/>
+        <body name="foot_1" pos="0 -0.0725 -0.035">
+          <geom name="foot_1_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.0011" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6"
+                solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- ============ LEG 2: Mid-Left (Group B) ============ -->
+      <body name="leg_2_ML" pos="0 0.0175 -0.005">
+        <joint name="j_leg_2" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_2" type="capsule"
+              fromto="0 0 0  0 0.0725 -0.035" size="0.003"
+              mass="0.003" material="leg_brown"/>
+        <body name="foot_2" pos="0 0.0725 -0.035">
+          <geom name="foot_2_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.0011" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6"
+                solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- ============ LEG 3: Mid-Right (Group A) ============ -->
+      <body name="leg_3_MR" pos="0 -0.0175 -0.005">
+        <joint name="j_leg_3" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_3" type="capsule"
+              fromto="0 0 0  0 -0.0725 -0.035" size="0.003"
+              mass="0.003" material="leg_brown"/>
+        <body name="foot_3" pos="0 -0.0725 -0.035">
+          <geom name="foot_3_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.0011" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6"
+                solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- ============ LEG 4: Rear-Left (Group A) ============ -->
+      <body name="leg_4_RL" pos="-0.018 0.0175 -0.005">
+        <joint name="j_leg_4" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_4" type="capsule"
+              fromto="0 0 0  0 0.0725 -0.035" size="0.003"
+              mass="0.003" material="leg_brown"/>
+        <body name="foot_4" pos="0 0.0725 -0.035">
+          <geom name="foot_4_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.0011" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6"
+                solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- ============ LEG 5: Rear-Right (Group B) ============ -->
+      <body name="leg_5_RR" pos="-0.018 -0.0175 -0.005">
+        <joint name="j_leg_5" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_5" type="capsule"
+              fromto="0 0 0  0 -0.0725 -0.035" size="0.003"
+              mass="0.003" material="leg_brown"/>
+        <body name="foot_5" pos="0 -0.0725 -0.035">
+          <geom name="foot_5_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.0011" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6"
+                solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- ============ LEFT MANDIBLE ============ -->
+      <body name="mandible_L" pos="0.035 0.007 0.005">
+        <joint name="j_mandible_L" type="hinge" axis="0 0 1" range="-30 30"/>
+        <geom name="mandible_L_arm" type="capsule"
+              fromto="0 0 0  0.035 0.008 0" size="0.002"
+              mass="0.003" material="mandible_color"/>
+        <geom name="mandible_L_tip" type="sphere" size="0.003"
+              pos="0.035 0.008 0" mass="0.001" material="foot_pad_mat"/>
+      </body>
+
+      <!-- ============ RIGHT MANDIBLE ============ -->
+      <body name="mandible_R" pos="0.035 -0.007 0.005">
+        <joint name="j_mandible_R" type="hinge" axis="0 0 -1" range="-30 30"/>
+        <geom name="mandible_R_arm" type="capsule"
+              fromto="0 0 0  0.035 -0.008 0" size="0.002"
+              mass="0.003" material="mandible_color"/>
+        <geom name="mandible_R_tip" type="sphere" size="0.003"
+              pos="0.035 -0.008 0" mass="0.001" material="foot_pad_mat"/>
+      </body>
+
+    </body>
+  </worldbody>
+
+  <!-- ============ ACTUATORS ============ -->
+  <actuator>
+    <position name="servo_leg_0" joint="j_leg_0" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.176 0.176"/>
+    <position name="servo_leg_1" joint="j_leg_1" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.176 0.176"/>
+    <position name="servo_leg_2" joint="j_leg_2" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.176 0.176"/>
+    <position name="servo_leg_3" joint="j_leg_3" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.176 0.176"/>
+    <position name="servo_leg_4" joint="j_leg_4" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.176 0.176"/>
+    <position name="servo_leg_5" joint="j_leg_5" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.176 0.176"/>
+    <position name="servo_mandible_L" joint="j_mandible_L" kp="3.0" kv="0.005"
+              ctrlrange="-30 30" forcerange="-0.098 0.098"/>
+    <position name="servo_mandible_R" joint="j_mandible_R" kp="3.0" kv="0.005"
+              ctrlrange="-30 30" forcerange="-0.098 0.098"/>
+  </actuator>
+
+  <sensor>
+    <framepos name="torso_pos" objtype="body" objname="torso"/>
+    <framequat name="torso_quat" objtype="body" objname="torso"/>
+    <framelinvel name="torso_linvel" objtype="body" objname="torso"/>
+    <subtreecom name="com_pos" body="torso"/>
+  </sensor>
+
+</mujoco>

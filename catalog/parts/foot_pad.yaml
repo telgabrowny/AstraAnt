@@ -1,0 +1,107 @@
+id: "foot_pad"
+name: "Universal Hybrid Grip Foot Pad"
+category: "locomotion"
+description: >
+  8mm diameter concentric foot pad with three passive grip mechanisms
+  for walking in microgravity across all asteroid surface types.
+  Layer 1: center neodymium magnet (metallic surfaces).
+  Layer 2: ring of 8 spring-steel microspines (rocky surfaces).
+  Layer 3: perimeter penetrator studs (loose regolith).
+  Derived from JPL LEMUR microspine technology (TRL 6-7) and
+  SpaceBok penetrator stud research (ETH Zurich).
+
+specs:
+  diameter_mm: 8
+  thickness_mm: 3
+  mass_g: 1.1
+  cost_usd: 0.30
+  frame_material: "PETG (3D printed)"
+
+  magnet_layer:
+    type: "N52 neodymium disc"
+    diameter_mm: 3
+    thickness_mm: 1.5
+    mass_g: 0.08
+    pull_force_on_steel_n: 1.5
+    effective_on: ["M-type metallic", "S-type iron-nickel grains"]
+    passive: true
+    note: "Force falls off as cube of distance. 10mm lift = negligible."
+
+  microspine_layer:
+    count: 8
+    material: "spring steel wire"
+    wire_diameter_mm: 0.3
+    spine_length_mm: 4
+    inward_angle_deg: 30
+    mass_per_spine_g: 0.019
+    total_mass_g: 0.15
+    grip_force_per_spine_n: 0.1
+    total_grip_on_rock_n: "0.2-2.0 (depends on surface roughness)"
+    effective_on: ["consolidated rock", "boulders", "metallic surfaces"]
+    passive: true
+    engagement: "foot pressure during stance loads spines into asperities"
+    disengagement: "10.8mm swing arc lift extracts spines (inward angle)"
+    heritage: "JPL LEMUR microspine grippers (TRL 6-7)"
+
+  penetrator_studs:
+    count: 4
+    material: "PETG (integral with frame)"
+    height_mm: 2
+    base_diameter_mm: 1.5
+    mass_g: 0.0
+    traction_improvement_pct: "22-66% on granular media"
+    effective_on: ["loose regolith", "gravel", "compacted dust"]
+    passive: true
+    heritage: "SpaceBok foot stud research (ETH Zurich)"
+
+grip_force_by_surface:
+  M_type_metallic:
+    asteroids: ["Psyche"]
+    primary_mechanism: "magnet"
+    expected_force_n: 1.5
+    safety_margin: "19x over 0.08 N minimum"
+  S_type_monolith:
+    asteroids: ["Eros"]
+    primary_mechanism: "microspines on bedrock"
+    expected_force_n: 0.8
+    safety_margin: "10x"
+  S_type_rubble:
+    asteroids: ["Itokawa", "Didymos"]
+    primary_mechanism: "microspines + partial magnetic + studs"
+    expected_force_n: 0.3
+    safety_margin: "3.8x"
+  C_type_rubble:
+    asteroids: ["Bennu", "Ryugu", "2008 EV5"]
+    primary_mechanism: "microspines on boulders + studs in regolith"
+    expected_force_n: 0.2
+    safety_margin: "2.5x"
+
+per_ant:
+  quantity: 6
+  total_mass_g: 6.6
+  total_cost_usd: 1.80
+
+sourcing:
+  suppliers:
+    - name: "In-house assembly"
+      url: ""
+      part_number: "FOOT-PAD-8MM"
+      price_usd: 0.30
+      date_checked: "2026-03-29"
+      note: "3D printed PETG frame + N52 magnet (Amazon $0.15) + music wire (hobby, $0.10)"
+  price_history:
+    - date: "2026-03-29"
+      price_usd: 0.30
+      source: "BOM estimate"
+
+notes: |
+  Biological validation: Stanford ISS "Ants in Space" experiment (2014)
+  showed real ants use dual-mechanism grip (tarsal claws + adhesive pads)
+  producing 3.1x body weight in friction. Combined system outperforms
+  either mechanism alone (synergistic, not additive). Our three-layer
+  hybrid follows the same principle at the robot scale.
+
+  The foot pad is permanently attached to each leg tip. Unlike the
+  modular tool head system (magnetic clip mount on mandibles), the
+  foot pads are fixed -- they must work on every surface the ant
+  encounters without swapping.

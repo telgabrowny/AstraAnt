@@ -1,13 +1,15 @@
-// AstraAnt Worker Chassis -- 6 Legs + 2 Mandible Arms
+// AstraAnt Worker Chassis -- 8 Legs + 2 Mandible Arms
 // 3D printable body frame for the universal worker ant.
 // Designed for SG90 servos (legs) and SG51R micro servos (mandibles).
+// 8-leg config verified by MuJoCo sim: 50% less grip needed vs 6-leg.
 //
 // After printing:
-//   1. Press-fit SG90 servos into leg sockets
+//   1. Press-fit SG90 servos into 8 leg sockets
 //   2. Press-fit SG51R servos into mandible sockets
 //   3. Route wires through internal channels
 //   4. Mount RP2040 Pico on the electronics bay
 //   5. Clip magnetic tool mount between mandible tips
+//   6. Press-fit foot pads onto each leg tip
 //
 // Print material: PETG recommended (heat/impact resistant)
 // Print time: ~3-4 hours
@@ -37,10 +39,15 @@ sg51_length = 16;
 sg51_width = 8;
 sg51_height = 12;
 
-// Leg geometry
-leg_socket_spacing = 18;   // Distance between leg pairs along body
+// Leg geometry (8 legs = 4 pairs)
+leg_socket_spacing = 12;   // Distance between leg pairs along body (was 18 for 3 pairs)
 leg_socket_angle = 30;     // Angle of servo mount from horizontal
-n_leg_pairs = 3;
+n_leg_pairs = 4;           // 8 legs total (was 3 pairs / 6 legs)
+
+// Abdomen grip socket (for ant-to-ant chaining)
+grip_groove_width = 3;     // Mandible-width channels on rear of abdomen
+grip_groove_depth = 1.5;   // Same profile as tool head mount grooves
+grip_groove_spacing = 10;  // Distance between the two grooves
 
 // Mandible geometry
 mandible_length = 35;
