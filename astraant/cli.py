@@ -852,5 +852,33 @@ def sousvide(years: int, customers: int, output: str):
         click.echo(f"\nReport saved to {output}")
 
 
+# -- Nautilus mechanical simulation ----------------------------------------
+
+@main.command("nautilus-mech")
+@click.option("--cycles", default=10, help="Number of asteroid processing cycles")
+@click.option("--diameter", default=10, help="Starting asteroid diameter (m)")
+@click.option("--current", default=2000, help="Electrodeposition current (A)")
+@click.option("--growth", default=1.2, help="Chamber growth factor per generation")
+@click.option("--verbose", is_flag=True, help="Show hourly detail")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def nautilus_mech(cycles, diameter, current, growth, verbose, output):
+    """Simulate nautilus station mechanical growth (multi-physics)."""
+    from .nautilus_mechanics import run_multi_cycle, format_report
+
+    click.echo(f"Nautilus mechanical sim: {cycles} cycles, {diameter}m asteroids, {current}A...")
+    state, summaries, events = run_multi_cycle(
+        cycles=cycles, initial_diameter_m=diameter,
+        current_amps=current, growth_factor=growth, verbose=verbose)
+
+    config = {"cycles": cycles, "diameter": diameter,
+              "current": current, "growth": growth}
+    report = format_report(state, summaries, events, config)
+    click.echo(report)
+
+    if output:
+        Path(output).write_text(report)
+        click.echo(f"\nReport saved to {output}")
+
+
 if __name__ == "__main__":
     main()
