@@ -575,18 +575,44 @@ pac_man:
         source: "asteroid (FREE, unlimited)"
         from_earth: false
 
-      airlock_relocation:
+      scoop_lid_capture:
         description: >
-          The airlock (Bag B + tube + gate) is a permanent modular unit.
-          Asteroids are always 10m, so the door is always ~14m wide.
-          When a chamber is retired, unbolt the airlock flange from the
-          old wall, cut a port in the new outer wall, bolt it on.
-          Same airlock, different wall. Like a loading dock door.
-        airlock_size_m: 14           # 10m asteroid + clearance
-        relocation_time_days: 3-5
-        frequency: "every ~3 years (when active chamber is retired)"
-        reusable: true
-        note: "4 surface ants handle the relocation"
+          Each new chamber is built as an open-sided shell (U-shape).
+          The tug pushes the asteroid into the open side. Surface ants
+          weld a pre-fabricated iron lid shut. Solution from the previous
+          chamber is pumped in. No separate airlock needed -- the new
+          chamber IS the capture mechanism.
+        mechanism:
+          step_1: "Build new chamber walls as U-shape (open on one side), glass-lined"
+          step_2: "Pre-fabricate lid plate (iron + glass inner face)"
+          step_3: "Tug pushes asteroid into U-shape (can be bigger or multiple!)"
+          step_4: "Surface ants slide lid into place, weld seams shut"
+          step_5: "Gasket seal around rim (2 kg silicone)"
+          step_6: "Open transfer port to previous chamber"
+          step_7: "Pump acid + bacteria solution from old to new chamber"
+          step_8: "Solar concentrators warm the new chamber"
+          step_9: "Processing begins. Old chamber drained, sealed, becomes storage."
+        advantages:
+          - "No separate airlock bag (saves 47 kg membrane)"
+          - "Can capture BIGGER asteroids each generation (chamber grows)"
+          - "Can batch multiple smaller asteroids in one load"
+          - "Simpler than airlock+tube+gate (one wall, one weld)"
+          - "Funnel shape guides asteroid even with imprecise tug aim"
+        exponential_growth:
+          description: >
+            Each generation produces more iron, enabling bigger walls,
+            capturing bigger asteroids, producing even more iron.
+            This is the von Neumann growth pattern.
+          gen_1: {year: "0-3", chamber_m: 10, asteroid_m: 10, mass_t: 628, iron_out_t: 107}
+          gen_2: {year: "3-6", chamber_m: 12, asteroid_m: 12, mass_t: 1085, iron_out_t: 184}
+          gen_3: {year: "6-9", chamber_m: 15, asteroid_m: 15, mass_t: 2121, iron_out_t: 360}
+          gen_4: {year: "9-12", chamber_m: 18, asteroid_m: 18, mass_t: 3663, iron_out_t: 623}
+          gen_5: {year: "12-15", chamber_m: 22, asteroid_m: 22, mass_t: 6683, iron_out_t: 1136}
+          gen_6: {year: "15-18", chamber_m: 26, asteroid_m: 26, mass_t: 11037, iron_out_t: 1876}
+          note: >
+            By generation 6 (year 18), processing 11,000 tonnes per cycle
+            vs 628 tonnes at start. 17x growth. Water ratio stays constant
+            (~1.6% consumed by tugs) so scaling is self-funding.
 
       chamber_lifecycle:
         born: >

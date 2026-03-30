@@ -66,7 +66,8 @@ VALUES = {
 CHAMBER_LIFESPAN_YEARS = 3          # Each active chamber lasts ~3 years
 GLASS_LINING_SINTER_DAYS = 17       # 400 m^2 at 1 m^2/hr
 GASKET_KG_PER_SEAL = 2              # Silicone for bulkhead seal
-AIRLOCK_RELOCATION_DAYS = 5
+CHAMBER_GROWTH_FACTOR = 1.2         # Each chamber 20% bigger than previous
+BASE_ASTEROID_DIAMETER_M = 10       # Starting asteroid size
 
 # Retired chamber specializations (assigned in order)
 CHAMBER_ROLES = [
@@ -126,16 +127,26 @@ class StationState:
         return self.time_hours / (24 * 365.25)
 
 
-def extract_metals_from_asteroid():
-    """Calculate metals extracted from one 10m C-type asteroid."""
-    mass = ASTEROID_MASS_KG
+def asteroid_mass_for_diameter(diameter_m):
+    """Mass of a spherical asteroid at 1200 kg/m^3 density."""
+    radius = diameter_m / 2
+    volume = (4 / 3) * math.pi * radius ** 3
+    return volume * 1200  # kg
+
+
+def extract_metals_from_asteroid(diameter_m=10):
+    """Calculate metals extracted from a C-type asteroid of given diameter."""
+    mass = asteroid_mass_for_diameter(diameter_m)
+    water = mass * 0.08  # 8% water
     return {
         "iron_kg": mass * ASTEROID_IRON_PPM / 1e6 * SULFIDE_EFFICIENCY,
         "nickel_kg": mass * ASTEROID_NICKEL_PPM / 1e6 * SULFIDE_EFFICIENCY,
         "copper_kg": mass * ASTEROID_COPPER_PPM / 1e6 * SULFIDE_EFFICIENCY,
         "cobalt_kg": mass * ASTEROID_COBALT_PPM / 1e6 * SULFIDE_EFFICIENCY,
         "pgm_kg": mass * ASTEROID_PGM_PPM / 1e6 * PGM_EFFICIENCY,
-        "water_kg": ASTEROID_WATER_KG,
+        "water_kg": water,
+        "diameter_m": diameter_m,
+        "mass_tonnes": mass / 1000,
     }
 
 
@@ -147,7 +158,8 @@ def run_simulation(years=20, customers_per_year=4, verbose=True):
     state = StationState()
     events = []
     yearly_snapshots = []
-    metals_per_asteroid = extract_metals_from_asteroid()
+    current_asteroid_diameter = BASE_ASTEROID_DIAMETER_M
+    metals_per_asteroid = extract_metals_from_asteroid(current_asteroid_diameter)
 
     dt_hours = 24.0  # 1-day time steps (fast enough for multi-year sim)
     total_hours = years * 365.25 * 24
@@ -184,21 +196,26 @@ def run_simulation(years=20, customers_per_year=4, verbose=True):
                 state.phase_hours_remaining = TUG_FETCH_HOURS
 
                 for metal, amount in metals_per_asteroid.items():
+                    if not hasattr(state, metal):
+                        continue  # Skip metadata keys like diameter_m, mass_tonnes
                     current = getattr(state, metal)
                     setattr(state, metal, current + amount)
 
                 state.asteroids_processed += 1
                 state.culture_generations += 1
-                state.water_kg -= TUG_WATER_PER_FETCH_KG
+                # Tug water scales with asteroid mass (~1.6% ratio)
+                tug_water = metals_per_asteroid.get("mass_tonnes", 628) * 1000 * 0.0013
+                state.water_kg -= tug_water
 
                 events.append({
                     "time_years": state.time_years,
                     "type": "extraction",
                     "message": (
-                        f"Asteroid #{state.asteroids_processed} complete: "
+                        f"Asteroid #{state.asteroids_processed} "
+                        f"({metals_per_asteroid.get('diameter_m', 10):.0f}m, "
+                        f"{metals_per_asteroid.get('mass_tonnes', 628):.0f}t): "
                         f"+{metals_per_asteroid['iron_kg']/1000:.0f}t Fe, "
-                        f"+{metals_per_asteroid['nickel_kg']:.0f} kg Ni, "
-                        f"+{metals_per_asteroid['copper_kg']:.1f} kg Cu"
+                        f"+{metals_per_asteroid['nickel_kg']:.0f} kg Ni"
                     )
                 })
 
@@ -259,6 +276,10 @@ def run_simulation(years=20, customers_per_year=4, verbose=True):
 
             state.active_chamber_number += 1
             state.active_chamber_age_hours = 0.0
+
+            # Scoop-lid growth: next chamber is bigger, captures bigger asteroids
+            current_asteroid_diameter *= CHAMBER_GROWTH_FACTOR
+            metals_per_asteroid = extract_metals_from_asteroid(current_asteroid_diameter)
 
         # --- Customer visits ---
         if state.time_hours >= next_customer_hours and state.asteroids_processed >= 2:
