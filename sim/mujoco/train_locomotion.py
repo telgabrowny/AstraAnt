@@ -39,8 +39,8 @@ OUTPUT_DIR = os.path.join(DIR, "training_output")
 POP_SIZE = 64                  # Perturbations per generation
 SIGMA = 0.02                   # Noise standard deviation
 LEARNING_RATE = 0.01           # ES learning rate
-NUM_GENERATIONS = 3000         # Total generations
-EVAL_STEPS = 300               # Control steps per evaluation (6 seconds)
+NUM_GENERATIONS = 10000        # Round 2: 3x more generations
+EVAL_STEPS = 500               # 10 seconds per eval (was 6)
 PHYSICS_STEPS = 10             # Substeps per control
 CONTROL_DT = 0.02
 
@@ -49,20 +49,23 @@ OBS_DIM = 34
 ACT_DIM = 8
 HIDDEN = 64
 
-# Reward (same as before)
-FWD_REWARD = 2.0
-ALIVE_BONUS = 0.05
-ENERGY_COST = 0.003
-LIFTOFF_COST = 10.0
-TILT_COST = 0.3
-JERK_COST = 0.005
+# Round 2 reward: STABILITY FIRST, speed second.
+# "Slow and steady wins the race" -- a bot that never flips is worth
+# infinitely more than one that's fast but tumbles.
+FWD_REWARD = 0.5               # Reduced from 2.0: forward is nice, not critical
+ALIVE_BONUS = 0.2              # Increased from 0.05: survival is #1 priority
+ENERGY_COST = 0.002            # Slightly lower: don't punish careful movement
+LIFTOFF_COST = 50.0            # 5x increase: flying off = mission failure
+TILT_COST = 2.0                # 7x increase: tipping is catastrophic
+JERK_COST = 0.01               # 2x increase: smooth = safe = servo longevity
+ANGVEL_COST = 0.3              # NEW: penalize spinning/wobbling
 
-# Domain randomization
+# Domain randomization -- heavier emphasis on hard conditions
 GRAVITY_LOG_MIN = math.log(5.8e-6)
 GRAVITY_LOG_MAX = math.log(0.06)
 FRICTION_MIN, FRICTION_MAX = 0.3, 0.8
 GRIP_MIN, GRIP_MAX = 0.08, 0.30
-CURRICULUM_WARMUP = 0.25
+CURRICULUM_WARMUP = 0.15       # Shorter warmup: get to hard stuff sooner
 
 FOOT_IDS = [3, 5, 7, 9, 11, 13, 15, 17]
 CHECKPOINT_INTERVAL = 300
@@ -166,12 +169,16 @@ def evaluate_policy(flat_params, mj_model, gravity, friction, grip,
         torque_sq = float(np.sum(data.qfrc_actuator[6:14]**2))
         jerk = float(np.sum((action - prev_action)**2))
 
+        # Angular velocity penalty (wobbling = bad)
+        angvel_sq = float(np.sum(data.qvel[3:6]**2))
+
         reward = (FWD_REWARD * fwd_vel
                   + ALIVE_BONUS
                   - ENERGY_COST * torque_sq
                   - LIFTOFF_COST * max(0, body_z - 0.07)
                   - TILT_COST * tilt
-                  - JERK_COST * jerk)
+                  - JERK_COST * jerk
+                  - ANGVEL_COST * angvel_sq)
         total_reward += reward
         prev_action = action
 
@@ -206,8 +213,22 @@ def train():
     log("=" * 70)
 
     mj_model = mujoco.MjModel.from_xml_path(MODEL_PATH)
-    flat_params = init_params()
     _, param_count = make_policy_shape()
+
+    # Warm-start from round 1 if available
+    r1_path = os.path.join(OUTPUT_DIR, "best_policy.npz")
+    if os.path.exists(r1_path):
+        log("Warm-starting from round 1 best policy...")
+        r1_data = np.load(r1_path)
+        flat_params = r1_data["params"].copy()
+        # Archive round 1
+        r1_archive = os.path.join(OUTPUT_DIR, "round1_best_policy.npz")
+        if not os.path.exists(r1_archive):
+            np.savez(r1_archive, params=flat_params)
+            log(f"  Round 1 archived to {r1_archive}")
+    else:
+        log("Cold start (no previous policy found)")
+        flat_params = init_params()
 
     log(f"Policy params: {param_count:,} ({param_count * 4 / 1024:.1f} KB)")
     log(f"Population: {POP_SIZE}, Generations: {NUM_GENERATIONS}")
