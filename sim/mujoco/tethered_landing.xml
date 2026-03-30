@@ -1,0 +1,142 @@
+<!-- AstraAnt Tethered Landing -- Ant-Guided Descent
+     4 surface ants rappel to surface first, anchor with microspines,
+     then winch the mothership down on powered tether/power cables.
+     Eliminates bounce risk entirely. Ants scout before committing. -->
+
+<mujoco model="astraant_tethered_landing">
+
+  <compiler angle="degree" coordinate="local"/>
+  <option timestep="0.002" gravity="0 0 -9.81">
+    <flag contact="enable"/>
+  </option>
+
+  <default>
+    <geom condim="4" friction="0.6 0.01 0.001"/>
+  </default>
+
+  <asset>
+    <material name="hull" rgba="0.72 0.74 0.72 1"/>
+    <material name="base_cone" rgba="0.60 0.62 0.60 1"/>
+    <material name="anchor_ant" rgba="0.75 0.78 0.75 1"/>
+    <material name="solar_blue" rgba="0.10 0.15 0.45 1"/>
+    <material name="regolith" rgba="0.42 0.40 0.36 1"/>
+    <material name="cable" rgba="0.9 0.9 0.2 0.8"/>
+  </asset>
+
+  <worldbody>
+    <light diffuse="0.9 0.9 0.85" dir="-0.2 -0.3 -1" pos="0 0 10"/>
+    <light diffuse="0.3 0.3 0.35" dir="0.5 0.5 -0.3" pos="-5 -5 5"/>
+
+    <!-- Asteroid surface -->
+    <geom name="ground" type="plane" size="20 20 0.1"
+          material="regolith" friction="0.5 0.01 0.001"
+          solref="0.02 0.9" solimp="0.9 0.95 0.001"/>
+
+    <!-- === 4 ANCHOR ANTS (fixed to ground = pre-anchored) === -->
+    <!-- Positioned 1.0m out from landing center (wider than mothership) -->
+    <body name="anchor_ant_0" pos="1.0 0 0.06">
+      <geom name="ant_body_0" type="box" size="0.08 0.04 0.03"
+            mass="0.43" material="anchor_ant"
+            friction="5.0 0.02 0.005"/>
+      <site name="anchor_site_0" pos="0 0 0.03"/>
+    </body>
+
+    <body name="anchor_ant_1" pos="0 1.0 0.06">
+      <geom name="ant_body_1" type="box" size="0.08 0.04 0.03"
+            mass="0.43" material="anchor_ant"
+            friction="5.0 0.02 0.005"/>
+      <site name="anchor_site_1" pos="0 0 0.03"/>
+    </body>
+
+    <body name="anchor_ant_2" pos="-1.0 0 0.06">
+      <geom name="ant_body_2" type="box" size="0.08 0.04 0.03"
+            mass="0.43" material="anchor_ant"
+            friction="5.0 0.02 0.005"/>
+      <site name="anchor_site_2" pos="0 0 0.03"/>
+    </body>
+
+    <body name="anchor_ant_3" pos="0 -1.0 0.06">
+      <geom name="ant_body_3" type="box" size="0.08 0.04 0.03"
+            mass="0.43" material="anchor_ant"
+            friction="5.0 0.02 0.005"/>
+      <site name="anchor_site_3" pos="0 0 0.03"/>
+    </body>
+
+    <!-- === MOTHERSHIP (starts 3m above surface) === -->
+    <body name="mothership" pos="0 0 4">
+      <freejoint name="root"/>
+      <camera name="side" pos="6 0 3" xyaxes="0 1 0 -0.3 0 1" mode="track"/>
+
+      <!-- Hull -->
+      <geom name="hull" type="cylinder" size="0.8 1.6"
+            pos="0 0 1.2" mass="650" material="hull"/>
+
+      <!-- Conical base -->
+      <geom name="base_upper" type="cylinder" size="0.75 0.15"
+            pos="0 0 -0.25" mass="60" material="base_cone"/>
+      <geom name="base_mid" type="cylinder" size="0.55 0.15"
+            pos="0 0 -0.55" mass="40" material="base_cone"/>
+      <geom name="base_lower" type="cylinder" size="0.35 0.1"
+            pos="0 0 -0.75" mass="30" material="base_cone"/>
+      <geom name="base_plate" type="cylinder" size="0.40 0.02"
+            pos="0 0 -0.87" mass="20" friction="0.8 0.02 0.005"/>
+
+      <!-- Solar panels -->
+      <geom name="solar_L" type="box" size="1.5 0.5 0.005"
+            pos="0 1.3 2.0" mass="15" material="solar_blue"/>
+      <geom name="solar_R" type="box" size="1.5 0.5 0.005"
+            pos="0 -1.3 2.0" mass="15" material="solar_blue"/>
+
+      <!-- Cable attachment sites (at base ring, matching anchor positions) -->
+      <site name="ship_attach_0" pos="0.35 0 -0.89"/>
+      <site name="ship_attach_1" pos="0 0.35 -0.89"/>
+      <site name="ship_attach_2" pos="-0.35 0 -0.89"/>
+      <site name="ship_attach_3" pos="0 -0.35 -0.89"/>
+    </body>
+  </worldbody>
+
+  <!-- === TETHER CABLES (spatial tendons) === -->
+  <!-- Steel cable + copper power conductors in one sheath -->
+  <tendon>
+    <spatial name="cable_0" width="0.003" stiffness="50000" damping="500"
+             limited="true" range="0 10">
+      <site site="ship_attach_0"/>
+      <site site="anchor_site_0"/>
+    </spatial>
+    <spatial name="cable_1" width="0.003" stiffness="50000" damping="500"
+             limited="true" range="0 10">
+      <site site="ship_attach_1"/>
+      <site site="anchor_site_1"/>
+    </spatial>
+    <spatial name="cable_2" width="0.003" stiffness="50000" damping="500"
+             limited="true" range="0 10">
+      <site site="ship_attach_2"/>
+      <site site="anchor_site_2"/>
+    </spatial>
+    <spatial name="cable_3" width="0.003" stiffness="50000" damping="500"
+             limited="true" range="0 10">
+      <site site="ship_attach_3"/>
+      <site site="anchor_site_3"/>
+    </spatial>
+  </tendon>
+
+  <!-- === WINCH ACTUATORS === -->
+  <!-- Motor actuators: positive ctrl = tension (pulls endpoints together) -->
+  <actuator>
+    <motor name="winch_0" tendon="cable_0" ctrlrange="0 200" forcerange="0 200"/>
+    <motor name="winch_1" tendon="cable_1" ctrlrange="0 200" forcerange="0 200"/>
+    <motor name="winch_2" tendon="cable_2" ctrlrange="0 200" forcerange="0 200"/>
+    <motor name="winch_3" tendon="cable_3" ctrlrange="0 200" forcerange="0 200"/>
+  </actuator>
+
+  <sensor>
+    <framepos name="ship_pos" objtype="body" objname="mothership"/>
+    <framequat name="ship_quat" objtype="body" objname="mothership"/>
+    <framelinvel name="ship_vel" objtype="body" objname="mothership"/>
+    <tendonpos name="cable_0_len" tendon="cable_0"/>
+    <tendonpos name="cable_1_len" tendon="cable_1"/>
+    <tendonpos name="cable_2_len" tendon="cable_2"/>
+    <tendonpos name="cable_3_len" tendon="cable_3"/>
+  </sensor>
+
+</mujoco>
