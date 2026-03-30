@@ -189,6 +189,118 @@ versus_tunnel:
     is the industrial-scale follow-on for 500m+ bodies once the
     technology and stockpile justify a Starship-class investment.
 
+deployment_mechanism:
+  description: "Parachute-fold + drawstring garbage bag"
+  concept: >
+    The membrane is pre-sewn as an oversized hemisphere with a
+    drawstring mouth (like a garbage bag). Folded like a parachute
+    in a 60cm canister on the mothership. Deploys in 2-4 hours.
+  sequence:
+    1: "Mothership approaches asteroid from one side (50m out)"
+    2: "Spring mortar ejects folded membrane toward asteroid"
+    3: "Gas puffs at rim pop the bag open (like an airbag)"
+    4: "Open mouth drifts over asteroid (no air resistance in vacuum)"
+    5: "4 surface ants guide edges around far side, tuck snags"
+    6: "Kevlar drawstring cinches mouth closed (ant-operated winch)"
+    7: "Mothership docks into pre-sewn gasket port at bag apex"
+    8: "Inflate through mothership port to 50 kPa"
+  bag_specs:
+    shape: "hemisphere + cylindrical skirt with drawstring mouth"
+    diameter_m: 14                   # Oversized for 10m rock (slack for irregularities)
+    membrane_area_m2: 400
+    drawstring: "Kevlar cord, 50m circumference, 5 kN rated"
+    closure: "ant-operated winch or spring-loaded ratchet"
+    gasket_port: "pre-sewn at bag apex, standard mothership interface"
+    fold_pattern: "z-fold in 60cm diameter canister"
+  heritage:
+    - "TransAstra asteroid capture bag (ISS tested Oct 2025, 10m under NASA contract)"
+    - "JWST sunshield (21m x 14m multilayer membrane, deployed flawlessly)"
+    - "Solar sail deployments (JAXA IKAROS, Planetary Society LightSail)"
+  deployment_time_hours: 2-4
+  note: >
+    The drawstring is the key insight. You don't gift-wrap an
+    irregular shape. You throw a big bag over it and pull the
+    bottom shut. Like putting a basketball in a grocery bag.
+
+reusability:
+  description: >
+    After the first asteroid, the mothership is essentially
+    self-sustaining. The previous asteroid's outputs become
+    the next asteroid's inputs. Only xenon and nitrogen deplete.
+
+  reusable_hardware:
+    - "Membrane (5-10 deployments before replacement)"
+    - "Solar concentrators (permanent)"
+    - "Electrolysis, pumps, electro-winning cell (permanent)"
+    - "Compute, comms, power, propulsion hardware (permanent)"
+    - "Surface ants (permanent with maintenance)"
+
+  self_replenishing_consumables:
+    bacteria:
+      status: "SELF-REPLICATING"
+      strategy: >
+        Save a culture sample from each asteroid. Reseed the next.
+        After each asteroid, the bacteria are naturally selected
+        for real asteroid conditions (directed evolution for free).
+        After 5 asteroids, the culture is space-optimized.
+    water:
+      status: "ACCUMULATES"
+      strategy: >
+        Each C-type asteroid produces 50 tonnes of water.
+        Keep 10-20 tonnes in reserve. Use it on the NEXT target,
+        even if that target has no water (S-type for PGMs).
+        The supply chain builds on itself.
+    sulfuric_acid:
+      status: "BACTERIA PRODUCE IT"
+      note: "A. thiooxidans generates H2SO4 as its metabolic product"
+    iron_nutrients:
+      status: "MINING PRODUCES IT"
+      note: "Dissolved iron from extraction IS the nutrient for A. ferrooxidans"
+    cathode_blanks:
+      status: "SELF-REPLACEABLE"
+      note: "First set from Earth. Subsequent sets cut from extracted nickel."
+
+  depleting_consumables:
+    xenon:
+      per_hop_kg: 15
+      initial_kg: 50
+      hops_before_resupply: 3-4
+      resupply_cost: "$150K (CubeSat rideshare with 50 kg Xe)"
+    nitrogen:
+      per_asteroid_loss_kg: 12       # 20% loss, 80% recovered
+      initial_kg: 89
+      asteroids_before_depletion: 7
+    membrane:
+      rated_deployments: "5-10"
+      replacement_cost: "$300K (new membrane shipped via rideshare)"
+
+  supply_chain_progression:
+    asteroid_1:
+      type: "C-type (water-rich)"
+      inputs_from_earth: "everything (first mission)"
+      outputs: "metals + 50 tonnes water + adapted bacteria + excess acid"
+      keep: "10 tonnes water, bacteria sample, acid, nutrients"
+    asteroid_2:
+      type: "S-type (high PGMs, no water)"
+      inputs_from_earth: "nothing new"
+      inputs_from_asteroid_1: "water, bacteria, acid"
+      outputs: "PGMs + nickel + doubly-adapted bacteria"
+    asteroid_3:
+      type: "C-type (replenish water)"
+      inputs: "bacteria adapted to BOTH C and S type surfaces"
+      outputs: "fresh water supply + metals + even better bacteria"
+    note: >
+      Each mission starts with MORE resources than the last.
+      C-types provide water + base metals.
+      S-types provide PGMs + nickel (using C-type water).
+      Bacteria improve with each generation (directed evolution).
+
+  cost_per_asteroid_after_first:
+    xenon_transit: "$150K per resupply (every 3-4 asteroids)"
+    membrane_replacement: "$300K (every 5-10 asteroids)"
+    everything_else: "$0 (self-replenishing)"
+    effective_cost: "~$50-100K per asteroid after initial $7-15M investment"
+
 notes: |
   The Sous Vide approach inverts the problem. Instead of building
   infrastructure INSIDE the asteroid (tunnels, rails, seals), it builds
@@ -201,6 +313,21 @@ notes: |
   The minerals are already exposed (57% porosity = massive surface area).
   We just add warmth, bacteria, and time.
 
+  REUSABILITY is the killer feature. After the first asteroid:
+  - Bacteria self-replicate (save a sample, reseed next target)
+  - Water accumulates (50 tonnes per C-type, carry to next)
+  - Acid self-generates (bacteria produce it)
+  - Nutrients self-produce (mining output IS the nutrient)
+  - Only xenon and nitrogen deplete (cheap to resupply)
+
+  The supply chain builds on itself. Each asteroid makes the next
+  one easier. C-types provide water for S-type campaigns. Bacteria
+  get better at asteroid mining with each generation. The membrane
+  hops between targets like a reusable space factory.
+
   This could be the Phase 0 mission: prove bioleaching works on real
   asteroid material, build a metal stockpile at a convenient orbit,
   and pay for the Starship tunnel-mining mission with the profits.
+
+  Effective cost after initial investment: $50-100K per asteroid.
+  That's cheaper than most Earth-based mining operations.
