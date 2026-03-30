@@ -201,9 +201,11 @@ foot_pads:
   attachment: "press-fit to servo horn arm at leg tip"
   grip_layers:
     magnet:
-      type: "N52 neodymium disc 3mm"
-      force_on_steel_n: 1.5       # Primary grip on power rail steel foil
-      passive: true
+      status: "REMOVED -- metallic debris accumulation"
+      note: >
+        S-type regolith is 20-25% iron. Permanent magnets in feet would
+        accumulate metallic grains, burying microspines. Magnetic grip
+        for the steel rail is handled by the rail contact brush instead.
     microspines:
       count: 8
       material: "0.3mm spring steel wire"
@@ -214,8 +216,9 @@ foot_pads:
       height_mm: 2
       material: "PETG (integral with frame)"
       passive: true
-  primary_grip_surface: "steel-foil-backed tunnel power rail"
-  off_rail_grip: "microspines + studs (2 min supercap window)"
+  primary_grip_surface: "microspines + studs (self-sufficient all surfaces)"
+  rail_grip: "spring-loaded rail contact brush (magnetic via steel foil)"
+  off_rail_grip: "microspines + studs (15x margin, 2 min supercap window)"
   scad_file: "scad/foot_pad.scad"
 
 chain_formation:

@@ -1,21 +1,19 @@
-// AstraAnt Universal Hybrid Grip Foot Pad
-// 8mm disc with 3 passive grip layers:
-//   Center: N52 neodymium magnet (metallic surfaces)
+// AstraAnt Universal Grip Foot Pad (V2 -- no magnet)
+// 8mm disc with 2 passive grip layers:
 //   Ring: 8 spring-steel microspines (rocky surfaces)
 //   Perimeter: 4 penetrator studs (loose regolith)
 //
-// Print in PETG, press-fit magnet and spines after printing.
+// Magnets REMOVED: metallic debris on S-type asteroids (20-25% iron)
+// would accumulate and bury microspines. Rail magnetic grip handled
+// by the spring-loaded rail contact brush instead.
+//
+// Print in PETG, press-fit spines after printing.
 // Attaches to SG90 servo horn arm at leg tip.
 
 // --- Parameters (all in mm) ---
 pad_diameter = 8;
 pad_thickness = 3;
 pad_radius = pad_diameter / 2;
-
-// Magnet pocket (center)
-magnet_d = 3.2;           // 3mm magnet + 0.2mm press-fit clearance
-magnet_depth = 1.7;       // 1.5mm magnet + 0.2mm clearance
-magnet_from_bottom = 0.4; // thin floor below magnet
 
 // Microspine holes (ring of 8)
 spine_count = 8;
@@ -40,12 +38,6 @@ horn_bore_depth = 2.0;
 module foot_pad_body() {
     // Main disc
     cylinder(d=pad_diameter, h=pad_thickness, $fn=64);
-}
-
-module magnet_pocket() {
-    // Centered pocket from bottom face
-    translate([0, 0, magnet_from_bottom])
-        cylinder(d=magnet_d, h=magnet_depth, $fn=32);
 }
 
 module spine_hole(index) {
@@ -92,7 +84,6 @@ module foot_pad() {
     union() {
         difference() {
             foot_pad_body();
-            magnet_pocket();
             spine_holes();
             horn_attachment();
         }

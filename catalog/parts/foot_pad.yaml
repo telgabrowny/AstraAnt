@@ -13,19 +13,19 @@ description: >
 specs:
   diameter_mm: 8
   thickness_mm: 3
-  mass_g: 1.1
-  cost_usd: 0.30
+  mass_g: 1.0
+  cost_usd: 0.15
   frame_material: "PETG (3D printed)"
 
   magnet_layer:
-    type: "N52 neodymium disc"
-    diameter_mm: 3
-    thickness_mm: 1.5
-    mass_g: 0.08
-    pull_force_on_steel_n: 1.5
-    effective_on: ["M-type metallic", "S-type iron-nickel grains"]
-    passive: true
-    note: "Force falls off as cube of distance. 10mm lift = negligible."
+    status: "REMOVED -- metallic debris accumulation problem"
+    rationale: >
+      On S-type asteroids (20-25% iron by mass), permanent magnets in
+      the feet would vacuum up metallic grains with every step, burying
+      the microspines and killing grip on non-magnetic surfaces.
+      Microspines + studs alone provide 15x safety margin (8-leg worker).
+      Magnetic grip for the steel-backed power rail is handled by the
+      spring-loaded rail contact brush, not the feet.
 
   microspine_layer:
     count: 8
@@ -57,9 +57,9 @@ specs:
 grip_force_by_surface:
   M_type_metallic:
     asteroids: ["Psyche"]
-    primary_mechanism: "magnet"
-    expected_force_n: 1.5
-    safety_margin: "19x over 0.08 N minimum"
+    primary_mechanism: "microspines on rough metallic surface"
+    expected_force_n: 0.8
+    safety_margin: "10x (8-leg worker)"
   S_type_monolith:
     asteroids: ["Eros"]
     primary_mechanism: "microspines on bedrock"
@@ -67,32 +67,32 @@ grip_force_by_surface:
     safety_margin: "10x"
   S_type_rubble:
     asteroids: ["Itokawa", "Didymos"]
-    primary_mechanism: "microspines + partial magnetic + studs"
+    primary_mechanism: "microspines + studs in regolith"
     expected_force_n: 0.3
-    safety_margin: "3.8x"
+    safety_margin: "4x"
   C_type_rubble:
     asteroids: ["Bennu", "Ryugu", "2008 EV5"]
     primary_mechanism: "microspines on boulders + studs in regolith"
     expected_force_n: 0.2
-    safety_margin: "2.5x"
+    safety_margin: "15x (8-leg worker)"
 
 per_ant:
-  quantity: 6
-  total_mass_g: 6.6
-  total_cost_usd: 1.80
+  quantity: 8                      # 8-leg primary config
+  total_mass_g: 8.0
+  total_cost_usd: 1.20
 
 sourcing:
   suppliers:
     - name: "In-house assembly"
       url: ""
-      part_number: "FOOT-PAD-8MM"
-      price_usd: 0.30
+      part_number: "FOOT-PAD-8MM-V2"
+      price_usd: 0.15
       date_checked: "2026-03-29"
-      note: "3D printed PETG frame + N52 magnet (Amazon $0.15) + music wire (hobby, $0.10)"
+      note: "3D printed PETG frame + music wire spines (no magnet)"
   price_history:
     - date: "2026-03-29"
-      price_usd: 0.30
-      source: "BOM estimate"
+      price_usd: 0.15
+      source: "BOM estimate (magnet removed)"
 
 notes: |
   Biological validation: Stanford ISS "Ants in Space" experiment (2014)

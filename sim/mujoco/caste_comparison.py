@@ -62,6 +62,16 @@ CASTES = [
         "cost_usd": 1500,
         "lever_m": 0.110,
     },
+    {
+        "name": "Surface Ant (8-leg)",
+        "model": "surface_ant_8leg.xml",
+        "n_legs": 8,
+        "gait": "alternating_quad",
+        "stall_torque_Nm": 1.0,
+        "mass_kg": 0.430,
+        "cost_usd": 1800,
+        "lever_m": 0.110,
+    },
 ]
 
 
