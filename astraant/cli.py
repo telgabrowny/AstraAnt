@@ -958,5 +958,147 @@ def wire_factory(days: int, current: float, power: float, output: str):
         click.echo(f"\nReport saved to {output}")
 
 
+@main.command("relay-support")
+@click.option("--hours", default=720, help="Simulation duration in hours (default 720 = 30 days)")
+@click.option("--heater-watts", default=50.0, type=float, help="Nickel heater power (W)")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def relay_support(hours: int, heater_watts: float, output: str):
+    """Simulate relay life support (bimetallic thermostat + dashpot timer).
+
+    Models backup bacteria life support after ESP32 failure: nickel heater
+    controlled by a bimetallic thermostat keeps bioleaching solution at
+    28-33C.  Pure electromechanical -- no firmware, no radiation-sensitive parts.
+    """
+    from .relay_systems import simulate_life_support, format_life_support_report
+
+    click.echo(f"Relay life support sim: {hours} hours, {heater_watts:.0f}W heater...")
+    click.echo()
+
+    states = simulate_life_support(hours=hours, heater_watts=heater_watts)
+    report = format_life_support_report(states)
+    click.echo(report)
+
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
+@main.command("tug-sortie")
+@click.option("--distance", default=1000.0, type=float, help="Target distance in meters")
+@click.option("--rock-mass", default=5000.0, type=float, help="Asteroid rock mass to capture (kg)")
+@click.option("--water", default=500.0, type=float, help="Water available for electrolysis (kg)")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def tug_sortie(distance: float, rock_mass: float, water: float, output: str):
+    """Simulate a retrieval tug asteroid capture sortie.
+
+    Models a WAAM-built H2/O2 rocket tug doing undock -> burn -> coast ->
+    capture -> return.  Propellant from water electrolysis, powered by
+    Edison battery, navigated by sun sensor + gyro (no microprocessor).
+    """
+    from .relay_systems import simulate_tug_sortie, format_tug_sortie_report
+
+    click.echo(f"Tug sortie sim: {distance:.0f}m, {rock_mass:.0f}kg rock, {water:.0f}kg water...")
+    click.echo()
+
+    states = simulate_tug_sortie(
+        target_distance_m=distance,
+        rock_mass_kg=rock_mass,
+        water_available_kg=water,
+    )
+    report = format_tug_sortie_report(states)
+    click.echo(report)
+
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
+@main.command("giant-arm")
+@click.option("--length", default=10.0, type=float, help="Arm length in meters")
+@click.option("--payload", default=50.0, type=float, help="Tip payload in kg")
+@click.option("--survey", is_flag=True, help="Show all standard lengths (1-50m)")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def giant_arm(length: float, payload: float, survey: bool, output: str):
+    """Model a WAAM-built cantilever arm for exterior printing.
+
+    Computes natural frequency, vibration settling, max tip speed,
+    and effective print rate.  In microgravity inertia dominates.
+    """
+    from .giant_machines import (
+        design_giant_arm, survey_arms, format_arm_report, format_stress_limits,
+    )
+
+    if survey:
+        arms = survey_arms(payload_kg=payload)
+    else:
+        arms = [design_giant_arm(length_m=length, payload_kg=payload)]
+
+    report = format_arm_report(arms) + "\n\n" + format_stress_limits()
+    click.echo(report)
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
+@main.command("giant-spider")
+@click.option("--body-diameter", default=5.0, type=float, help="Body diameter in meters")
+@click.option("--survey", is_flag=True, help="Show all standard sizes (0.5-10m)")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def giant_spider(body_diameter: float, survey: bool, output: str):
+    """Model a WAAM-built 8-legged walker for exterior construction.
+
+    Computes joint torque, grip force, battery endurance, walking speed,
+    and cargo capacity.  All forces are inertial (microgravity).
+    """
+    from .giant_machines import (
+        design_giant_spider, survey_spiders, format_spider_report,
+    )
+
+    if survey:
+        spiders = survey_spiders()
+    else:
+        spiders = [design_giant_spider(body_diameter_m=body_diameter)]
+
+    report = format_spider_report(spiders)
+    click.echo(report)
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
+@main.command("relay-computer")
+@click.option("--task", default="autopilot",
+              help="Control task to size (thermostat/pump_sequencer/cam_arm_6axis/"
+                   "process_bioleach/autopilot/factory_plc/all)")
+@click.option("--relays", default=None, type=int, help="Override relay count")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def relay_computer(task: str, relays: int, output: str):
+    """Size a WAAM-built relay logic controller.
+
+    Models relay count, power draw, heat dissipation, radiator area,
+    physical volume, and mass for various control tasks.
+    """
+    from .giant_machines import (
+        design_relay_computer, survey_relay_computers, format_relay_report,
+        RELAY_TASKS,
+    )
+
+    if task == "all":
+        computers = survey_relay_computers()
+    elif relays is not None:
+        computers = [design_relay_computer(task=task, n_relays_override=relays)]
+    else:
+        if task not in RELAY_TASKS:
+            click.echo(f"Unknown task '{task}'. Options: {', '.join(RELAY_TASKS.keys())}, all")
+            return
+        computers = [design_relay_computer(task=task)]
+
+    report = format_relay_report(computers)
+    click.echo(report)
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
 if __name__ == "__main__":
     main()
