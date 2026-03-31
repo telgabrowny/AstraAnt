@@ -881,34 +881,36 @@ def nautilus_mech(cycles, diameter, current, growth, verbose, output):
 
 
 @main.command("bootstrap")
-@click.option("--steps", default=8, help="Max bootstrap generations")
-@click.option("--max-rock", default=50.0, help="Stop when rock exceeds this diameter (m)")
-@click.option("--shell-frac", default=0.65, help="Fraction of iron to next shell (0-1)")
-@click.option("--conc-frac", default=0.20, help="Fraction of iron to concentrators (0-1)")
-@click.option("--first-rock", default=2.0, help="Initial rock diameter (m)")
+@click.option("--mode", default="A", type=click.Choice(["A", "B", "C"]),
+              help="A=bag-only, B=bag+arm, C=cubesat seed")
+@click.option("--steps", default=15, help="Max bootstrap generations")
+@click.option("--max-rock", default=12.0, help="Stop when rock exceeds this diameter (m)")
+@click.option("--compare", is_flag=True, help="Run all 3 modes side by side")
 @click.option("--output", "-o", default=None, help="Save report to file")
-def bootstrap(steps, max_rock, shell_frac, conc_frac, first_rock, output):
-    """Simulate garbage-bag bootstrap from 11 kg seed to full station."""
+def bootstrap(mode, steps, max_rock, compare, output):
+    """Simulate garbage-bag bootstrap from seed to station.
+
+    Three modes: A = passive bag (10 kg), B = bag + robotic arm (13 kg),
+    C = full CubeSat seed (25 kg).
+    """
     from .bootstrap_sim import SeedPackage, run_bootstrap, format_report
 
-    seed = SeedPackage(first_rock_m=first_rock)
-    click.echo(f"Bootstrap sim: {seed.total_kg:.0f} kg seed, {first_rock}m first rock, "
-               f"max {steps} generations...")
-
-    generations = run_bootstrap(
-        seed=seed,
-        max_steps=steps,
-        max_rock_m=max_rock,
-        shell_fraction=shell_frac,
-        concentrator_fraction=conc_frac,
-    )
-
-    report = format_report(generations, seed)
-    click.echo(report)
-
-    if output:
-        Path(output).write_text(report, encoding="utf-8")
-        click.echo(f"\nReport saved to {output}")
+    if compare:
+        reports = []
+        for m in ["A", "B", "C"]:
+            seed = SeedPackage()
+            gens = run_bootstrap(mode=m, seed=None, max_steps=steps, max_rock_m=max_rock)
+            reports.append(format_report(gens, mode=m))
+        full = "\n\n".join(reports)
+        click.echo(full)
+        if output:
+            Path(output).write_text(full, encoding="utf-8")
+    else:
+        gens = run_bootstrap(mode=mode, seed=None, max_steps=steps, max_rock_m=max_rock)
+        report = format_report(gens, mode=mode)
+        click.echo(report)
+        if output:
+            Path(output).write_text(report, encoding="utf-8")
 
 
 if __name__ == "__main__":
