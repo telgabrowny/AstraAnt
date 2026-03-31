@@ -926,5 +926,37 @@ def seed_bom(output):
         click.echo(f"\nReport saved to {output}")
 
 
+@main.command("wire-factory")
+@click.option("--days", default=365, help="Simulation duration in days")
+@click.option("--current", default=544, type=float, help="Electro-winning current (A)")
+@click.option("--power", default=1.1, type=float, help="Initial electrical power (kW)")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def wire_factory(days: int, current: float, power: float, output: str):
+    """Simulate the electroforming-to-wire-to-WAAM construction pipeline.
+
+    Models iron wire production via Faraday's law, bobbin winding,
+    WAAM bot fleet scaling, and prioritized structure construction
+    (Stirling engine -> bots -> concentrators -> shell sections).
+    """
+    from .wire_factory import run_wire_factory, format_report
+
+    click.echo(f"Simulating wire factory for {days} days...")
+    click.echo(f"  Current: {current:.0f} A  |  Power: {power:.1f} kW")
+    click.echo()
+
+    snapshots = run_wire_factory(
+        duration_days=days,
+        initial_current_a=current,
+        initial_power_kw=power,
+    )
+
+    report = format_report(snapshots)
+    click.echo(report)
+
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
 if __name__ == "__main__":
     main()
