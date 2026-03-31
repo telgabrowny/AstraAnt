@@ -1,0 +1,264 @@
+<!-- AstraAnt WAAM Printer Bot - 8-Leg Walker with Print Head
+     411g total mass.  Same 8-leg layout as worker_ant_8leg.xml.
+     Payload: WAAM print head (front), wire bobbin (rear), ESP32 (top).
+     Walks on the OUTSIDE of a 1.15m iron sphere (Gen 1 shell).
+     Magnetic foot pads grip the iron surface.
+     Pairs at x: +0.016, +0.006, -0.006, -0.016 along thorax.
+
+     Mass budget (from printer_bot.scad BOM):
+       Chassis + wiring harness:  100g (iron + copper internals)
+       Head dome:                   5g
+       ESP32-S3:                    3g
+       8x leg + servo:            120g (5g iron rod + 9g SG90 + 1g misc each)
+       8x foot pad + magnet:       16g (2g each)
+       Print head assembly:        60g (housing + rollers + motor + nozzle)
+       Wire bobbin + wire coil:    52g (30g frame + 22g iron wire)
+       Power tether stub:          50g (5m copper cable, 3mm OD)
+       Tolerance:                   5g
+       TOTAL:                     411g  -->
+
+<mujoco model="astraant_printer_bot">
+
+  <compiler angle="degree" coordinate="local"/>
+
+  <option timestep="0.001" gravity="0 0 -6e-6">
+    <flag contact="enable"/>
+  </option>
+
+  <default>
+    <joint damping="0.001" armature="0.00001" limited="true"/>
+    <geom condim="3" friction="0.8 0.005 0.001" solref="0.02 1"/>
+  </default>
+
+  <asset>
+    <material name="iron_chassis" rgba="0.50 0.50 0.55 1"/>
+    <material name="iron_dark" rgba="0.40 0.40 0.44 1"/>
+    <material name="leg_iron" rgba="0.55 0.55 0.60 1"/>
+    <material name="foot_pad_mat" rgba="0.20 0.20 0.22 1"/>
+    <material name="pcb_green" rgba="0.10 0.50 0.15 1"/>
+    <material name="copper_nozzle" rgba="0.80 0.50 0.30 1"/>
+    <material name="silver_housing" rgba="0.70 0.70 0.72 1"/>
+    <material name="wire_spool" rgba="0.65 0.67 0.72 1"/>
+    <material name="tether_copper" rgba="0.70 0.45 0.20 1"/>
+    <material name="iron_shell" rgba="0.48 0.46 0.44 1"/>
+  </asset>
+
+  <worldbody>
+    <!-- Space lighting: sun from one side, ambient fill from others -->
+    <light diffuse="1.0 0.95 0.85" dir="-0.3 -0.2 -0.8" pos="1.0 0.5 2.0"/>
+    <light diffuse="0.4 0.4 0.5" dir="0.5 0.5 -0.3" pos="-1.0 -1.0 1.5"/>
+    <light diffuse="0.2 0.2 0.25" dir="0 0 1" pos="0 0 -2.0"/>
+
+    <!-- Iron shell sphere (Gen 1, 1.15m radius) -- bot walks on OUTSIDE -->
+    <geom name="iron_shell" type="sphere" size="1.15"
+          pos="0 0 0" material="iron_shell"
+          friction="0.6 0.01 0.001" condim="6"/>
+
+    <!-- Printer bot body, placed on top of the sphere.
+         Sphere surface at z=1.15.  Legs extend ~34mm below hip.
+         Hip at z = torso_z - 4mm.  Foot at hip_z - 30mm.
+         So torso_z = 1.15 + 0.034 + 0.004 = 1.188.
+         Small clearance for foot pad thickness (1.5mm): 1.190. -->
+    <body name="torso" pos="0 0 1.190">
+      <freejoint name="root"/>
+      <camera name="track" pos="0 -0.20 0.10" xyaxes="1 0 0 0 0.5 1" mode="track"/>
+      <camera name="overhead" pos="0 0 0.30" xyaxes="1 0 0 0 1 0" mode="track"/>
+
+      <!-- Thorax: 45 x 30 x 16mm WAAM-printed iron chassis + wiring harness -->
+      <geom name="thorax" type="box" size="0.0225 0.015 0.008"
+            mass="0.105" material="iron_chassis"/>
+
+      <!-- Head dome: 7mm radius sphere at front of thorax -->
+      <geom name="head_dome" type="sphere" size="0.007"
+            pos="0.027 0 0.003" mass="0.005" material="iron_chassis"/>
+
+      <!-- ESP32-S3 board on top of thorax (electronics bay) -->
+      <geom name="esp32" type="box" size="0.01275 0.009 0.0015"
+            pos="0.005 0 0.0095" mass="0.003" material="pcb_green"/>
+
+      <!-- ============================================ -->
+      <!-- WAAM PRINT HEAD (front-mounted, below head)  -->
+      <!-- Total assembly: 60g                          -->
+      <!-- ============================================ -->
+      <body name="print_head" pos="0.040 0 0.0">
+        <!-- Housing: 20 x 14 x 12mm iron box -->
+        <geom name="head_housing" type="box" size="0.010 0.007 0.006"
+              mass="0.040" material="silver_housing"/>
+
+        <!-- Feed roller left -->
+        <geom name="roller_L" type="cylinder" size="0.004 0.0025"
+              pos="0.002 0.003 0" euler="90 0 0"
+              mass="0.002" material="iron_dark"/>
+
+        <!-- Feed roller right -->
+        <geom name="roller_R" type="cylinder" size="0.004 0.0025"
+              pos="0.002 -0.003 0" euler="90 0 0"
+              mass="0.002" material="iron_dark"/>
+
+        <!-- Wire guide tube -->
+        <geom name="wire_guide" type="capsule"
+              fromto="0.010 0 0  0.018 0 0"
+              size="0.0015" mass="0.002" material="iron_dark"/>
+
+        <!-- Arc nozzle: 3mm dia x 15mm, extending forward -->
+        <geom name="arc_nozzle" type="cylinder" size="0.0015 0.0075"
+              pos="0.026 0 0" euler="0 90 0"
+              mass="0.006" material="copper_nozzle"/>
+
+        <!-- Feed motor (small cylinder on top) -->
+        <geom name="feed_motor" type="cylinder" size="0.005 0.006"
+              pos="0 0 0.010" mass="0.008" material="iron_dark"/>
+      </body>
+
+      <!-- ============================================ -->
+      <!-- WIRE BOBBIN (rear-mounted spool)             -->
+      <!-- Total: 52g (30g frame + 22g wire)            -->
+      <!-- ============================================ -->
+      <body name="wire_bobbin" pos="-0.034 0 0.003">
+        <!-- Spool cylinder: 15mm radius x 15mm wide, with wire -->
+        <geom name="bobbin_core" type="cylinder" size="0.015 0.0075"
+              euler="90 0 0" mass="0.042" material="wire_spool"/>
+
+        <!-- Flanges (visual detail) -->
+        <geom name="bobbin_flange_L" type="cylinder" size="0.015 0.001"
+              pos="0 0.0085 0" euler="90 0 0"
+              mass="0.005" material="iron_dark"/>
+        <geom name="bobbin_flange_R" type="cylinder" size="0.015 0.001"
+              pos="0 -0.0085 0" euler="90 0 0"
+              mass="0.005" material="iron_dark"/>
+      </body>
+
+      <!-- ============================================ -->
+      <!-- POWER TETHER (rear stub, 5m copper cable)    -->
+      <!-- 50g total cable mass in visual stub          -->
+      <!-- ============================================ -->
+      <geom name="tether_stub" type="capsule"
+            fromto="-0.0225 0 -0.003  -0.1225 0 -0.003"
+            size="0.0015" mass="0.050" material="tether_copper"/>
+
+      <!-- ============================================ -->
+      <!-- 8 LEGS: 4 pairs along thorax                 -->
+      <!-- Same layout as worker_ant_8leg.xml           -->
+      <!-- Pair positions: x = +0.016, +0.006, -0.006, -0.016 -->
+      <!-- Each leg: 15g (5g iron rod + 9g SG90 servo + 1g) -->
+      <!-- Each foot pad: 2g (iron disc + NdFeB magnet) -->
+      <!-- ============================================ -->
+
+      <!-- Pair 1: x=+0.016 (front) -->
+      <body name="leg_0_FL" pos="0.016 0.015 -0.004">
+        <joint name="j_leg_0" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_0" type="capsule" fromto="0 0 0  0 0.036 -0.030"
+              size="0.0015" mass="0.015" material="leg_iron"/>
+        <body name="foot_0" pos="0 0.036 -0.030">
+          <geom name="foot_0_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.002" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+      <body name="leg_1_FR" pos="0.016 -0.015 -0.004">
+        <joint name="j_leg_1" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_1" type="capsule" fromto="0 0 0  0 -0.036 -0.030"
+              size="0.0015" mass="0.015" material="leg_iron"/>
+        <body name="foot_1" pos="0 -0.036 -0.030">
+          <geom name="foot_1_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.002" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- Pair 2: x=+0.006 -->
+      <body name="leg_2_M1L" pos="0.006 0.015 -0.004">
+        <joint name="j_leg_2" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_2" type="capsule" fromto="0 0 0  0 0.036 -0.030"
+              size="0.0015" mass="0.015" material="leg_iron"/>
+        <body name="foot_2" pos="0 0.036 -0.030">
+          <geom name="foot_2_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.002" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+      <body name="leg_3_M1R" pos="0.006 -0.015 -0.004">
+        <joint name="j_leg_3" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_3" type="capsule" fromto="0 0 0  0 -0.036 -0.030"
+              size="0.0015" mass="0.015" material="leg_iron"/>
+        <body name="foot_3" pos="0 -0.036 -0.030">
+          <geom name="foot_3_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.002" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- Pair 3: x=-0.006 -->
+      <body name="leg_4_M2L" pos="-0.006 0.015 -0.004">
+        <joint name="j_leg_4" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_4" type="capsule" fromto="0 0 0  0 0.036 -0.030"
+              size="0.0015" mass="0.015" material="leg_iron"/>
+        <body name="foot_4" pos="0 0.036 -0.030">
+          <geom name="foot_4_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.002" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+      <body name="leg_5_M2R" pos="-0.006 -0.015 -0.004">
+        <joint name="j_leg_5" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_5" type="capsule" fromto="0 0 0  0 -0.036 -0.030"
+              size="0.0015" mass="0.015" material="leg_iron"/>
+        <body name="foot_5" pos="0 -0.036 -0.030">
+          <geom name="foot_5_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.002" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+
+      <!-- Pair 4: x=-0.016 (rear) -->
+      <body name="leg_6_RL" pos="-0.016 0.015 -0.004">
+        <joint name="j_leg_6" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_6" type="capsule" fromto="0 0 0  0 0.036 -0.030"
+              size="0.0015" mass="0.015" material="leg_iron"/>
+        <body name="foot_6" pos="0 0.036 -0.030">
+          <geom name="foot_6_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.002" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+      <body name="leg_7_RR" pos="-0.016 -0.015 -0.004">
+        <joint name="j_leg_7" type="hinge" axis="0 -1 0" range="-30 30"/>
+        <geom name="leg_7" type="capsule" fromto="0 0 0  0 -0.036 -0.030"
+              size="0.0015" mass="0.015" material="leg_iron"/>
+        <body name="foot_7" pos="0 -0.036 -0.030">
+          <geom name="foot_7_pad" type="cylinder" size="0.004 0.0015"
+                mass="0.002" material="foot_pad_mat"
+                friction="5.0 0.02 0.005" condim="6" solref="0.01 1"/>
+        </body>
+      </body>
+
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- SG90 servos: 0.018 N*m torque, 60 deg in 0.1s -->
+    <position name="servo_leg_0" joint="j_leg_0" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.018 0.018"/>
+    <position name="servo_leg_1" joint="j_leg_1" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.018 0.018"/>
+    <position name="servo_leg_2" joint="j_leg_2" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.018 0.018"/>
+    <position name="servo_leg_3" joint="j_leg_3" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.018 0.018"/>
+    <position name="servo_leg_4" joint="j_leg_4" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.018 0.018"/>
+    <position name="servo_leg_5" joint="j_leg_5" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.018 0.018"/>
+    <position name="servo_leg_6" joint="j_leg_6" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.018 0.018"/>
+    <position name="servo_leg_7" joint="j_leg_7" kp="5.0" kv="0.01"
+              ctrlrange="-30 30" forcerange="-0.018 0.018"/>
+  </actuator>
+
+  <sensor>
+    <framepos name="torso_pos" objtype="body" objname="torso"/>
+    <framequat name="torso_quat" objtype="body" objname="torso"/>
+    <framelinvel name="torso_linvel" objtype="body" objname="torso"/>
+  </sensor>
+
+</mujoco>

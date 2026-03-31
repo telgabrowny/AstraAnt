@@ -1,0 +1,500 @@
+<!-- AstraAnt Seed Mothership -- Full Articulated Model
+     41 kg total mass from seed_bom.py, all subsystem masses real.
+     Stowed: 0.50 x 0.35 x 0.30 m (carry-on suitcase)
+     Deployed: ~5 m tip-to-tip (solar wings)
+
+     Subsystem masses (from BOM):
+       Structure:       3.2 kg  (frame + springs + clamp)
+       Power:           5.0 kg  (2x solar 1.5kg each + batteries 1.6kg + MPPT 0.4kg)
+       Propulsion:      7.6 kg  (ion 1.5kg + iodine 5.0kg + cold gas 0.6kg + N2 0.5kg)
+       Compute+Comms:   0.8 kg
+       Robotic Arms:    4.5 kg  (2x 1.5kg arm + 1.5kg WAAM/tools/wire/harness)
+       Chemistry:       9.0 kg  (membrane 8.0kg + concentrators 1.0kg)
+       Fluid System:    4.8 kg  (pump 2.5kg + spare 1.0kg + tubing 0.8kg + bladder 0.4kg + sensors 0.1kg)
+       Electro-winning: 3.1 kg  (anode 1.5kg + cathodes 1.0kg + converter 0.3kg + frame 0.3kg)
+       Biology:         0.65 kg
+       Bot seed parts:  0.68 kg
+       Miscellaneous:   1.4 kg  (gaskets + MLI + wiring + fasteners)
+       ---------------------------------
+       Grand total:    40.8 kg
+
+     Articulated components:
+       - 2x solar wing (hinge, 0-180 deg deploy)
+       - 2x robotic arm (3-DOF shoulder/elbow/wrist + 2-finger gripper)
+       - 1x ion engine (force actuator, 0-1.4 mN along -x)
+       - 1x membrane bundle (detachable)
+-->
+
+<mujoco model="astraant_seed_mothership">
+
+  <compiler angle="degree" coordinate="local"/>
+
+  <option timestep="0.002" gravity="0 0 -6e-6">
+    <!-- Bennu surface gravity default. Override in test script. -->
+    <flag contact="enable"/>
+  </option>
+
+  <default>
+    <joint damping="0.5" armature="0.001" limited="true"/>
+    <geom condim="4" friction="0.6 0.01 0.001" solref="0.02 1"/>
+  </default>
+
+  <asset>
+    <!-- Structural materials -->
+    <material name="hull_aluminum"    rgba="0.38 0.40 0.42 1"/>
+    <material name="hull_dark"        rgba="0.25 0.27 0.29 1"/>
+    <material name="electronics_green" rgba="0.12 0.30 0.15 1"/>
+    <material name="pump_gray"        rgba="0.50 0.52 0.50 1"/>
+    <material name="cell_copper"      rgba="0.60 0.45 0.25 1"/>
+    <material name="propellant_amber" rgba="0.55 0.35 0.15 0.85"/>
+
+    <!-- Power materials -->
+    <material name="solar_blue"       rgba="0.08 0.12 0.42 1"/>
+    <material name="solar_grid"       rgba="0.55 0.58 0.62 1"/>
+    <material name="battery_black"    rgba="0.15 0.15 0.18 1"/>
+
+    <!-- Propulsion materials -->
+    <material name="ion_copper"       rgba="0.65 0.50 0.30 1"/>
+    <material name="nozzle_dark"      rgba="0.30 0.30 0.32 1"/>
+    <material name="cold_gas_silver"  rgba="0.70 0.72 0.74 1"/>
+
+    <!-- Arm materials -->
+    <material name="arm_aluminum"     rgba="0.65 0.67 0.70 1"/>
+    <material name="joint_steel"      rgba="0.50 0.50 0.53 1"/>
+    <material name="gripper_dark"     rgba="0.28 0.28 0.30 1"/>
+    <material name="waam_bronze"      rgba="0.70 0.55 0.30 1"/>
+
+    <!-- Chemistry / membrane -->
+    <material name="membrane_gold"    rgba="0.78 0.65 0.20 0.90"/>
+
+    <!-- Environment -->
+    <material name="asteroid_gray"    rgba="0.35 0.33 0.30 1"/>
+    <material name="ground_dark"      rgba="0.18 0.17 0.16 1"/>
+  </asset>
+
+  <worldbody>
+    <!-- Lighting: deep-space feel with strong key light -->
+    <light diffuse="0.95 0.93 0.88" dir="-0.3 -0.2 -1" pos="3 3 8"/>
+    <light diffuse="0.15 0.15 0.20" dir="0.5 0.5 -0.2" pos="-5 -5 5"/>
+    <light diffuse="0.08 0.08 0.12" dir="0 0 -1" pos="0 0 10"/>
+
+    <!-- Dark ground plane (visual reference only) -->
+    <geom name="ground" type="plane" size="20 20 0.1"
+          material="ground_dark" friction="0.5 0.01 0.001"
+          solref="0.02 0.9" solimp="0.9 0.95 0.001"/>
+
+    <!-- ============================================================ -->
+    <!-- ASTEROID ROCK: 2m diameter sphere                            -->
+    <!-- C-type rubble pile density ~1200 kg/m3                       -->
+    <!-- Volume = 4/3 * pi * 1^3 = 4.189 m3                          -->
+    <!-- Mass = 4.189 * 1200 = 5027 kg                               -->
+    <!-- ============================================================ -->
+    <body name="asteroid" pos="5 0 1.0">
+      <freejoint name="rock_joint"/>
+      <geom name="rock" type="sphere" size="1.0"
+            mass="5027" material="asteroid_gray"
+            friction="0.4 0.01 0.001"/>
+      <!-- Surface boulders for visual interest -->
+      <geom name="boulder_1" type="sphere" size="0.12"
+            pos="0.85 0.3 0.4" mass="0" material="asteroid_gray"/>
+      <geom name="boulder_2" type="sphere" size="0.08"
+            pos="-0.6 0.7 0.3" mass="0" material="asteroid_gray"/>
+      <geom name="boulder_3" type="ellipsoid" size="0.15 0.10 0.08"
+            pos="0.2 -0.8 0.5" mass="0" material="asteroid_gray"/>
+    </body>
+
+    <!-- ============================================================ -->
+    <!-- SEED MOTHERSHIP: 40.8 kg, 0.50 x 0.35 x 0.30 m stowed      -->
+    <!-- ============================================================ -->
+    <body name="mothership" pos="0 0 0.5">
+      <freejoint name="ship_root"/>
+
+      <!-- Tracking camera (follows mothership) -->
+      <camera name="track" pos="0 -2.5 1.0" xyaxes="1 0 0 0 0.4 1"
+              mode="track"/>
+      <!-- Side view -->
+      <camera name="side" pos="3.0 0 0.3" xyaxes="0 1 0 -0.1 0 1"
+              mode="track"/>
+
+      <!-- ======================================================== -->
+      <!-- MAIN HULL: Al 6061-T6 frame                              -->
+      <!-- 0.50 x 0.30 x 0.35 m box                                 -->
+      <!-- Structure mass: 3.2 kg (frame + springs + clamp)          -->
+      <!-- + Compute 0.8 kg + Misc 1.4 kg + Bio 0.65 kg             -->
+      <!-- + Bot parts 0.68 kg = 6.73 kg in the hull shell           -->
+      <!-- ======================================================== -->
+      <geom name="hull_top" type="box" size="0.25 0.15 0.005"
+            pos="0 0 0.175" mass="0.8" material="hull_aluminum"/>
+      <geom name="hull_bottom" type="box" size="0.25 0.15 0.005"
+            pos="0 0 -0.175" mass="0.8" material="hull_aluminum"/>
+      <geom name="hull_left" type="box" size="0.25 0.005 0.175"
+            pos="0 0.15 0" mass="0.5" material="hull_aluminum"/>
+      <geom name="hull_right" type="box" size="0.25 0.005 0.175"
+            pos="0 -0.15 0" mass="0.5" material="hull_aluminum"/>
+      <geom name="hull_front" type="box" size="0.005 0.15 0.175"
+            pos="0.25 0 0" mass="0.3" material="hull_dark"/>
+      <geom name="hull_rear" type="box" size="0.005 0.15 0.175"
+            pos="-0.25 0 0" mass="0.3" material="hull_dark"/>
+
+      <!-- ======================================================== -->
+      <!-- INTERNAL BAYS (visible sub-boxes)                         -->
+      <!-- ======================================================== -->
+
+      <!-- Electronics bay (center top): Compute 0.8 kg + Bio 0.65 kg  -->
+      <!-- + Bot parts 0.68 kg + Misc 1.4 kg + Springs 0.3 kg = 3.83 kg -->
+      <geom name="electronics_bay" type="box" size="0.10 0.06 0.04"
+            pos="0 0 0.10" mass="3.83"
+            material="electronics_green"/>
+      <!-- ESP32-S3 TMR + watchdog + radios + sensors + bio + bots + misc -->
+
+      <!-- Pump bay (left front): Peristaltic pump 2.5 kg + spare 1.0 kg -->
+      <!-- + tubing 0.8 kg + bladder 0.4 kg + sensors 0.1 kg = 4.8 kg   -->
+      <geom name="pump_bay" type="box" size="0.10 0.06 0.07"
+            pos="0.10 0.07 -0.02" mass="4.8"
+            material="pump_gray"/>
+
+      <!-- Electro-winning cell bay (right front): 3.1 kg -->
+      <!-- Anode 1.5 kg + cathodes 1.0 kg + converter 0.3 kg + frame 0.3 kg -->
+      <geom name="ewin_cell_bay" type="box" size="0.10 0.06 0.07"
+            pos="0.10 -0.07 -0.02" mass="3.1"
+            material="cell_copper"/>
+
+      <!-- Propellant block (center rear): iodine 5.0 kg + N2 tank 0.5 kg -->
+      <geom name="propellant_block" type="box" size="0.10 0.075 0.075"
+            pos="-0.10 0 0" mass="5.5"
+            material="propellant_amber"/>
+
+      <!-- Battery pack (under electronics): 2x 0.8 kg = 1.6 kg -->
+      <geom name="battery_L" type="box" size="0.06 0.04 0.025"
+            pos="0.04 0.05 0.05" mass="0.8"
+            material="battery_black"/>
+      <geom name="battery_R" type="box" size="0.06 0.04 0.025"
+            pos="0.04 -0.05 0.05" mass="0.8"
+            material="battery_black"/>
+
+      <!-- MPPT + power distribution: 0.4 kg -->
+      <geom name="mppt" type="box" size="0.04 0.05 0.015"
+            pos="-0.04 0 0.13" mass="0.4"
+            material="electronics_green"/>
+
+      <!-- Rock clamp + aperture frame: 0.4 kg (on front face) -->
+      <geom name="rock_clamp" type="box" size="0.005 0.08 0.08"
+            pos="0.255 0 0" mass="0.4"
+            material="joint_steel"/>
+
+      <!-- ======================================================== -->
+      <!-- SOLAR WING - LEFT (deployable, 2.0 x 0.8 x 0.015 m)     -->
+      <!-- Mass: 1.5 kg per wing                                    -->
+      <!-- Hinge at body left edge, deploys outward 0-180 deg       -->
+      <!-- ======================================================== -->
+      <body name="solar_wing_L" pos="0 0.155 0.10">
+        <joint name="j_solar_L" type="hinge" axis="1 0 0"
+               range="0 180" damping="2.0" armature="0.01"/>
+        <!-- Panel center is 0.4m out from hinge (half of 0.8m width) -->
+        <geom name="solar_panel_L" type="box" size="1.0 0.40 0.0075"
+              pos="0 0.40 0" mass="1.4" material="solar_blue"/>
+        <!-- Solar cell grid lines -->
+        <geom name="solar_grid_L1" type="box" size="1.0 0.001 0.008"
+              pos="0 0.20 0" mass="0.025" material="solar_grid"/>
+        <geom name="solar_grid_L2" type="box" size="1.0 0.001 0.008"
+              pos="0 0.40 0" mass="0.025" material="solar_grid"/>
+        <geom name="solar_grid_L3" type="box" size="1.0 0.001 0.008"
+              pos="0 0.60 0" mass="0.025" material="solar_grid"/>
+        <geom name="solar_hinge_L" type="cylinder" size="0.01 0.04"
+              pos="0 0 0" mass="0.025" material="joint_steel"
+              euler="0 90 0"/>
+      </body>
+
+      <!-- ======================================================== -->
+      <!-- SOLAR WING - RIGHT (mirror of left)                      -->
+      <!-- ======================================================== -->
+      <body name="solar_wing_R" pos="0 -0.155 0.10">
+        <joint name="j_solar_R" type="hinge" axis="-1 0 0"
+               range="0 180" damping="2.0" armature="0.01"/>
+        <geom name="solar_panel_R" type="box" size="1.0 0.40 0.0075"
+              pos="0 -0.40 0" mass="1.4" material="solar_blue"/>
+        <geom name="solar_grid_R1" type="box" size="1.0 0.001 0.008"
+              pos="0 -0.20 0" mass="0.025" material="solar_grid"/>
+        <geom name="solar_grid_R2" type="box" size="1.0 0.001 0.008"
+              pos="0 -0.40 0" mass="0.025" material="solar_grid"/>
+        <geom name="solar_grid_R3" type="box" size="1.0 0.001 0.008"
+              pos="0 -0.60 0" mass="0.025" material="solar_grid"/>
+        <geom name="solar_hinge_R" type="cylinder" size="0.01 0.04"
+              pos="0 0 0" mass="0.025" material="joint_steel"
+              euler="0 90 0"/>
+      </body>
+
+      <!-- ======================================================== -->
+      <!-- ROBOTIC ARM - LEFT (3-DOF + 2-finger gripper)            -->
+      <!-- Total per arm: 1.5 kg (assembly) + WAAM/tools split      -->
+      <!-- Stepper motors: 0.5 N*m torque each joint                -->
+      <!-- Each arm segment: capsule 0.15m, radius 0.015m           -->
+      <!-- 30cm reach total (2 x 0.15m segments)                    -->
+      <!-- ======================================================== -->
+      <body name="arm_L_shoulder" pos="0.20 0.155 0">
+        <joint name="j_arm_L_shoulder" type="hinge" axis="0 1 0"
+               range="-90 90" damping="1.0" armature="0.005"/>
+        <geom name="arm_L_shoulder_hub" type="sphere" size="0.02"
+              mass="0.25" material="joint_steel"/>
+
+        <!-- Upper arm: stepper motor + Al linkage -->
+        <geom name="arm_L_upper" type="capsule"
+              fromto="0 0 0  0.15 0 0"
+              size="0.015" mass="0.50" material="arm_aluminum"/>
+
+        <body name="arm_L_elbow" pos="0.15 0 0">
+          <joint name="j_arm_L_elbow" type="hinge" axis="0 1 0"
+                 range="-120 120" damping="0.8" armature="0.003"/>
+          <geom name="arm_L_elbow_hub" type="sphere" size="0.018"
+                mass="0.20" material="joint_steel"/>
+
+          <!-- Forearm: motor + harness + lubricant -->
+          <geom name="arm_L_forearm" type="capsule"
+                fromto="0 0 0  0.15 0 0"
+                size="0.015" mass="0.45" material="arm_aluminum"/>
+
+          <body name="arm_L_wrist" pos="0.15 0 0">
+            <joint name="j_arm_L_wrist" type="hinge" axis="0 0 1"
+                   range="-90 90" damping="0.5" armature="0.002"/>
+            <geom name="arm_L_wrist_hub" type="cylinder"
+                  size="0.012 0.01" mass="0.15"
+                  material="joint_steel"/>
+
+            <!-- WAAM nozzle: 0.01m radius x 0.03m tall -->
+            <geom name="waam_nozzle_L" type="cylinder"
+                  size="0.01 0.015" pos="0.025 0 -0.02"
+                  mass="0.15" material="waam_bronze"/>
+
+            <!-- Arm-tip camera -->
+            <camera name="arm_L_cam" pos="0.03 0 0.01"
+                    xyaxes="0 1 0 0 0 1"/>
+
+            <!-- Gripper finger LEFT -->
+            <body name="arm_L_finger_L" pos="0.03 0.01 0">
+              <joint name="j_arm_L_finger_L" type="hinge"
+                     axis="0 0 1" range="0 45"
+                     damping="0.2" armature="0.001"/>
+              <geom name="arm_L_finger_L_geom" type="capsule"
+                    fromto="0 0 0  0.04 0.005 0"
+                    size="0.005" mass="0.03"
+                    material="gripper_dark"/>
+            </body>
+
+            <!-- Gripper finger RIGHT -->
+            <body name="arm_L_finger_R" pos="0.03 -0.01 0">
+              <joint name="j_arm_L_finger_R" type="hinge"
+                     axis="0 0 -1" range="0 45"
+                     damping="0.2" armature="0.001"/>
+              <geom name="arm_L_finger_R_geom" type="capsule"
+                    fromto="0 0 0  0.04 -0.005 0"
+                    size="0.005" mass="0.03"
+                    material="gripper_dark"/>
+            </body>
+          </body>
+        </body>
+      </body>
+
+      <!-- ======================================================== -->
+      <!-- ROBOTIC ARM - RIGHT (mirror, same specs)                 -->
+      <!-- ======================================================== -->
+      <body name="arm_R_shoulder" pos="0.20 -0.155 0">
+        <joint name="j_arm_R_shoulder" type="hinge" axis="0 1 0"
+               range="-90 90" damping="1.0" armature="0.005"/>
+        <geom name="arm_R_shoulder_hub" type="sphere" size="0.02"
+              mass="0.25" material="joint_steel"/>
+
+        <geom name="arm_R_upper" type="capsule"
+              fromto="0 0 0  0.15 0 0"
+              size="0.015" mass="0.50" material="arm_aluminum"/>
+
+        <body name="arm_R_elbow" pos="0.15 0 0">
+          <joint name="j_arm_R_elbow" type="hinge" axis="0 1 0"
+                 range="-120 120" damping="0.8" armature="0.003"/>
+          <geom name="arm_R_elbow_hub" type="sphere" size="0.018"
+                mass="0.20" material="joint_steel"/>
+
+          <geom name="arm_R_forearm" type="capsule"
+                fromto="0 0 0  0.15 0 0"
+                size="0.015" mass="0.45" material="arm_aluminum"/>
+
+          <body name="arm_R_wrist" pos="0.15 0 0">
+            <joint name="j_arm_R_wrist" type="hinge" axis="0 0 1"
+                   range="-90 90" damping="0.5" armature="0.002"/>
+            <geom name="arm_R_wrist_hub" type="cylinder"
+                  size="0.012 0.01" mass="0.15"
+                  material="joint_steel"/>
+
+            <geom name="waam_nozzle_R" type="cylinder"
+                  size="0.01 0.015" pos="0.025 0 -0.02"
+                  mass="0.15" material="waam_bronze"/>
+
+            <!-- Arm-tip camera -->
+            <camera name="arm_R_cam" pos="0.03 0 0.01"
+                    xyaxes="0 1 0 0 0 1"/>
+
+            <!-- Gripper finger LEFT -->
+            <body name="arm_R_finger_L" pos="0.03 0.01 0">
+              <joint name="j_arm_R_finger_L" type="hinge"
+                     axis="0 0 1" range="0 45"
+                     damping="0.2" armature="0.001"/>
+              <geom name="arm_R_finger_L_geom" type="capsule"
+                    fromto="0 0 0  0.04 0.005 0"
+                    size="0.005" mass="0.03"
+                    material="gripper_dark"/>
+            </body>
+
+            <body name="arm_R_finger_R" pos="0.03 -0.01 0">
+              <joint name="j_arm_R_finger_R" type="hinge"
+                     axis="0 0 -1" range="0 45"
+                     damping="0.2" armature="0.001"/>
+              <geom name="arm_R_finger_R_geom" type="capsule"
+                    fromto="0 0 0  0.04 -0.005 0"
+                    size="0.005" mass="0.03"
+                    material="gripper_dark"/>
+            </body>
+          </body>
+        </body>
+      </body>
+
+      <!-- ======================================================== -->
+      <!-- ION ENGINE: BIT-3 class, 1.4 mN thrust, iodine-fed      -->
+      <!-- 0.08m dia x 0.06m cylinder, 1.5 kg                       -->
+      <!-- Mounted on rear face (-x direction)                       -->
+      <!-- ======================================================== -->
+      <geom name="ion_thruster" type="cylinder" size="0.04 0.03"
+            pos="-0.28 0 0" mass="1.3"
+            material="ion_copper" euler="0 90 0"/>
+      <geom name="ion_nozzle" type="cylinder" size="0.035 0.01"
+            pos="-0.32 0 0" mass="0.2"
+            material="nozzle_dark" euler="0 90 0"/>
+
+      <!-- Cold gas thrusters (4x, attitude control, 0.15 kg each) -->
+      <geom name="rcs_top" type="cylinder" size="0.008 0.015"
+            pos="0 0 0.18" mass="0.15" material="cold_gas_silver"/>
+      <geom name="rcs_bottom" type="cylinder" size="0.008 0.015"
+            pos="0 0 -0.18" mass="0.15" material="cold_gas_silver"/>
+      <geom name="rcs_left" type="cylinder" size="0.008 0.015"
+            pos="0 0.155 0" mass="0.15" material="cold_gas_silver"
+            euler="90 0 0"/>
+      <geom name="rcs_right" type="cylinder" size="0.008 0.015"
+            pos="0 -0.155 0" mass="0.15" material="cold_gas_silver"
+            euler="90 0 0"/>
+
+      <!-- ======================================================== -->
+      <!-- MEMBRANE BUNDLE: Kapton+Kevlar, 8.0 kg + concentrators   -->
+      <!-- Ellipsoid under body: 0.25 x 0.12 x 0.20 m              -->
+      <!-- Total chemistry package: 9.0 kg                          -->
+      <!-- Spring-loaded spool, deploys to wrap 3m rock              -->
+      <!-- ======================================================== -->
+      <body name="membrane_bundle" pos="0 0 -0.22">
+        <joint name="j_membrane_release" type="slide" axis="0 0 -1"
+               range="0 0.3" damping="5.0" armature="0.01"
+               ref="0"/>
+        <geom name="membrane_spool" type="ellipsoid"
+              size="0.125 0.06 0.10" mass="8.0"
+              material="membrane_gold"/>
+        <!-- Concentrator panels (folded, stowed against membrane) -->
+        <geom name="concentrator_stowed" type="box"
+              size="0.08 0.05 0.02" pos="0 0 -0.10"
+              mass="0.8" material="solar_grid"/>
+        <!-- Copper seed tape + magnet: small mass on spool -->
+        <geom name="seed_tape" type="cylinder" size="0.02 0.005"
+              pos="0.10 0 0" mass="0.2"
+              material="cell_copper"/>
+      </body>
+
+    </body>
+    <!-- END MOTHERSHIP -->
+
+  </worldbody>
+
+  <!-- ============================================================ -->
+  <!-- ACTUATORS                                                     -->
+  <!-- ============================================================ -->
+  <actuator>
+    <!-- Solar wing deployment: slow, high torque spring release -->
+    <position name="deploy_solar_L" joint="j_solar_L" kp="20.0" kv="5.0"
+              ctrlrange="0 180" forcerange="-5.0 5.0"/>
+    <position name="deploy_solar_R" joint="j_solar_R" kp="20.0" kv="5.0"
+              ctrlrange="0 180" forcerange="-5.0 5.0"/>
+
+    <!-- Left arm: 3 joints + 2 gripper fingers -->
+    <!-- Stepper motors: 0.5 N*m per joint -->
+    <position name="arm_L_shoulder" joint="j_arm_L_shoulder"
+              kp="50.0" kv="2.0" ctrlrange="-90 90"
+              forcerange="-0.5 0.5"/>
+    <position name="arm_L_elbow" joint="j_arm_L_elbow"
+              kp="40.0" kv="1.5" ctrlrange="-120 120"
+              forcerange="-0.5 0.5"/>
+    <position name="arm_L_wrist" joint="j_arm_L_wrist"
+              kp="30.0" kv="1.0" ctrlrange="-90 90"
+              forcerange="-0.3 0.3"/>
+    <position name="arm_L_grip_L" joint="j_arm_L_finger_L"
+              kp="10.0" kv="0.5" ctrlrange="0 45"
+              forcerange="-0.1 0.1"/>
+    <position name="arm_L_grip_R" joint="j_arm_L_finger_R"
+              kp="10.0" kv="0.5" ctrlrange="0 45"
+              forcerange="-0.1 0.1"/>
+
+    <!-- Right arm: mirror of left -->
+    <position name="arm_R_shoulder" joint="j_arm_R_shoulder"
+              kp="50.0" kv="2.0" ctrlrange="-90 90"
+              forcerange="-0.5 0.5"/>
+    <position name="arm_R_elbow" joint="j_arm_R_elbow"
+              kp="40.0" kv="1.5" ctrlrange="-120 120"
+              forcerange="-0.5 0.5"/>
+    <position name="arm_R_wrist" joint="j_arm_R_wrist"
+              kp="30.0" kv="1.0" ctrlrange="-90 90"
+              forcerange="-0.3 0.3"/>
+    <position name="arm_R_grip_L" joint="j_arm_R_finger_L"
+              kp="10.0" kv="0.5" ctrlrange="0 45"
+              forcerange="-0.1 0.1"/>
+    <position name="arm_R_grip_R" joint="j_arm_R_finger_R"
+              kp="10.0" kv="0.5" ctrlrange="0 45"
+              forcerange="-0.1 0.1"/>
+
+    <!-- Membrane release: slide actuator -->
+    <position name="membrane_release" joint="j_membrane_release"
+              kp="100.0" kv="10.0" ctrlrange="0 0.3"
+              forcerange="-20.0 20.0"/>
+
+    <!-- Ion engine thrust (BIT-3, 1.4 mN max) applied via           -->
+    <!-- xfrc_applied in the test script since freejoints lack a      -->
+    <!-- single translational axis for a general actuator.            -->
+    <!-- data.xfrc_applied[ship_body_id, 0] = 0.0014  (Newtons, +x)  -->
+  </actuator>
+
+  <!-- ============================================================ -->
+  <!-- SENSORS                                                       -->
+  <!-- ============================================================ -->
+  <sensor>
+    <!-- Mothership state -->
+    <framepos    name="ship_pos"    objtype="body" objname="mothership"/>
+    <framequat   name="ship_quat"   objtype="body" objname="mothership"/>
+    <framelinvel name="ship_vel"    objtype="body" objname="mothership"/>
+    <frameangvel name="ship_angvel" objtype="body" objname="mothership"/>
+
+    <!-- Asteroid state -->
+    <framepos    name="rock_pos"    objtype="body" objname="asteroid"/>
+
+    <!-- Arm joint positions (for feedback) -->
+    <jointpos name="arm_L_sh_pos" joint="j_arm_L_shoulder"/>
+    <jointpos name="arm_L_el_pos" joint="j_arm_L_elbow"/>
+    <jointpos name="arm_L_wr_pos" joint="j_arm_L_wrist"/>
+    <jointpos name="arm_R_sh_pos" joint="j_arm_R_shoulder"/>
+    <jointpos name="arm_R_el_pos" joint="j_arm_R_elbow"/>
+    <jointpos name="arm_R_wr_pos" joint="j_arm_R_wrist"/>
+
+    <!-- Solar wing angles -->
+    <jointpos name="solar_L_angle" joint="j_solar_L"/>
+    <jointpos name="solar_R_angle" joint="j_solar_R"/>
+
+    <!-- Membrane slide position -->
+    <jointpos name="membrane_pos" joint="j_membrane_release"/>
+
+    <!-- Wrist tip positions (for reach envelope) -->
+    <framepos name="wrist_L_pos" objtype="body" objname="arm_L_wrist"/>
+    <framepos name="wrist_R_pos" objtype="body" objname="arm_R_wrist"/>
+  </sensor>
+
+</mujoco>
