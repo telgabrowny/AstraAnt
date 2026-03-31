@@ -43,20 +43,27 @@ DEPOSITION_KG_PER_AMP_DAY = 0.02496
 BIO_DAYS = 90                 # Bioleaching time per rock (mass-transfer limited)
 MAX_CURRENT_A = 50000         # Practical electrode limit
 CELL_VOLTAGE = 2.0            # V per electro-winning cell
+PV_EFFICIENCY = 0.20          # Thin-film solar panel
+TURBINE_EFFICIENCY = 0.10     # Steam turbine (iron + copper, built on-site)
+WELD_DAYS_PER_M2 = 0.5        # Spot-welding plate seams (1 day per 2 m2)
 
 
 @dataclass
 class SeedPackage:
     """The initial package launched from Earth."""
-    membrane_kg: float = 3.8    # Kapton for 2m rock
-    concentrator_m2: float = 0.5  # Mylar reflector
-    bacteria_kg: float = 1.1    # Culture + nutrients
-    electrolyzer_kg: float = 1.0  # Mini electro-winning cell
-    pump_kg: float = 1.5        # Micro pump + tubing
-    electronics_kg: float = 2.0  # ESP32 + radio + solar panel
-    copper_seed_kg: float = 0.1  # Tape for first deposition
-    gasket_structure_kg: float = 1.2
-    initial_current_a: float = 100  # Tiny solar-powered cell
+    membrane_kg: float = 3.8       # Kapton for 2m rock
+    concentrator_m2: float = 0.5   # Mylar reflector (thermal only)
+    pv_panel_m2: float = 0.5       # Thin-film PV (electrical)
+    bacteria_kg: float = 1.1       # Culture + nutrients
+    electrolyzer_kg: float = 1.0   # Electro-winning cell (also welder)
+    pump_kg: float = 1.5           # Peristaltic micro pump + tubing
+    electronics_kg: float = 0.5    # ESP32 + radio + spectral sensor
+    solar_panel_kg: float = 0.8    # 0.5 m2 thin-film (1.5 kg/m2)
+    copper_seed_kg: float = 0.1    # Tape for first deposition
+    magnet_kg: float = 0.05        # Permanent magnet for steam turbine
+    bladder_kg: float = 0.2        # Collapsible fluid bladder (drain soup)
+    gasket_structure_kg: float = 1.0
+    initial_current_a: float = 68  # 136W PV / 2V cell = 68A realistic
     first_rock_m: float = 2.0
 
     @property
@@ -64,7 +71,9 @@ class SeedPackage:
         return (self.membrane_kg + self.concentrator_m2 * 0.1 +
                 self.bacteria_kg + self.electrolyzer_kg +
                 self.pump_kg + self.electronics_kg +
-                self.copper_seed_kg + self.gasket_structure_kg)
+                self.solar_panel_kg + self.copper_seed_kg +
+                self.magnet_kg + self.bladder_kg +
+                self.gasket_structure_kg)
 
 
 @dataclass
@@ -166,19 +175,29 @@ def run_bootstrap(
         next_rock_d = max_rock_for_iron(iron_for_shell)
         actual_shell = shell_mass_for_rock(next_rock_d)
 
-        # Heating
+        # Heating (concentrators provide thermal, not electrical)
         e = heating_energy(rock_d)
         heat_w = concentrator_m2 * SOLAR_FLUX_NET
         heat_days = (e / heat_w) / 86400 if heat_w > 0 else 99999
 
-        # Deposition
+        # Electrodeposition (rate depends on current)
         dep_rate = current_a * DEPOSITION_KG_PER_AMP_DAY
-        form_days = actual_shell / dep_rate if dep_rate > 0 else 99999
+
+        # Shell construction: deposit plates + weld into sphere
+        # Step 0: one welder (the electro-winning cell), slow
+        # Step 1+: build parallel welding rigs from surplus iron/copper
+        plate_dep_days = actual_shell / dep_rate if dep_rate > 0 else 99999
+        inner_r = (next_rock_d * CLEARANCE) / 2
+        weld_area = 4 * math.pi * inner_r ** 2
+        # Parallel welders: 1 at Step 0, scales with surplus iron after
+        n_welders = max(1, min(step * 4, 20))  # 1, 4, 8, 12, 16, 20
+        weld_days = (weld_area * WELD_DAYS_PER_M2) / n_welders
+        form_days = plate_dep_days + weld_days
 
         total = heat_days + BIO_DAYS + form_days
         cumulative_days += total
 
-        container = "Kapton membrane" if step == 0 else "Iron sphere"
+        container = "Kapton membrane" if step == 0 else "Welded iron"
 
         gen = GenState(
             step=step,
@@ -204,13 +223,22 @@ def run_bootstrap(
         )
         generations.append(gen)
 
-        # Upgrade concentrators
+        # Upgrade concentrators (iron foil mirrors)
         new_conc = iron_for_conc / CONC_FOIL_KG_PER_M2
         concentrator_m2 += new_conc
 
-        # Upgrade current (proportional to concentrator power)
-        available_w = concentrator_m2 * SOLAR_FLUX_NET * electrolysis_power_fraction
-        current_a = min(available_w / CELL_VOLTAGE, MAX_CURRENT_A)
+        # Power scaling: Step 0 uses PV panel, Step 1+ builds steam turbine
+        if step == 0:
+            # After Step 0: build steam turbine from iron + copper + magnet
+            # Turbine powered by concentrator thermal energy
+            thermal_w = concentrator_m2 * SOLAR_FLUX_NET
+            electrical_w = thermal_w * TURBINE_EFFICIENCY
+            current_a = min(electrical_w / CELL_VOLTAGE, MAX_CURRENT_A)
+        else:
+            # Subsequent steps: turbine scales with concentrator area
+            thermal_w = concentrator_m2 * SOLAR_FLUX_NET
+            electrical_w = thermal_w * TURBINE_EFFICIENCY
+            current_a = min(electrical_w / CELL_VOLTAGE, MAX_CURRENT_A)
 
         rock_d = next_rock_d
 
@@ -232,14 +260,22 @@ def format_report(generations: List[GenState], seed: SeedPackage | None = None) 
     # Manifest
     lines.append("  SEED MANIFEST:")
     lines.append(f"    Kapton membrane (wraps {seed.first_rock_m:.0f}m rock): {seed.membrane_kg:.1f} kg")
-    lines.append(f"    Mylar concentrator ({seed.concentrator_m2} m2):     {seed.concentrator_m2 * 0.1 + 0.2:.1f} kg")
-    lines.append(f"    Bacteria + nutrients:            {seed.bacteria_kg:.1f} kg")
-    lines.append(f"    Mini electro-winning cell:       {seed.electrolyzer_kg:.1f} kg")
-    lines.append(f"    Micro pump + tubing:             {seed.pump_kg:.1f} kg")
-    lines.append(f"    ESP32 + radio + solar panel:     {seed.electronics_kg:.1f} kg")
-    lines.append(f"    Copper seed tape:                {seed.copper_seed_kg:.1f} kg")
-    lines.append(f"    Gaskets + structure:             {seed.gasket_structure_kg:.1f} kg")
-    lines.append(f"    TOTAL:                          {seed.total_kg:.1f} kg")
+    lines.append(f"    Mylar concentrator ({seed.concentrator_m2} m2):      {seed.concentrator_m2 * 0.1 + 0.2:.1f} kg")
+    lines.append(f"    Thin-film PV panel ({seed.pv_panel_m2} m2):         {seed.solar_panel_kg:.1f} kg")
+    lines.append(f"    Bacteria + nutrients:             {seed.bacteria_kg:.1f} kg")
+    lines.append(f"    Electro-winning cell (+ welder):  {seed.electrolyzer_kg:.1f} kg")
+    lines.append(f"    Peristaltic micro pump:           {seed.pump_kg:.1f} kg")
+    lines.append(f"    ESP32 + radio + spectral sensor:  {seed.electronics_kg:.1f} kg")
+    lines.append(f"    Copper seed tape:                 {seed.copper_seed_kg:.1f} kg")
+    lines.append(f"    Permanent magnet (for turbine):   {seed.magnet_kg:.2f} kg")
+    lines.append(f"    Collapsible fluid bladder:        {seed.bladder_kg:.1f} kg")
+    lines.append(f"    Gaskets + structure:              {seed.gasket_structure_kg:.1f} kg")
+    lines.append(f"    TOTAL:                           {seed.total_kg:.1f} kg")
+    lines.append("")
+    lines.append("  POWER PROGRESSION:")
+    lines.append(f"    Step 0: PV panel ({seed.pv_panel_m2} m2) = {seed.pv_panel_m2 * 1361 * PV_EFFICIENCY:.0f}W -> {seed.initial_current_a:.0f}A")
+    lines.append("    Step 1+: Steam turbine (iron casing + copper coil + magnet)")
+    lines.append("             Built from Step 0 extracted metals. Power scales with concentrators.")
     lines.append("")
 
     # Table header
