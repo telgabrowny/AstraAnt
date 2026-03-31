@@ -53,10 +53,14 @@ def generate_bom_report() -> str:
     item('COMP', 'AS7341 spectral sensor', 0.02, 10, 2,
          'Rock characterization, 11 channels')
 
-    # === ROBOTIC ARMS (x2, redundant) ===
+    # === ROBOTIC ARMS (x2, redundant) + WAAM PRINTING ===
     item('ARMS', 'Arm assembly (3-DOF + gripper)', 1.5, 2000, 2,
          'Stepper motors, Al linkage, 30cm reach')
-    item('ARMS', 'Tool heads (welder/bender/driver)', 0.2, 300, 2,
+    item('ARMS', 'WAAM print head (arc + wire feed)', 0.3, 400, 2,
+         'MIG-style: motor + 2 rollers + nozzle + arc tip')
+    item('ARMS', 'Seed wire spool (0.5mm Cu, 200m)', 0.3, 50, 1,
+         'Initial cathode wire for electroforming')
+    item('ARMS', 'Tool heads (gripper/driver/probe)', 0.15, 200, 2,
          'Swappable magnetic mount')
     item('ARMS', 'Vacuum lubricant (Braycote 601)', 0.05, 100, 2,
          'Bearings + joints')
@@ -199,7 +203,9 @@ def generate_bom_report() -> str:
     lines.append(f"  Solar panels: 4 m2 = {pv_watts:.0f}W at 1 AU")
     lines.append(f"  E-winning:    {pv_watts:.0f}W / 2V = {pv_watts/2:.0f}A")
     lines.append(f"  Deposition:   {pv_watts/2 * 0.02496:.0f} kg/day")
-    lines.append(f"  After arms build Stirling: scales with concentrator area")
+    lines.append(f"  Wire stock:   {pv_watts/2 * 0.02496:.0f} kg/day (electroformed inside bag)")
+    lines.append(f"  WAAM print:   ~0.5 kg/hr at 1.1 kW (arc melts wire, builds shapes)")
+    lines.append(f"  After arms WAAM-print Stirling: power scales with concentrators")
     lines.append("")
 
     # Launch costs
