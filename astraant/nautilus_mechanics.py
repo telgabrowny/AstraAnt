@@ -106,6 +106,11 @@ class NautilusState:
     septa_sealed: int = 0
     solution_in_siphuncle: bool = False
 
+    # Spiral position tracking (for nautilus layout)
+    spiral_theta: float = 0.0       # Current angle on logarithmic spiral
+    spiral_b: float = 0.18          # Spiral tightness parameter
+    chamber_positions: list = field(default_factory=list)  # [(x, y, radius, gen)]
+
     @property
     def solution_volume_l(self):
         # Cylinder volume * porosity factor (asteroid fills ~43% of space)
@@ -347,6 +352,10 @@ def run_multi_cycle(cycles=10, initial_diameter_m=10, current_amps=2000,
     all_events = []
     cycle_summaries = []
 
+    # Record initial chamber position on spiral
+    r0 = initial_diameter_m / 2
+    state.chamber_positions.append((0.0, 0.0, r0, 0))
+
     for cycle_num in range(1, cycles + 1):
         wall_start = state.wall_thickness_mm
         state, snapshots, events = simulate_cycle(state, diameter, verbose=verbose)
@@ -366,9 +375,34 @@ def run_multi_cycle(cycles=10, initial_diameter_m=10, current_amps=2000,
             "temp_c": state.temp_c,
         })
 
-        # Check for septum -> grow diameter for next generation
-        if state.septa_sealed > 0 and state.septa_sealed > (cycle_num // 3):
+        # New chamber every 3 cycles (or when septum seals)
+        # Each generation: seal bulkhead, build adjacent chamber on spiral
+        new_chamber = (state.septa_sealed > 0 and
+                       state.septa_sealed > len(state.chamber_positions) - 1)
+        if not new_chamber and cycle_num > 0 and cycle_num % 3 == 0:
+            new_chamber = True
+        if new_chamber:
+            old_radius = diameter / 2
             diameter *= growth_factor
+            new_radius = diameter / 2
+
+            # Place new chamber adjacent on logarithmic spiral
+            gap = old_radius + new_radius
+            prev_r = r0 * math.exp(state.spiral_b * state.spiral_theta)
+            avg_r = max(prev_r + gap * state.spiral_b * 0.5, 0.01)
+            d_theta = gap / avg_r
+            state.spiral_theta += d_theta
+
+            r_spiral = r0 * math.exp(state.spiral_b * state.spiral_theta)
+            cx = r_spiral * math.cos(state.spiral_theta)
+            cy = r_spiral * math.sin(state.spiral_theta)
+            gen = len(state.chamber_positions)
+            state.chamber_positions.append((cx, cy, new_radius, gen))
+
+            # Reset wall for new chamber (iron shell built by WAAM bots)
+            state.wall_thickness_mm = 0.0
+            state.chamber_radius_m = diameter * 0.7
+            state.chamber_length_m = diameter * 1.2
 
     return state, cycle_summaries, all_events
 
@@ -443,6 +477,15 @@ def format_report(state, summaries, events, config):
     lines.append(f"  Septa sealed: {state.septa_sealed}")
     lines.append(f"  Asteroids consumed: {state.asteroids_consumed}")
     lines.append(f"  Chamber radius: {state.chamber_radius_m:.1f} m")
+
+    # Spiral layout
+    if state.chamber_positions:
+        lines.append(f"\n  SPIRAL LAYOUT ({len(state.chamber_positions)} chambers):")
+        for x, y, r, gen in state.chamber_positions:
+            role = "Vault (Kapton)" if gen == 0 else f"Iron shell Gen {gen}"
+            lines.append(f"    Gen {gen}: ({x:>6.1f}, {y:>6.1f}) r={r:.1f}m -- {role}")
+        lines.append(f"  Spiral angle: {math.degrees(state.spiral_theta):.0f} deg")
+
     lines.append("=" * 95)
 
     return "\n".join(lines)
