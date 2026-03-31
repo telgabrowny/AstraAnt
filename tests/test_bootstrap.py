@@ -62,6 +62,40 @@ def test_exponential_growth_mode_b():
         assert gens[i].rock_diameter_m > gens[i - 1].rock_diameter_m
 
 
+def test_seed_package_pv_watts():
+    """PV watts = panel_m2 * 1361 * 0.20 = ~136W for default 0.5 m2."""
+    seed = SeedPackage()
+    expected = 0.5 * 1361 * 0.20  # 136.1 W
+    assert abs(seed.pv_watts - expected) < 0.1
+
+
+def test_seed_package_initial_current():
+    """Initial current = pv_watts / cell_voltage (2.0V)."""
+    seed = SeedPackage()
+    expected = seed.pv_watts / 2.0
+    assert abs(seed.initial_current_a - expected) < 0.01
+
+
+def test_mode_a_power_fixed_forever():
+    """Mode A: current_a stays the same across ALL generations (no fabrication)."""
+    gens = run_bootstrap(mode="A", max_steps=8)
+    first_current = gens[0].current_a
+    for g in gens:
+        assert g.current_a == first_current, (
+            f"Step {g.step}: current_a={g.current_a} differs from "
+            f"initial {first_current} -- Mode A should be fixed")
+
+
+def test_mode_b_power_increases():
+    """Mode B: current_a must increase after step 0 (arm builds concentrators)."""
+    gens = run_bootstrap(mode="B", max_steps=5)
+    initial_current = gens[0].current_a
+    # At least one later generation must have higher current
+    found_increase = any(g.current_a > initial_current for g in gens[1:])
+    assert found_increase, (
+        f"Mode B current never increased from {initial_current}A")
+
+
 def test_format_report_no_crash():
     """Report formatter must not crash for any mode."""
     for m in ["A", "B", "C"]:
