@@ -913,5 +913,18 @@ def bootstrap(mode, steps, max_rock, compare, output):
             Path(output).write_text(report, encoding="utf-8")
 
 
+@main.command("seed-bom")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def seed_bom(output):
+    """Show seed mothership bill of materials, cost, and sizing."""
+    from .seed_bom import generate_bom_report
+
+    report = generate_bom_report()
+    click.echo(report)
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
 if __name__ == "__main__":
     main()
