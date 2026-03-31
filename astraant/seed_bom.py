@@ -111,6 +111,16 @@ def generate_bom_report() -> str:
     item('BIO', 'pH + temperature sensors', 0.05, 100, 1,
          'Bioleaching health monitoring')
 
+    # === PRINTER BOT SEED PARTS (Earth-origin components) ===
+    item('BOTS', 'SG90 servo tray (50 units)', 0.45, 15, 1,
+         'Enough for 6 bots + spares. $0.30 each.')
+    item('BOTS', 'ESP32/RP2040 tray (10 units)', 0.03, 50, 1,
+         'Bot brains. $5 each.')
+    item('BOTS', 'NdFeB magnet discs (80 units)', 0.16, 16, 1,
+         '8 per bot foot pad, 10 bots worth')
+    item('BOTS', 'Wire feed roller bearings (20)', 0.04, 10, 1,
+         'For WAAM print heads, 2 per bot')
+
     # === MISCELLANEOUS ===
     item('MISC', 'Silicone gaskets + sealant', 0.4, 200, 1,
          'Aperture seal, joint seals')
@@ -138,6 +148,7 @@ def generate_bom_report() -> str:
         'FLUID': 'FLUID SYSTEM (oversized for growth)',
         'EWIN': 'ELECTRO-WINNING CELL',
         'BIO': 'BIOLOGY',
+        'BOTS': 'PRINTER BOT PARTS (Earth-origin seeds)',
         'MISC': 'MISCELLANEOUS',
     }
 
@@ -151,7 +162,7 @@ def generate_bom_report() -> str:
     grand_cost = 0
 
     for key in ['STRUCT', 'POWER', 'PROP', 'COMP', 'ARMS',
-                'CHEM', 'FLUID', 'EWIN', 'BIO', 'MISC']:
+                'CHEM', 'FLUID', 'EWIN', 'BIO', 'BOTS', 'MISC']:
         items = subsystems[key]
         sub_mass = sum(m for _, m, _, _, _ in items)
         sub_cost = sum(c for _, _, c, _, _ in items)
