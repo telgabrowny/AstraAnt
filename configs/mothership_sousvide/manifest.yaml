@@ -482,6 +482,83 @@ equipment_lifecycle:
       not TO it. Anchor of a space economy. Effectively permanent.
       You don't abandon it. You upgrade it. $100K/year forever.
 
+  multi_metal_wire_production:
+    description: >
+      Same electroforming process as iron wire, different voltages.
+      Four wire spools run in parallel from the same dissolved solution.
+      Multi-material WAAM enables printing conductors inside structures.
+    spools:
+      copper:
+        voltage_v: "+0.34"
+        properties: "best conductor, ductile"
+        applications: "motor coils, wiring, antenna, heat pipes"
+      nickel:
+        voltage_v: "-0.26"
+        properties: "corrosion-resistant, high-temp"
+        applications: "heating elements, chemical-resistant parts"
+      cobalt:
+        voltage_v: "-0.28"
+        properties: "hard, wear-resistant"
+        applications: "tool tips, cutting edges, bearing surfaces"
+      iron:
+        voltage_v: "-0.44"
+        properties: "structural, cheap, bulk"
+        applications: "shells, frames, chassis, everything structural"
+    multi_material_printing: >
+      Bots carrying different wire types can print multi-material
+      structures. Iron housing with embedded copper traces. Nickel
+      bearing surface on an iron shaft. Cobalt cutting edge on an
+      iron tool body. No assembly -- printed in place.
+
+  processing_cascade:
+    description: >
+      Retired chambers repurposed as secondary/tertiary processors.
+      Each chamber runs a different chemistry phase in sequence.
+      The mothership is the central processor -- all chambers connect
+      via siphuncle network (circulatory system architecture).
+    pipeline:
+      primary:
+        chamber: "newest (active)"
+        biology: "A. ferrooxidans + A. thiooxidans"
+        dissolves: "Fe, Cu, Ni, Co (sulfide minerals)"
+        duration_days: 90
+        solution_to: "mothership primary e-winning bank"
+      pgm_phase:
+        chamber: "just retired from primary"
+        biology: "C. violaceum (biogenic cyanide)"
+        dissolves: "Pt, Pd, Ir, Au (PGMs)"
+        duration_days: "30-60"
+        solution_to: "mothership PGM e-winning cell"
+        note: "cyanide is catalytic, reusable"
+      ree_phase:
+        chamber: "secondary retired"
+        biology: "A. niger (citric acid producer)"
+        dissolves: "La, Ce, Nd, Y (rare earth elements)"
+        duration_days: "60-90"
+        solution_to: "mothership REE precipitation tank"
+        note: "citric acid reusable"
+      cleanup:
+        chamber: "tertiary retired"
+        state: "inert silicate sand residue"
+        conversion: "storage, habitat, foundry, etc."
+
+    mothership_central_processor:
+      siphuncle_manifold: "connects to ALL chambers"
+      filter_stage: "mesh + settling tank (removes silicate particles)"
+      primary_ewinning:
+        cell_a: "+0.34V -> copper wire spool"
+        cell_b: "-0.28V -> nickel wire spool"
+        cell_c: "-0.44V -> iron wire spool"
+        return: "depleted solution back to primary chamber"
+      pgm_ewinning:
+        input: "cyanide solution from PGM chamber"
+        output: "PGM foil on cathode"
+        return: "cyanide solution (reusable)"
+      ree_precipitation:
+        input: "citric acid solution from REE chamber"
+        output: "rare earth oxide powders"
+        return: "citric acid (reusable)"
+
   electrowinning_details:
     description: >
       Metals separated by staged voltage control. Each metal has a
