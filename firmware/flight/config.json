@@ -1,0 +1,110 @@
+{
+  "mission": "AstraAnt-001",
+  "target_asteroid": "Bennu",
+  "launch_date": "2030-03-15",
+  "firmware_version": "0.1.0",
+
+  "adcs": {
+    "sun_sensor_pins": [1, 2, 3, 4],
+    "gyro_i2c_addr": 40,
+    "rcs_pins": [12, 13, 14, 15],
+    "detumble_gain": 0.001,
+    "pointing_tolerance_deg": 2.0,
+    "gyro_bias_dps": 0.0,
+    "complementary_alpha": 0.98
+  },
+
+  "thermal": {
+    "heater_pin": 7,
+    "thermocouple_pins": [5, 6],
+    "target_temp_c": 30.0,
+    "max_temp_c": 45.0,
+    "min_temp_c": 5.0,
+    "heater_max_duty": 0.8,
+    "pid_kp": 2.0,
+    "pid_ki": 0.1,
+    "pid_kd": 0.5
+  },
+
+  "power": {
+    "solar_voltage_pin": 9,
+    "solar_current_pin": 10,
+    "battery_voltage_pin": 11,
+    "battery_cells": 4,
+    "cell_nominal_v": 3.7,
+    "cell_min_v": 3.0,
+    "cell_max_v": 4.2,
+    "safe_mode_soc_pct": 15,
+    "panel_max_watts": 1100
+  },
+
+  "comms": {
+    "uart_id": 1,
+    "uart_tx": 17,
+    "uart_rx": 16,
+    "baud": 9600,
+    "beacon_interval_s": 30,
+    "packet_size": 64,
+    "sync_word": "AA55"
+  },
+
+  "capture": {
+    "arm_servo_pins": [35, 36, 37, 38, 39, 40, 41, 42],
+    "gripper_pins": [43, 44],
+    "membrane_release_pin": 45,
+    "arm_stow_angles": [0, 90, 0, 0, 90, 0, 0, 0],
+    "arm_extend_angles": [45, 45, 0, 45, 45, 0, 0, 0],
+    "grip_close_angle": 10,
+    "grip_open_angle": 80,
+    "grip_current_threshold_ma": 200,
+    "approach_speed_mps": 0.001,
+    "station_keep_range_m": 5.0
+  },
+
+  "bioleach": {
+    "heater_pin": 7,
+    "ph_sensor_pin": 8,
+    "pump_pin": 46,
+    "pump_duty_default": 0.5,
+    "target_ph": 2.0,
+    "ph_alarm_low": 1.0,
+    "ph_alarm_high": 4.0,
+    "temp_target_c": 30.0,
+    "electrowin_voltage_cu": 0.34,
+    "electrowin_voltage_ni": 0.26,
+    "electrowin_voltage_co": 0.28,
+    "electrowin_voltage_fe": 0.44,
+    "electrowin_current_a": 50.0,
+    "faraday_const": 96485
+  },
+
+  "waam": {
+    "wire_rate_kg_per_hr": 0.5,
+    "power_per_head_kw": 1.1,
+    "bot_mass_kg": 0.411,
+    "bot_cost_earth_usd": 9,
+    "stirling_iron_kg": 25.0,
+    "concentrator_iron_kg": 5.0,
+    "shell_plate_kg": 2.0
+  },
+
+  "navigation": {
+    "ion_thrust_n": 0.0014,
+    "isp_s": 2200,
+    "propellant_mass_kg": 5.0,
+    "dry_mass_kg": 35.8,
+    "bennu_mu": 4.89,
+    "bennu_radius_m": 245,
+    "target_orbit_alt_m": 1000
+  },
+
+  "limits": {
+    "cpu_temp_max_c": 85,
+    "battery_temp_max_c": 45,
+    "battery_temp_min_c": -10,
+    "solar_overcurrent_a": 10.0,
+    "watchdog_timeout_s": 60,
+    "max_reboot_count": 10,
+    "safe_mode_after_reboots": 5
+  }
+}
