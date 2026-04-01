@@ -1100,5 +1100,95 @@ def relay_computer(task: str, relays: int, output: str):
         click.echo(f"\nReport saved to {output}")
 
 
+# -- Link budget command -------------------------------------------------------
+
+@main.command("link-budget")
+@click.option("--distance-au", default=1.0, type=float, help="Distance in AU")
+@click.option("--tx-power-w", default=2.0, type=float, help="TX power in watts")
+@click.option("--rx-gain", default=14.0, type=float, help="RX antenna gain (dBi)")
+@click.option("--sweep", is_flag=True, help="Sweep 0.01-2.0 AU distances")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def link_budget_cmd(distance_au: float, tx_power_w: float, rx_gain: float,
+                    sweep: bool, output: str):
+    """UHF radio link budget -- EIRP, FSPL, margin, max data rate."""
+    from .link_budget import (
+        LinkBudgetParams, compute_link_budget, sweep_distances,
+        format_link_budget, format_distance_sweep,
+    )
+
+    params = LinkBudgetParams(
+        distance_au=distance_au,
+        tx_power_w=tx_power_w,
+        rx_antenna_gain_dbi=rx_gain,
+    )
+    result = compute_link_budget(params)
+    report = format_link_budget(result)
+
+    if sweep:
+        sweep_results = sweep_distances(params)
+        report += "\n" + format_distance_sweep(sweep_results)
+
+    click.echo(report)
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
+# -- Power budget command ------------------------------------------------------
+
+@main.command("power-budget")
+@click.option("--distance-au", default=1.2, type=float, help="Heliocentric distance in AU")
+@click.option("--panel-area", default=4.0, type=float, help="Solar panel area (m^2)")
+@click.option("--years", default=0.0, type=float, help="Years since deployment (degradation)")
+@click.option("--waam-heads", default=1, type=int, help="Active WAAM print heads")
+@click.option("--bots", default=1, type=int, help="Printer bots charging simultaneously")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def power_budget_cmd(distance_au: float, panel_area: float, years: float,
+                     waam_heads: int, bots: int, output: str):
+    """Solar power budget -- generation vs consumption per mission phase."""
+    from .power_budget import (
+        SolarParams, analyze_power_budget, format_power_budget,
+    )
+
+    solar = SolarParams(
+        panel_area_m2=panel_area,
+        distance_au=distance_au,
+        years_deployed=years,
+    )
+    report_data = analyze_power_budget(solar, waam_heads=waam_heads, bots_charging=bots)
+    report = format_power_budget(report_data)
+
+    click.echo(report)
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
+@main.command("trajectory-2030")
+@click.option("--launch-year", default=2030, type=int, help="Nominal launch year")
+@click.option("--output", "-o", default=None, help="Save report to file")
+def trajectory_2030_cmd(launch_year: int, output: str):
+    """Design transfer trajectory to best asteroid for a ~2030 launch.
+
+    Evaluates all 7 catalog asteroids across a 2-year launch window,
+    selects the best target by delta-V, composition, solar flux, and
+    transfer time, then designs the complete ion-engine trajectory.
+    """
+    from .trajectory_2030 import compute_trajectory_2030, format_trajectory_report
+
+    click.echo(f"Computing {launch_year} launch trajectories for 7 catalog asteroids...")
+    click.echo(f"  Scanning launch dates {launch_year - 1}-06 through {launch_year + 1}-06")
+    click.echo(f"  Transfer times 90 to 730 days")
+    click.echo()
+
+    design = compute_trajectory_2030(launch_year=launch_year)
+    report = format_trajectory_report(design)
+    click.echo(report)
+
+    if output:
+        Path(output).write_text(report, encoding="utf-8")
+        click.echo(f"\nReport saved to {output}")
+
+
 if __name__ == "__main__":
     main()
