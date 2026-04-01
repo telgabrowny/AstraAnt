@@ -320,6 +320,75 @@ Status: [ ] TODO, [~] IN PROGRESS, [x] DONE, [B] BLOCKED
 
 ---
 
+## ANSYS READINESS: PRIORITY ORDER FOR ANALYSIS
+
+Each component needs a CadQuery assembly with real vendor STEP imports before
+it can be analyzed in Ansys. Priority order is based on what you'd physically
+build and test first (Phase 0 prototype on your desk).
+
+### Priority 1: Printer Bot (Phase 0 desk prototype)
+- **Current state:** MuJoCo model (physics verified), SCAD (block geometry)
+- **Needed:** CadQuery assembly importing real SG90 STEP (we have it) into 8 leg positions,
+  real ESP32 STEP in electronics bay, iron chassis designed around real servo geometry
+- **Ansys analysis:** Mechanical -- modal analysis (natural frequencies of legs),
+  static stress under servo torque loads. Discovery for quick visualization.
+- **Why first:** This is the thing you 3D print and test on your desk. If the chassis
+  cracks or resonates, find out in simulation before wasting filament.
+- **Servo scaling note:** SG90 works at Earth gravity for the 411g bot (45x margin even
+  at 0.1g centrifuge). Only needs upgrade above 0.3g -- which is Year 15+ territory,
+  by which time you have revenue to buy Dynamixel/Maxon servos or WAAM-print motors.
+
+### Priority 2: Worker Ant (Phase 0 desk prototype)
+- **Current state:** SCAD chassis has real SG90 pockets already (best existing model)
+- **Needed:** CadQuery rebuild importing SG90 STEP, ESP32/RP2040 STEP, foot pad geometry
+- **Ansys analysis:** Same as printer bot -- modal + static stress
+- **Why second:** Same Phase 0 desk prototype logic. Different payload (drill vs WAAM head)
+  but same chassis pattern. Do one, the other follows.
+
+### Priority 3: Seed Mothership (launch vehicle interface)
+- **Current state:** CadQuery assembly DONE (43.9 kg, CoM verified, real STEP imports)
+- **Needed:** Bolt patterns for ESPA ring interface, panel fastener details, deployment
+  mechanism spring rates
+- **Ansys analysis:**
+  - Mechanical: random vibration (Falcon 9 spectrum), sine sweep, shock
+  - Icepak: orbital thermal cycling (sun/shadow at 1 AU, eclipse, internal dissipation)
+  - HFSS: UHF antenna radiation pattern and impedance match at 437 MHz
+  - STK: orbit propagation, ground station contact windows
+- **Why third:** Needs the most analysis but is also the most complex. Do the simpler
+  bot analyses first to learn the Ansys workflow, then tackle the mothership.
+
+### Priority 4: Deployed Configuration (pitch renders)
+- **Current state:** No CAD exists for the in-operation configuration
+- **Needed:** Blender scene (not Ansys) showing: mothership docked on rock, membrane
+  wrapped, bots crawling, shell growing. Built from the CadQuery component models.
+- **Ansys analysis:** Structural analysis of the membrane under 50 kPa internal pressure
+  (thin shell FEA). Thermal analysis of the bioleaching chamber.
+- **Why fourth:** The pitch renders drive investor interest. The structural analysis
+  of the membrane is a key credibility item ("does the bag actually hold pressure?")
+
+### Priority 5: Nautilus Station (endgame visualization)
+- **Current state:** SCAD spiral display model, Python sim
+- **Needed:** Blender scene with proper spiral, cutaway, bots, concentrators
+- **Ansys analysis:** Not needed at this stage. The hoop stress calculations in
+  nautilus_mechanics.py are sufficient for PDR. Full FEA of the station shell
+  is a CDR-level task for much later.
+- **Why last:** Visualization for the pitch deck. The physics is already verified
+  by the Python sims and the MuJoCo lifecycle orchestrator.
+
+### Servo Upgrade Path (for when gravity increases)
+
+| Phase | Gravity | Servo | Cost/unit | Source |
+|-------|---------|-------|-----------|--------|
+| Year 0-5 | Microgravity | SG90 ($0.30) | $0.30 | Earth seed package |
+| Year 5-10 | Microgravity | SG90 ($0.30) | $0.30 | Earth seed package spares |
+| Year 10-15 | 0.1g centrifuge | SG90 still works | $0.30 | Still overpowered at 45x margin |
+| Year 15-20 | 0.3g centrifuge | WAAM wound-field motors | $0 (built on-site) | Copper + iron from asteroid |
+| Year 20+ | 1g habitat ring | Import Dynamixel/Maxon OR WAAM custom | $50-500 or $0 | Buy with revenue or build |
+
+The SG90 is the bootstrap servo. It gets you from zero to revenue. Then you upgrade.
+
+---
+
 ## GrabCAD PARTS NEEDED (User Action)
 
 Search these on grabcad.com and download the STEP files:
@@ -370,11 +439,15 @@ Phase 5 (Pitch)                           │
 - [x] MuJoCo (already installed, 3.6.0)
 - [x] Ursina (already installed, 8.3.0)
 - [x] OpenSCAD (already installed)
-- [ ] Blender 4.x (blender.org, free)
-- [ ] GNU Radio (gnuradio.org, free) -- for radio link simulation
-- [ ] FreeCAD (freecad.org, free) -- for STEP-to-STL conversion
-- [ ] Node.js (nodejs.org) -- for ground station frontend (React/Vue)
-- [ ] pykep or poliastro (pip install) -- for trajectory optimization
+- [x] CadQuery 2.7.0 (pip install cadquery) -- parametric CAD + STEP import/export
+- [ ] Blender 4.x (blender.org, free) -- pitch renders
+- [ ] GNU Radio (gnuradio.org, free) -- radio link simulation
+- [ ] Node.js (nodejs.org) -- ground station frontend (React/Vue)
+- [ ] pykep or poliastro (pip install) -- trajectory optimization
+- [ ] Ansys Mechanical (on Taurik's work machine) -- structural vibration analysis
+- [ ] Ansys HFSS (on work machine) -- antenna radiation pattern
+- [ ] Ansys Icepak (on work machine) -- thermal analysis
+- [ ] Ansys STK (on work machine) -- orbit propagation + contact windows
 
 ---
 
@@ -384,7 +457,12 @@ Phase 5 (Pitch)                           │
 |---------|------|-----------------|-------|
 | 0 | 2026-03-30 | All sous vide sims, WAAM, relay, lifecycle | Foundation work |
 | 1 | 2026-03-31 | MuJoCo models, lifecycle verification | 11/11 phases pass |
-| 2 | TBD | | |
+| 1b | 2026-03-31 | Vendor STEP files, CadQuery mothership assembly | 43.9 kg, CoM verified |
+| 1c | 2026-03-31 | Ansys readiness plan, design progression path | PDR-level documented |
+| 2 | TBD | Printer bot CadQuery assembly (Priority 1 for Ansys) | |
+| 3 | TBD | Worker ant CadQuery assembly + trajectory design | |
+| 4 | TBD | Blender renders + deployed configuration scene | |
+| 5+ | TBD | Ansys analysis on work machine (structural, thermal, antenna) | |
 
 ---
 
