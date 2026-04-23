@@ -1,0 +1,38 @@
+\documentclass[border=10pt]{standalone}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage[dvipsnames]{xcolor}
+
+\begin{document}
+\begin{algorithm}[H]
+\SetAlgoLined
+\KwResult{Collective construction and de-construction in RAnts}
+$d=1$\;
+$\mathsf{K} \in [-1,1]$\;
+$\mathsf{C} \in [0,1]$\;
+$\bar{c}=0.4 \, c_{\rm{max}}$\;
+$\Delta c=0.2 \, c_{\rm{max}}$\;
+ \While{true}{
+  {\color{Apricot} $c, \nabla c$  $\leftarrow$ get local photormone value and gradient\;}
+  {\color{Apricot}heading $\leftarrow f\left(\nabla c, \mathsf{C}, d \right)$\;}
+  {\color{Mulberry}\If{object detected $\&$  $d=1$}{
+  	\eIf{$\mathsf{K} \mathsf{C} \, c>\mathsf{K}(\bar{c}+\mathsf{K}\Delta c) $}{
+  	engage magnet with probability $\mathsf{K}$\;
+  	fetch object\;
+  	$d = -1$\;
+  }{
+  	turn away from object\;
+  }
+  }}
+ {\color{RubineRed} \If{no object detected}{
+  	$d = 1$\;
+  	disengage magnet\;
+  }}
+   {\color{ForestGreen} \If{$d = -1$ and $\mathsf{K} \, c < \mathsf{C} \mathsf{K}(\bar{c}-\mathsf{K}\Delta c) $}{
+    	disengage magnet\;
+    	turn away from object\;
+  	$d = 1$\; 	
+  }}
+ }
+ \caption{RAnt local rules}
+\end{algorithm}
+\end{document}
