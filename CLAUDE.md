@@ -15,14 +15,59 @@ AstraAnt is an ant swarm asteroid mining simulator and feasibility tracker. It m
 - Always maintain a readiness gap list: proven vs. needs testing vs. open research question
 - Use ASCII-only characters in all Python output (Windows cp1252 compatibility)
 
+## Space Manufacturing (Electrodeposition Track)
+
+Bioleach -> electrowin -> patterned electrodeposition -> functional components.
+Skips conventional refining-to-fabrication pipeline. No furnaces or forges -- just tanks, electricity, and chemistry.
+
+**Locked decisions:**
+- **Aqueous electrowinning** for Cu, Ni, Co, Zn, Fe (proven, from sulfide leachate)
+- **FFC Cambridge process** (molten salt, future phase) for Ti and Al
+- **Vacuum metallurgy advantage**: space vacuum eliminates oxide barriers for reactive metals (Ti, Al, Mg) -- a genuine space manufacturing advantage rarely discussed in literature
+- **Patterned deposition** as WAAM successor: electrode array pattern = DLP mask analog. Current pattern -> selective plating from electrolyte -> solid metal. Gap-to-feature ratio determines pattern resolution.
+- **Microgravity deposition benefits**: no natural convection -> purely diffusive ion transport -> uniform deposits within pattern. Enables hollow-form plating and freestanding geometry impossible under gravity.
+- **Multi-metal architectured materials** (aspirational): sequential deposition of different metals at specific 3D locations. Architecture beats alloy chemistry (like bone, wood, composites).
+
+**Simulation:** `deposition_sim.py` -- 31 tests, sparse Laplace solver, arbitrary geometry (I-beam, channel), Butler-Volmer kinetics, Wagner number diagnostics. Modes: 0g/1g comparison, resolution comparison, multi-layer sequential, pool electroforming with current distribution analysis.
+
+**Fabrication methods (shape-to-method):**
+- **Continuous pulling** (beams, tubes): unlimited length, perfect uniformity, simple rectangular pool
+- **Spin electroforming** (rings, cylinders): habitat pressure vessels, spin seed through pool
+- **Pool electroforming** (brackets, nodes): shaped molds, BV kinetics smooth current ~4.5x -> 1.4x
+- **EM press** (fine features, circuits): thin-gap patterned deposition, multi-metal sequential
+- **WAAM** (3D parts): wire-arc additive from electroformed wire
+
+**Key design decisions:**
+- Sacrificial anode wire = purification barrier (bioleach dirty -> wire pure -> clean build bath)
+- Chamber lining: glass from asteroid silicates (insulating, chemically inert, locally produced)
+- Bioleach residue (Ti/Al oxides): safe in glass/ceramics, stockpile for future FFC extraction
+- Press self-replicates body + coils; only controller chip needs Earth resupply
+
+**Phase progression:**
+1. WAAM from electroformed wire (current, proven)
+2. Pool electroforming + continuous pulling for structural members (sim validated)
+3. Patterned single-metal deposition via EM press (sim exists)
+4. Multi-metal sequential deposition (sim exists)
+5. Architected composite materials (aspirational)
+
 ## Architecture Decisions (Locked In)
-- **Underground tunnel operations** as primary operating model
+- **Spinning workshop + deployable canopy**: Split-body spacecraft -- non-rotating base anchored to asteroid, rotating workshop section (0.05g at 2.5m radius, 4.2 RPM) connected via bearing/hub. Deployable origami canopy (8-10m diameter, ~300 m^3) provides dust/meteorite protection and pressurizable enclosure. Eliminates most microgravity process workarounds. See memory: project_spinning_workshop_architecture.md
+- **Nuclear power option (not locked, architecture variant)**: Kilopower 1 kW reactor (~400 kg, 1 kW-e + 4 kW-th waste heat, 10-15 yr). 8x daily energy vs solar alone. Free process heat replaces all electric heaters. Enables 24/7 ops, eclipse immunity, asteroid belt targets. Combined with Jumpstart Kit: self-sustaining in ~4 months. See spinning workshop architecture memory for full analysis.
+- **Progressive pressurization**: Canopy mud-sealed to surface, pressurized with captured CO2/N2. 0.1 kPa Day 0 -> 1-3 kPa Day 60 -> tunnel sections at 5-10 kPa. Solid slag-glass floor from Day 30+. Progressive brick/iron armoring from local materials.
+- **Tunnel expansion**: Dig entry pit under canopy (Day 20-40), extend as tunnel into asteroid body. Rock = pressure vessel + micrometeorite shield + radiation shelter. Line walls with slag glass/brick as you dig.
+- **Locally-built carnival centrifuge** (Stage 4, Day 150-210): Track-and-wheel 10-15m diameter workshop, 0.1-0.2g, all local materials. Heavy industry moves here; original workshop becomes clean lab. Replicable indefinitely.
+- **Three-zone facility** (four by Day 400): clean lab (original 0.05g) + heavy industry (carnival 0.1-0.2g) + tunnel backbone (0g, 5-10 kPa) + underground bio-chamber (centrifuge, 200-500L bioreactors). Process separation for contamination, thermal, safety.
+- **Pre-built doorways**: ALL domes get 3-4 iron U-channel doorway frames at construction time, bricked over until needed. Planned openings are trivial; cutting structural walls later is destructive.
+- **Two-stage metal workflow**: smelt in tunnel (0g arc furnace) → cast in centrifuge (0.1g+ carnival). Smelting doesn't need gravity; casting does.
+- **Facility connectivity**: underground tunnels (primary backbone, utility/transit/storage) + surface arched corridors (quick transit, large equipment). Long-term: underground network is the endgame; surface domes become access portals.
+- **Underground tunnel operations** as primary operating model (long-term expansion of initial dig)
 - **Sealed tunnels** at 1-10 kPa (extends COTS component MTBF ~100x)
 - **3-caste system with modular tools**: Worker (6 legs + 2 mandibles, ~$33, RP2040, swaps tool heads), Taskmaster (~$75, ESP32-S3, permanent sensors), Surface Ant (~$1242, vacuum-rated Maxon, aluminum chassis)
 - **7 modular tool heads**: drill, scoop, paste nozzle, thermal rake, sampling probe, cargo gripper, panel brush. Magnetic clip mount, all 3D-printable via OpenSCAD.
 - **Self-sustaining biology**: Bacteria self-replicate, sugar grown on-site from algae photobioreactor, water recovered from asteroid ice, waste becomes tunnel sealant
 - **Three extraction tracks**: mechanical, bioleaching, hybrid (formerly A/B/C)
-- **Centrifuge bioreactors** for microgravity fluid handling (30% mass overhead)
+- **No individual centrifuge bioreactors** — spinning workshop provides gravity for all fluid handling (replaces former 30% mass overhead per unit)
+- **2x BOT-1 dexterous workers** (redundancy + 2.3x throughput, 100 kg total in H9)
 - **Modular mothership**: drill, power, comms, sealing, cargo, bioreactor modules
 - **Multi-destination economics**: lunar orbit (first stage), Mars orbit (long-term)
 - **MicroPython** control code from the start
@@ -35,6 +80,7 @@ AstraAnt is an ant swarm asteroid mining simulator and feasibility tracker. It m
 - Click for CLI
 - Ursina for 3D GUI (planned)
 - SciPy for bioreactor ODE simulation (Monod kinetics)
+- NumPy + Matplotlib for electrodeposition FD simulation
 - pytest for testing
 
 ## Project Structure
@@ -47,6 +93,7 @@ AstraAnt/
     configs.py        # Ant/mothership config loader
     feasibility.py    # Mass budget, cost, break-even calculator
     bioreactor.py     # Monod kinetics ODE bioreactor simulation
+    deposition_sim.py # Zero-g patterned electrodeposition simulator
     sensitivity.py    # Parameter sweep analysis
     scad_generator.py # OpenSCAD parametric tool models
     wiring.py         # Pin-to-pin wiring diagrams
