@@ -7,17 +7,10 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-import yaml
+from .yaml_utils import load_yaml as _load_yaml
 
 
 CATALOG_DIR = Path(__file__).parent.parent / "catalog"
-
-
-def _load_yaml(path: Path) -> dict[str, Any]:
-    """Load a single YAML file, returning its contents as a dict."""
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
-
 
 
 class CatalogEntry:

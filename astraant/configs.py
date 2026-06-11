@@ -5,14 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import yaml
+from .yaml_utils import load_yaml as _load_yaml
 
 CONFIGS_DIR = Path(__file__).parent.parent / "configs"
-
-
-def _load_yaml(path: Path) -> dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
 
 
 def load_ant_config(caste: str) -> dict[str, Any]:

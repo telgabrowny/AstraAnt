@@ -91,6 +91,24 @@ def catalog_asteroids(max_dv: float | None):
         click.echo(f"{a.id:<20s} {name:<20s} {spec:<10s} {str(dv):<10s} {conf:<12s} {'Yes' if water else 'No'}")
 
 
+@catalog.command("validate")
+def catalog_validate():
+    """Validate catalog entries against the schema; exit 1 on errors."""
+    from .validation import validate_catalog, has_errors
+
+    issues = validate_catalog()
+    if not issues:
+        click.echo("Catalog OK: no issues found.")
+        return
+    for issue in issues:
+        click.echo(str(issue))
+    errors = sum(1 for i in issues if i.severity == "error")
+    warnings = len(issues) - errors
+    click.echo(f"\n{errors} error(s), {warnings} warning(s)")
+    if has_errors(issues):
+        sys.exit(1)
+
+
 @catalog.command("species")
 def catalog_species():
     """List biological species in the catalog."""
