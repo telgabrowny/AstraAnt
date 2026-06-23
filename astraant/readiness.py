@@ -549,6 +549,52 @@ def assess_operations() -> list[ReadinessItem]:
     ]
 
 
+def assess_materials() -> list[ReadinessItem]:
+    """Assess readiness of in-situ material and manufacturing strategy decisions."""
+    return [
+        ReadinessItem(
+            category="materials",
+            name="In-Situ Material Strategy -- Exotic Alloys vs. Architected Deposition",
+            level=ReadinessLevel.OPEN_RESEARCH,
+            description="Whether cutting-edge bulk alloys (e.g. Monash 2026 refractory "
+                        "high-entropy alloy, Ti-Hf-Ta-Nb-Zr, >2 GPa compressive yield) have "
+                        "any role in the colony, vs. the locked 'architecture beats alloy "
+                        "chemistry' bet on patterned multi-metal electrodeposition from "
+                        "abundant elements.",
+            rationale="Three independent reasons exotic high-entropy alloys do NOT fit the "
+                      "in-situ manufacturing thesis: (1) FEEDSTOCK -- four of the five RHEA "
+                      "constituents (Hf, Ta, Nb, Zr) are high-field-strength incompatible "
+                      "lithophile elements that concentrate in evolved silicate crust, not in "
+                      "chondritic (C/S-type) or metallic (M-type) asteroid feedstock; the "
+                      "locked electrowinning set (Cu, Ni, Co, Zn, Fe) and FFC track (Ti, Al) "
+                      "cannot reach them. (2) PROCESS -- the alloy needs precise controlled "
+                      "thermal processing of a tightly-controlled melt, which conflicts with "
+                      "the 'no furnaces/forges, just tanks-electricity-chemistry' "
+                      "electrodeposition track and demands clean feedstock that dirty "
+                      "bioleachate does not provide. (3) PHILOSOPHY -- it is the maximalist "
+                      "alloy-chemistry bet, the opposite of the locked architected-materials "
+                      "decision. Net: relevant only as late-era / Earth-supplied content, not "
+                      "as an in-situ product. Documenting this strengthens the architected "
+                      "deposition thesis by contrast.",
+            test_plan="1) Literature review: Hf/Ta/Nb/Zr abundance and mineral hosts in C/S/M-"
+                      "type feedstock; confirm sub-economic concentrations + no bioleach/"
+                      "electrowin pathway. 2) If RHEA leaves lab phase, scope it only for the "
+                      "few high-stress Earth-launched parts (surface-ant structure, drill bit "
+                      "shanks) -- mass + cost delta vs. current materials. 3) Use "
+                      "deposition_sim.py to confirm architected multi-metal deposition from "
+                      "abundant elements meets the structural load cases RHEA would otherwise "
+                      "serve (quantify 'architecture beats chemistry'). 4) Track RHEA TRL; "
+                      "revisit only if it both leaves the lab AND an in-situ feedstock route "
+                      "is identified.",
+            blockers=["RHEA is early laboratory phase -- no production data, expensive "
+                      "constituents (Hf, Ta)",
+                      "Sparse published data on HFSE abundance in accessible asteroid feedstock"],
+            estimated_cost_usd=0,
+            estimated_time_weeks=3,
+        ),
+    ]
+
+
 def assess_mission(catalog: Catalog | None = None, track: str = "mechanical") -> ReadinessReport:
     """Run complete readiness assessment for a mission."""
     if catalog is None:
@@ -566,6 +612,10 @@ def assess_mission(catalog: Catalog | None = None, track: str = "mechanical") ->
 
     # Operations-level assessment
     for item in assess_operations():
+        report.add(item)
+
+    # Materials / in-situ manufacturing strategy assessment
+    for item in assess_materials():
         report.add(item)
 
     report.compute_summary()
