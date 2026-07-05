@@ -90,16 +90,28 @@ class MissionEconomics:
     metals_extracted_kg: dict[str, float] = field(default_factory=dict)
     total_metals_kg: float = 0.0
 
-    # Revenue
+    # Gross resource value (if 100% were delivered and sold)
+    extracted_value_by_material: dict[str, float] = field(default_factory=dict)
+    total_extracted_value_usd: float = 0.0
+
+    # Realized revenue (delivered AND arrived) -- this is what actually sells
     revenue_by_material: dict[str, float] = field(default_factory=dict)
-    total_revenue_usd: float = 0.0
+    realized_revenue_usd: float = 0.0
+    total_revenue_usd: float = 0.0        # alias for realized (what the books show)
+    in_transit_value_usd: float = 0.0     # launched, not yet arrived
+    stockpiled_value_usd: float = 0.0     # extracted but no pod capacity to ship
+    water_price_usd_per_kg: float = 0.0   # price actually used (for sensitivity)
+
     net_profit_usd: float = 0.0
     roi_pct: float = 0.0
 
-    # Delivery
+    # Delivery -- the micro-pod fleet is the real throughput throttle
     pods_launched: int = 0
-    kg_delivered: float = 0.0
+    delivery_capacity_kg: float = 0.0     # max the pod fleet can move over the mission
+    arrived_kg: float = 0.0
+    kg_delivered: float = 0.0             # alias for arrived_kg
     kg_in_transit: float = 0.0
+    stockpiled_kg: float = 0.0            # stranded: extracted but never shipped
 
 
 def calculate_site_economics(
@@ -111,6 +123,7 @@ def calculate_site_economics(
     surface_ants: int = 3,
     mission_years: float = 5.0,
     launch_vehicle: str = "starship_conservative",
+    water_price_usd_per_kg: float | None = None,
     catalog: Catalog | None = None,
 ) -> MissionEconomics:
     """Calculate full economics for a single mothership site."""
@@ -178,16 +191,62 @@ def calculate_site_economics(
 
     econ.total_metals_kg = sum(econ.metals_extracted_kg.values())
 
-    # --- Revenue ---
-    # Water revenue
-    econ.revenue_by_material["water"] = econ.total_water_recovered_kg * values.get("water", 0)
+    # --- Gross resource value (upper bound: everything mined, delivered, and sold) ---
+    water_price = (water_price_usd_per_kg if water_price_usd_per_kg is not None
+                   else values.get("water", 0))
+    econ.water_price_usd_per_kg = water_price
 
-    # Metal revenue
-    for metal, kg in econ.metals_extracted_kg.items():
-        price = values.get(metal, values.get("iron", 1000))
-        econ.revenue_by_material[metal] = kg * price
+    produced_kg: dict[str, float] = {"water": econ.total_water_recovered_kg}
+    produced_kg.update(econ.metals_extracted_kg)
 
-    econ.total_revenue_usd = sum(econ.revenue_by_material.values())
+    def price_of(material: str) -> float:
+        if material == "water":
+            return water_price
+        return values.get(material, values.get("iron", 1000))
+
+    econ.extracted_value_by_material = {
+        m: kg * price_of(m) for m, kg in produced_kg.items() if kg > 0
+    }
+    econ.total_extracted_value_usd = sum(econ.extracted_value_by_material.values())
+    total_produced_kg = sum(produced_kg.values())
+
+    # --- Delivery bottleneck ---
+    # Micro-pods are the throughput throttle, NOT the crusher. Each pod carries
+    # pod_payload_kg and the fleet launches pods_per_day. Anything extracted beyond
+    # what the fleet can move is stranded on the asteroid (stockpiled), and anything
+    # launched within the last transit window hasn't arrived (in transit).
+    pod_payload_kg = 2.0
+    pods_per_day = 3
+    econ.delivery_capacity_kg = effective_production_days * pods_per_day * pod_payload_kg
+
+    transit_days = 2.5 * 365.25
+    fraction_arrived = (max(0.0, (production_days - transit_days) / production_days)
+                        if production_days > 0 else 0.0)
+    arrived_remaining = econ.delivery_capacity_kg * fraction_arrived
+    transit_remaining = econ.delivery_capacity_kg - arrived_remaining
+
+    # Greedy allocation by value density: the highest $/kg materials ship first.
+    realized_by_material: dict[str, float] = {}
+    econ.arrived_kg = econ.kg_in_transit = econ.stockpiled_kg = 0.0
+    econ.in_transit_value_usd = econ.stockpiled_value_usd = 0.0
+    for m in sorted(produced_kg, key=lambda x: -price_of(x)):
+        kg, price = produced_kg[m], price_of(m)
+        a = min(kg, arrived_remaining); arrived_remaining -= a; kg -= a
+        econ.arrived_kg += a
+        if a > 0:
+            realized_by_material[m] = a * price
+        t = min(kg, transit_remaining); transit_remaining -= t; kg -= t
+        econ.kg_in_transit += t
+        econ.in_transit_value_usd += t * price
+        econ.stockpiled_kg += kg
+        econ.stockpiled_value_usd += kg * price
+
+    econ.revenue_by_material = realized_by_material
+    econ.realized_revenue_usd = sum(realized_by_material.values())
+    econ.total_revenue_usd = econ.realized_revenue_usd  # books show realized, not mined
+    econ.kg_delivered = econ.arrived_kg
+    shipped_kg = econ.arrived_kg + econ.kg_in_transit
+    econ.pods_launched = int(shipped_kg / pod_payload_kg)
 
     # --- Costs ---
     # Get mission cost from feasibility calculator
@@ -217,21 +276,7 @@ def calculate_site_economics(
         econ.total_consumables_cost_usd
     )
 
-    # --- Delivery ---
-    # Micro-pods: 2 kg each, 3 per day
-    pods_per_day = 3
-    econ.pods_launched = int(effective_production_days * pods_per_day)
-    econ.kg_delivered = min(
-        econ.pods_launched * 2,  # 2 kg per pod
-        econ.total_metals_kg + econ.total_water_recovered_kg  # Can't deliver more than produced
-    )
-    # Material in transit (launched but not yet arrived — ~2.5 year transit)
-    transit_days = 2.5 * 365.25
-    if production_days > transit_days:
-        econ.kg_in_transit = min(transit_days * pods_per_day * 2,
-                                 econ.kg_delivered * 0.5)
-
-    # --- Net Economics ---
+    # --- Net Economics (realized revenue only -- not mined-but-stranded value) ---
     econ.net_profit_usd = econ.total_revenue_usd - econ.total_mission_cost_usd
     if econ.total_mission_cost_usd > 0:
         econ.roi_pct = (econ.net_profit_usd / econ.total_mission_cost_usd) * 100
@@ -264,15 +309,38 @@ def format_economics_report(econ: MissionEconomics) -> str:
             lines.append(f"    {metal:20s} {kg:10.1f} kg")
     lines.append(f"    {'TOTAL METALS':20s} {econ.total_metals_kg:10.1f} kg")
 
-    # Revenue
-    lines.append(f"\n--- REVENUE AT {econ.destination.upper().replace('_', ' ')} PRICES ---")
-    sorted_rev = sorted(econ.revenue_by_material.items(), key=lambda x: -x[1])
-    for material, rev in sorted_rev:
+    # Gross resource value (the tempting-but-misleading headline number)
+    dest_label = econ.destination.upper().replace('_', ' ')
+    lines.append(f"\n--- GROSS RESOURCE VALUE AT {dest_label} PRICES ---")
+    lines.append(f"    (upper bound: if every kg mined were delivered AND sold)")
+    lines.append(f"    Water price used:  ${econ.water_price_usd_per_kg:>13,.0f}/kg")
+    for material, val in sorted(econ.extracted_value_by_material.items(), key=lambda x: -x[1]):
+        if val > 0:
+            pct = (val / econ.total_extracted_value_usd * 100) if econ.total_extracted_value_usd else 0
+            lines.append(f"    {material:20s} ${val:>15,.0f}  ({pct:4.1f}%)")
+    lines.append(f"    {'GROSS VALUE MINED':20s} ${econ.total_extracted_value_usd:>15,.0f}")
+
+    # Delivery reality -- the pod fleet is the throttle
+    total_produced = econ.total_water_recovered_kg + econ.total_metals_kg
+    stranded_pct = (econ.stockpiled_kg / total_produced * 100) if total_produced else 0
+    lines.append(f"\n--- DELIVERY REALITY (micro-pod fleet is the bottleneck) ---")
+    lines.append(f"    Produced (water+metals):  {total_produced:>12,.0f} kg")
+    lines.append(f"    Pod fleet capacity:       {econ.delivery_capacity_kg:>12,.0f} kg"
+                 f"  ({econ.pods_launched:,} pods x 2 kg)")
+    lines.append(f"    Arrived at market:        {econ.arrived_kg:>12,.0f} kg")
+    lines.append(f"    Still in transit (~2.5y): {econ.kg_in_transit:>12,.0f} kg")
+    lines.append(f"    STRANDED (never shipped): {econ.stockpiled_kg:>12,.0f} kg"
+                 f"  ({stranded_pct:.0f}% of production)")
+
+    # Realized revenue -- what actually sells (delivered AND arrived)
+    lines.append(f"\n--- REALIZED REVENUE (delivered AND arrived, sold) ---")
+    for material, rev in sorted(econ.revenue_by_material.items(), key=lambda x: -x[1]):
         if rev > 0:
-            pct = (rev / econ.total_revenue_usd * 100) if econ.total_revenue_usd > 0 else 0
+            pct = (rev / econ.realized_revenue_usd * 100) if econ.realized_revenue_usd else 0
             lines.append(f"    {material:20s} ${rev:>15,.0f}  ({pct:4.1f}%)")
-    lines.append(f"    {'':20s} {'':>15s}")
-    lines.append(f"    {'TOTAL REVENUE':20s} ${econ.total_revenue_usd:>15,.0f}")
+    lines.append(f"    {'REALIZED REVENUE':20s} ${econ.realized_revenue_usd:>15,.0f}")
+    lines.append(f"    {'(value in transit)':20s} ${econ.in_transit_value_usd:>15,.0f}")
+    lines.append(f"    {'(value stranded)':20s} ${econ.stockpiled_value_usd:>15,.0f}")
 
     # Costs
     lines.append(f"\n--- COSTS ---")
@@ -282,21 +350,70 @@ def format_economics_report(econ: MissionEconomics) -> str:
     lines.append(f"    {'':20s} {'':>15s}")
     lines.append(f"    {'TOTAL COST':20s} ${econ.total_mission_cost_usd:>15,.0f}")
 
-    # Bottom line
-    lines.append(f"\n--- BOTTOM LINE ---")
-    lines.append(f"    Revenue:           ${econ.total_revenue_usd:>15,.0f}")
+    # Bottom line -- based on REALIZED revenue, not mined value
+    lines.append(f"\n--- BOTTOM LINE (on realized revenue) ---")
+    lines.append(f"    Realized revenue:  ${econ.total_revenue_usd:>15,.0f}")
     lines.append(f"    Cost:              ${econ.total_mission_cost_usd:>15,.0f}")
     lines.append(f"    ----------------------------------------")
     profit_label = "NET PROFIT" if econ.net_profit_usd >= 0 else "NET LOSS"
     lines.append(f"    {profit_label:20s} ${econ.net_profit_usd:>15,.0f}")
     lines.append(f"    ROI:               {econ.roi_pct:>14.0f}%")
-
-    # Delivery
-    lines.append(f"\n--- DELIVERY ---")
-    lines.append(f"    Micro-pods launched:  {econ.pods_launched:,}")
-    lines.append(f"    Material shipped:     {econ.kg_delivered:,.0f} kg")
-    lines.append(f"    Estimated in-transit: {econ.kg_in_transit:,.0f} kg"
-                 f" (~2.5 year transit time)")
+    lines.append(f"\n    NOTE: gross value mined was ${econ.total_extracted_value_usd:,.0f}, but the")
+    lines.append(f"    2 kg micro-pod fleet can only move {econ.delivery_capacity_kg:,.0f} kg over the mission.")
+    lines.append(f"    Delivery throughput -- not extraction -- is the binding constraint.")
 
     lines.append("\n" + "=" * 70)
+    return "\n".join(lines)
+
+
+def water_price_sensitivity(
+    asteroid_id: str = "bennu",
+    destination: str = "lunar_orbit",
+    track: str = "bioleaching",
+    prices: list[float] | None = None,
+    catalog: Catalog | None = None,
+    **kwargs: Any,
+) -> list[dict[str, float]]:
+    """Sweep the water sale price and report realized economics at each point.
+
+    The $50,000/kg lunar-orbit water price is a launch-cost-avoidance ceiling that
+    only holds in a mature cislunar market. This shows how the case holds up as that
+    price falls toward what a real early market might pay.
+    """
+    if prices is None:
+        prices = [2000, 5000, 10000, 25000, 50000]
+    if catalog is None:
+        catalog = Catalog()
+    rows = []
+    for p in prices:
+        econ = calculate_site_economics(
+            asteroid_id=asteroid_id, destination=destination, track=track,
+            water_price_usd_per_kg=p, catalog=catalog, **kwargs,
+        )
+        rows.append({
+            "water_price": p,
+            "realized_revenue": econ.realized_revenue_usd,
+            "net_profit": econ.net_profit_usd,
+            "roi_pct": econ.roi_pct,
+        })
+    return rows
+
+
+def format_water_sensitivity(rows: list[dict[str, float]], asteroid_name: str = "") -> str:
+    """Format the water-price sweep as a table."""
+    lines = []
+    lines.append("=" * 70)
+    lines.append(f"WATER PRICE SENSITIVITY{('  --  ' + asteroid_name) if asteroid_name else ''}")
+    lines.append("How the realized case holds up as the cislunar water price falls")
+    lines.append("=" * 70)
+    lines.append(f"\n  {'Water $/kg':>12s} {'Realized Rev':>16s} {'Net Profit':>16s} {'ROI':>10s}")
+    lines.append(f"  {'-'*56}")
+    for r in rows:
+        lines.append(f"  {r['water_price']:>11,.0f}/ "
+                     f"${r['realized_revenue']:>14,.0f} "
+                     f"${r['net_profit']:>14,.0f} "
+                     f"{r['roi_pct']:>8,.0f}%")
+    lines.append("\n  Even at a mature-market $2,000/kg, water still carries the case --")
+    lines.append("  but the headline ROI is a fraction of the $50,000/kg fantasy number.")
+    lines.append("=" * 70)
     return "\n".join(lines)

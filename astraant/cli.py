@@ -428,18 +428,33 @@ def build_bom(caste: str, track: str, output: str | None):
 @click.option("--years", default=5.0, help="Mission lifetime in years")
 @click.option("--reality-check", "do_reality", is_flag=True,
               help="Include full reality check with hidden costs")
+@click.option("--water-price", type=float, default=None,
+              help="Override water sale price ($/kg). Default is destination market price.")
+@click.option("--water-sweep", is_flag=True,
+              help="Show realized economics across a range of water prices")
 def economics(workers, taskmasters, surface_ants, track, asteroid,
-              destination, years, do_reality):
+              destination, years, do_reality, water_price, water_sweep):
     """Full mission economics for a single site over its lifetime."""
-    from .mission_economics import calculate_site_economics, format_economics_report
+    from .mission_economics import (
+        calculate_site_economics, format_economics_report,
+        water_price_sensitivity, format_water_sensitivity,
+    )
     from .reality_check import reality_check
 
     econ = calculate_site_economics(
         asteroid_id=asteroid, destination=destination, track=track,
         workers=workers, taskmasters=taskmasters, surface_ants=surface_ants,
-        mission_years=years,
+        mission_years=years, water_price_usd_per_kg=water_price,
     )
     click.echo(format_economics_report(econ))
+    if water_sweep:
+        click.echo()
+        rows = water_price_sensitivity(
+            asteroid_id=asteroid, destination=destination, track=track,
+            workers=workers, taskmasters=taskmasters, surface_ants=surface_ants,
+            mission_years=years,
+        )
+        click.echo(format_water_sensitivity(rows, econ.asteroid_name))
     if do_reality:
         click.echo()
         click.echo(reality_check(econ))

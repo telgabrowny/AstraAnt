@@ -206,7 +206,10 @@ def reality_check(econ: MissionEconomics | None = None) -> str:
 
     if econ:
         lines.append(f"\nHardware model cost: ${econ.total_mission_cost_usd:,.0f}")
-        lines.append(f"Hardware model revenue: ${econ.total_revenue_usd:,.0f}")
+        lines.append(f"Realized revenue (delivered): ${econ.total_revenue_usd:,.0f}")
+        if getattr(econ, "total_extracted_value_usd", 0):
+            lines.append(f"Gross value mined (mostly stranded): "
+                         f"${econ.total_extracted_value_usd:,.0f}")
         lines.append("(These numbers are correct but incomplete)\n")
 
     # Sum up reality costs
@@ -266,10 +269,13 @@ def reality_check(econ: MissionEconomics | None = None) -> str:
     lines.append("  4. Autonomous space mining is 6 orders of magnitude beyond demonstrated capability.")
     lines.append("  5. Two companies tried (Planetary Resources, Deep Space Industries). Both failed.")
     lines.append("     But they failed on business model, not technology. The tech is closer now.")
+    lines.append("  6. Delivery throughput is a hidden wall: a 2 kg micro-pod fleet strands ~80% of")
+    lines.append("     everything mined. Revenue is bounded by what you can SHIP, not what you dig.")
     lines.append("")
-    lines.append("  BOTTOM LINE: At $15-50M total realistic cost and $709M potential revenue,")
-    lines.append("  the opportunity IS real. The barriers are timeline, market timing, and the")
-    lines.append("  leap from lab demo to space operation. That gap is where the risk lives.")
+    lines.append("  BOTTOM LINE: The gross value mined looks enormous, but realized revenue -- what")
+    lines.append("  actually arrives and sells -- is what pays the bill. Against $15-50M of realistic")
+    lines.append("  cost, the opportunity is real IF the delivery and market questions are solved.")
+    lines.append("  Timeline, market timing, and the lab-to-space leap are where the risk lives.")
 
     lines.append("\n" + "=" * 70)
     return "\n".join(lines)
