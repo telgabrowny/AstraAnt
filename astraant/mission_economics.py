@@ -362,6 +362,16 @@ def format_economics_report(econ: MissionEconomics) -> str:
     lines.append(f"    2 kg micro-pod fleet can only move {econ.delivery_capacity_kg:,.0f} kg over the mission.")
     lines.append(f"    Delivery throughput -- not extraction -- is the binding constraint.")
 
+    # Track/target fit advisory: bioleaching's PGM/REE premium is wasted on a
+    # water-dominated C-type target where trace metals are a rounding error.
+    water_rev = econ.revenue_by_material.get("water", 0)
+    if (econ.track.startswith("b") or econ.track == "hybrid") and \
+            econ.realized_revenue_usd > 0 and water_rev > 0.8 * econ.realized_revenue_usd:
+        lines.append(f"\n    ADVISORY: bioleaching's edge is precious/rare-earth extraction, but on this")
+        lines.append(f"    water-dominated target PGM+REE are <1% of revenue -- it barely beats the")
+        lines.append(f"    mechanical track here. Bioleaching earns its keep on metal-rich (M-type)")
+        lines.append(f"    bodies like Psyche, not on a C-type water asteroid.")
+
     lines.append("\n" + "=" * 70)
     return "\n".join(lines)
 

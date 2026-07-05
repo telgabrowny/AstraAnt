@@ -1,0 +1,113 @@
+<title>AstraAnt — Subsurface Colony Walkthrough</title>
+<style>
+  :root{
+    --bg:#080b12; --panel:rgba(11,18,30,.82); --line:#4ec9e0; --line-dim:#2a5f70;
+    --orange:#ff8c42; --green:#5fd08a; --amber:#e0a458; --ink:#bcd3e0; --ink-dim:#6f8595;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+    --sans:"Helvetica Neue",Arial,system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:var(--bg);overflow:hidden;color:var(--ink);font-family:var(--mono)}
+  #scene{position:fixed;inset:0}
+  canvas{display:block}
+
+  /* ---- HUD ---- */
+  .hud{position:fixed;pointer-events:none;z-index:10;opacity:0;transition:opacity .6s ease}
+  .hud.live{opacity:1}
+  .panel{background:var(--panel);border:1px solid var(--line-dim);
+    backdrop-filter:blur(2px);padding:10px 13px}
+  .panel .k{color:var(--ink-dim);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+  .panel .v{color:var(--line);font-size:13px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+
+  #zone{top:16px;left:16px;min-width:230px;border-left:2px solid var(--line)}
+  #zone .name{color:#eaf6fb;font-size:16px;letter-spacing:.06em;margin-bottom:9px;text-wrap:balance}
+  #zone .row{display:flex;justify-content:space-between;gap:18px;padding:2px 0}
+  #zone .row .v.warn{color:var(--amber)}
+  #zone .row .v.g{color:var(--orange)}
+
+  #nav{top:16px;right:16px;text-align:right;min-width:150px}
+  #nav .row{display:flex;justify-content:space-between;gap:14px;padding:1px 0}
+
+  #brand{bottom:15px;left:16px;font-size:10px;letter-spacing:.2em;color:var(--ink-dim);text-transform:uppercase}
+  #brand b{color:var(--line);font-weight:600}
+
+  #hint{bottom:40px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:.12em;
+    color:var(--ink-dim);text-transform:uppercase;text-align:center;transition:opacity .5s}
+
+  /* crosshair */
+  #cross{position:fixed;top:50%;left:50%;width:16px;height:16px;transform:translate(-50%,-50%);
+    z-index:9;opacity:0;transition:opacity .6s}
+  #cross.live{opacity:.7}
+  #cross::before,#cross::after{content:"";position:absolute;background:var(--line)}
+  #cross::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-.5px)}
+  #cross::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-.5px)}
+
+  /* ---- Start overlay ---- */
+  #start{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(120% 90% at 50% 40%,rgba(15,26,40,.55),rgba(4,7,12,.94));
+    transition:opacity .5s ease}
+  #start.gone{opacity:0;pointer-events:none}
+  .card{width:min(560px,90vw);border:1px solid var(--line-dim);background:rgba(9,14,23,.7);
+    padding:38px 40px 34px}
+  .card .eyebrow{font-size:11px;letter-spacing:.34em;color:var(--line);text-transform:uppercase;margin-bottom:20px}
+  .card h1{font-family:var(--sans);font-weight:700;font-size:34px;line-height:1.05;letter-spacing:-.01em;
+    color:#eef8fc;text-wrap:balance;margin-bottom:12px}
+  .card h1 .sub{display:block;font-family:var(--mono);font-weight:400;font-size:13px;letter-spacing:.05em;
+    color:var(--ink-dim);margin-top:12px;line-height:1.6}
+  .keys{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:26px 0 28px;font-size:12.5px}
+  .keys kbd{font-family:var(--mono);background:#0f1a28;border:1px solid var(--line-dim);
+    border-bottom-width:2px;border-radius:3px;padding:2px 8px;color:var(--line);letter-spacing:.05em}
+  .keys .d{color:var(--ink-dim);align-self:center;letter-spacing:.03em}
+  #enter{pointer-events:auto;cursor:pointer;font-family:var(--mono);font-size:13px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--bg);background:var(--line);border:none;padding:13px 24px;width:100%;
+    transition:background .2s,transform .06s}
+  #enter:hover{background:#7fdcee}
+  #enter:active{transform:translateY(1px)}
+  #enter:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
+  .legend{display:flex;gap:18px;margin-top:22px;flex-wrap:wrap;font-size:10.5px;letter-spacing:.06em;color:var(--ink-dim)}
+  .legend i{display:inline-block;width:9px;height:9px;margin-right:6px;vertical-align:middle}
+  @media (max-width:520px){.card{padding:28px 22px}.card h1{font-size:26px}}
+</style>
+
+<div id="scene"></div>
+
+<div id="cross"></div>
+
+<div id="zone" class="hud panel">
+  <div class="name" id="z-name">—</div>
+  <div class="row"><span class="k">Pressure</span><span class="v" id="z-press">—</span></div>
+  <div class="row"><span class="k">Spin gravity</span><span class="v g" id="z-grav">—</span></div>
+  <div class="row"><span class="k">Depth</span><span class="v" id="z-depth">—</span></div>
+  <div class="row"><span class="k">Seal</span><span class="v" id="z-seal">—</span></div>
+</div>
+
+<div id="nav" class="hud panel">
+  <div class="row"><span class="k">Heading</span><span class="v" id="n-head">—</span></div>
+  <div class="row"><span class="k">Grid X</span><span class="v" id="n-x">—</span></div>
+  <div class="row"><span class="k">Grid Z</span><span class="v" id="n-z">—</span></div>
+</div>
+
+<div id="brand" class="hud"><b>ASTRAANT</b> · subsurface facility survey</div>
+<div id="hint" class="hud">move: W A S D &nbsp;·&nbsp; look: mouse &nbsp;·&nbsp; run: shift &nbsp;·&nbsp; release: esc</div>
+
+<div id="start">
+  <div class="card">
+    <div class="eyebrow">Completed tunnel colony · interior survey</div>
+    <h1>Walk the finished dig.
+      <span class="sub">A first-person survey of an AstraAnt colony as the design docs describe it built out — sealed tunnel backbone, the 0.05 g clean lab, the underground bioreactors, and the locally-built carnival centrifuge where heavy industry lives.</span>
+    </h1>
+    <div class="keys">
+      <kbd>W A S D</kbd><span class="d">walk through the tunnels</span>
+      <kbd>Mouse</kbd><span class="d">look around</span>
+      <kbd>Shift</kbd><span class="d">move faster</span>
+      <kbd>Esc</kbd><span class="d">release the mouse</span>
+    </div>
+    <button id="enter">Click to enter the colony</button>
+    <div class="legend">
+      <span><i style="background:#ff8c42"></i>Worker ant</span>
+      <span><i style="background:#4ec9e0"></i>Taskmaster</span>
+      <span><i style="background:#5fd08a"></i>Bioreactor</span>
+      <span><i style="background:#e0a458"></i>Centrifuge</span>
+    </div>
+  </div>
+</div>

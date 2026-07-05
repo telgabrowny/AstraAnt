@@ -15,6 +15,19 @@ AstraAnt is an ant swarm asteroid mining simulator and feasibility tracker. It m
 - Always maintain a readiness gap list: proven vs. needs testing vs. open research question
 - Use ASCII-only characters in all Python output (Windows cp1252 compatibility)
 
+### Claim tiers (keep feasibility and game claims separate)
+This project is two things at once: a feasibility study and a game. Don't let their
+claims blur — a reader should always know which tier a statement lives in.
+- **Feasibility-grade**: must survive the reality-check bar (full mission cost, delivery
+  throughput, market existence). Revenue is what you can *deliver and sell*, never what
+  you mine — the micro-pod fleet strands ~80% of production, so quote realized revenue.
+  Lead the pitch with water + mechanical extraction to cislunar orbit (proven physics,
+  a plausible near-term buyer); treat bioleaching/PGM as clearly-labeled upside on
+  metal-rich targets.
+- **Game-aspiration**: the faction 4X, size classes, self-replication, on-site chip fab.
+  Fine to design and build toward, but never cite as feasibility. Year 0-10 = real
+  hardware; Year 10-20 = plausible near-future; Year 20+ = speculative-but-grounded.
+
 ## Space Manufacturing (Electrodeposition Track)
 
 Bioleach -> electrowin -> patterned electrodeposition -> functional components.
