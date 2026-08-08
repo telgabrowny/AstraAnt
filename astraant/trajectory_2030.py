@@ -725,7 +725,7 @@ def _evaluate_asteroid(ast: Any, windows: list[TransferWindow]) -> AsteroidCandi
 
     # Transfer time score: 100 at 180 days, 0 at 730 days
     if best:
-        time_score = max(0, 100.0 * (1.0 - (best.tof_days - 180) / 550.0))
+        time_score = min(100.0, max(0, 100.0 * (1.0 - (best.tof_days - 180) / 550.0)))
     else:
         time_score = 0.0
 
@@ -839,7 +839,7 @@ def compute_trajectory_2030(
 ) -> TrajectoryDesign:
     """Compute the optimal 2030-launch trajectory to a catalog asteroid.
 
-    Scans all 7 catalog asteroids across a 2-year launch window,
+    Scans all catalog asteroids across a 2-year launch window,
     evaluates each, and designs a trajectory to the best target.
 
     Parameters
