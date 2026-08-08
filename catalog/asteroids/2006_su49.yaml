@@ -1,0 +1,100 @@
+id: "2006_su49"
+name: "(292220) 2006 SU49"
+designation: "(292220) 2006 SU49"
+discovery:
+  date: "2006-09-25"
+  discoverer: "Spacewatch"
+
+physical:
+  diameter_m: 470          # estimated from H=19.39, assumed albedo 0.14
+  mass_kg: 1.1e11          # estimated from diameter and assumed density
+  density_kg_per_m3: 2000  # assumed (S-type prior), unconstrained
+  surface_gravity_m_per_s2: 0.00013
+  # rotation_period_hours: unknown -- no lightcurve published
+  spectral_class: "unclassified"
+  albedo: 0.14             # assumed, not measured
+
+orbit:
+  semi_major_axis_au: 1.41
+  eccentricity: 0.312
+  inclination_deg: 2.52
+  perihelion_au: 0.972
+  aphelion_au: 1.85
+  orbital_period_years: 1.678
+  epoch: "2026-06-09"      # JD 2461200.5, JPL SBDB solution
+  longitude_ascending_node_deg: 303.0
+  argument_perihelion_deg: 199.0
+  mean_anomaly_deg: 146.0
+  note: "Apollo-class PHA. Very low inclination (2.5 deg) keeps transfer costs down."
+
+composition:
+  source: "spectral_inference"
+  confidence: "low"
+  mission: "none — no taxonomic classification published; values are generic NEA priors"
+  bulk:
+    silicates: 75.0
+    iron_nickel: 15.0
+    other: 10.0
+  metals_ppm:
+    platinum: 5
+    palladium: 2
+    iridium: 1
+    copper: 60
+    nickel: 13000
+    cobalt: 600
+    iron: 200000
+    rare_earths_total: 10
+  meteorite_analog: "ordinary chondrite (statistical prior only — ~2/3 of NEAs are S-complex)"
+  water_content_percent: 0.1
+  composition_notes: >
+    NO spectral classification exists for this object. All composition values
+    are statistical priors from the NEA population (S-complex is most likely
+    a priori) and should be treated as placeholders pending characterization.
+    A prospecting flyby or ground-based spectroscopy campaign is a
+    prerequisite before any mining commitment.
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 9.3   # NHATS minimum total delta-v
+    estimated_transit_days_solar_sail: 700
+    launch_windows_per_year: 1
+    note: >
+      NHATS-listed accessible target. Close approach 2029-Jan-28 at 3.2 LD
+      with unusually low v_rel of 4.9 km/s — the lowest relative velocity of
+      any very-close large-object approach in the 2026-2046 window, which
+      makes the approach epoch a cheap rendezvous window despite the
+      middling NHATS delta-v.
+  close_approaches:
+    - date: "2029-01-28"
+      miss_distance_ld: 3.19
+      v_rel_km_per_s: 4.90
+      source: "JPL CNEOS close-approach database (queried 2026-08-07)"
+  value_assessment: >
+    Interesting almost entirely because of the January 2029 close approach:
+    3.2 lunar distances at only 4.9 km/s relative velocity, two months
+    before the Apophis flyby. At ~470 m it is a substantial rock, and the
+    2.5-degree inclination is favorable. Against that: no taxonomy, no
+    rotation period, no shape model — composition risk is maximal, and if
+    it turns out S-type it is a mechanical-track/metals target, not a
+    water play. Best treated as a prospecting opportunity riding the 2029
+    window rather than a committed mining destination.
+  water_availability: false
+  regolith_type: "unknown"
+
+references:
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=2006+SU49"
+  - "JPL CNEOS Close Approach Data: https://cneos.jpl.nasa.gov/ca/ (2029-01-28 approach)"
+  - "NASA NHATS accessible target list: https://cneos.jpl.nasa.gov/nhats/"
+
+notes: >
+  Apollo-class potentially hazardous asteroid added to the catalog for its
+  2029 close-approach rendezvous window (surveyed 2026-08-07 while studying
+  hitch-a-ride targets). Physical parameters are estimates from absolute
+  magnitude H=19.39 only. The pairing of a very close approach with low
+  relative velocity is what earns it a catalog slot: low v_rel means the
+  orbit is Earth-like where it counts, so the approach epoch doubles as a
+  low-cost transfer window, and subsequent approaches can serve as cheap
+  cargo-return windows.
+
+added_date: "2026-08-07"
+last_updated: "2026-08-07"

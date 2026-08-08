@@ -1,0 +1,89 @@
+id: "2000_qk130"
+name: "(216985) 2000 QK130"
+designation: "(216985) 2000 QK130"
+discovery:
+  date: "2000-08-24"
+  discoverer: "LINEAR"
+
+physical:
+  diameter_m: 192          # estimated from H=21.34, assumed albedo 0.14
+  mass_kg: 6.7e9           # estimated from diameter and assumed density
+  density_kg_per_m3: 1800  # assumed, unconstrained
+  surface_gravity_m_per_s2: 0.000049
+  # rotation_period_hours: unknown -- no lightcurve published
+  spectral_class: "unclassified"
+  albedo: 0.14             # assumed, not measured
+
+orbit:
+  semi_major_axis_au: 1.18
+  eccentricity: 0.262
+  inclination_deg: 4.72
+  perihelion_au: 0.871
+  aphelion_au: 1.49
+  orbital_period_years: 1.284
+  epoch: "2026-06-09"      # JD 2461200.5, JPL SBDB solution
+  longitude_ascending_node_deg: 174.0
+  argument_perihelion_deg: 66.4
+  mean_anomaly_deg: 99.2
+  note: "Apollo-class. Moderate eccentricity, low inclination."
+
+composition:
+  source: "spectral_inference"
+  confidence: "low"
+  mission: "none — no taxonomic classification published; values are generic NEA priors"
+  bulk:
+    silicates: 75.0
+    iron_nickel: 15.0
+    other: 10.0
+  metals_ppm:
+    platinum: 5
+    palladium: 2
+    iridium: 1
+    copper: 60
+    nickel: 13000
+    cobalt: 600
+    iron: 200000
+    rare_earths_total: 10
+  meteorite_analog: "ordinary chondrite (statistical prior only)"
+  water_content_percent: 0.1
+  composition_notes: >
+    NO spectral classification exists. All composition values are NEA
+    population priors and placeholders pending characterization.
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 8.3   # NHATS minimum total delta-v
+    estimated_transit_days_solar_sail: 600
+    launch_windows_per_year: 1
+    note: >
+      NHATS-listed. Close approach 2036-Mar-15 at 4.4 LD provides a
+      well-timed rendezvous window a decade out.
+  close_approaches:
+    - date: "2036-03-15"
+      miss_distance_ld: 4.44
+      v_rel_km_per_s: 7.56
+      source: "JPL CNEOS close-approach database (queried 2026-08-07)"
+  value_assessment: >
+    The smallest and least accessible of the three close-approach
+    candidates added in the 2026-08-07 survey, included for its March 2036
+    window at 4.4 lunar distances. At ~190 m it is still tens of millions
+    of tons of material. NHATS delta-v of 8.3 km/s and v_rel of 7.6 km/s
+    make it a second-tier option: viable if 2036 fits the program timeline
+    better than 2011 DV's 2040 window, but orbitally inferior. Composition
+    entirely unknown.
+  water_availability: false
+  regolith_type: "unknown"
+
+references:
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=2000+QK130"
+  - "JPL CNEOS Close Approach Data: https://cneos.jpl.nasa.gov/ca/ (2036-03-15 approach)"
+  - "NASA NHATS accessible target list: https://cneos.jpl.nasa.gov/nhats/"
+
+notes: >
+  Apollo-class asteroid added to the catalog for its March 2036
+  close-approach window (surveyed 2026-08-07 while studying hitch-a-ride
+  targets). Physical parameters are estimates from absolute magnitude
+  H=21.34 only. Numbered but never physically characterized.
+
+added_date: "2026-08-07"
+last_updated: "2026-08-07"

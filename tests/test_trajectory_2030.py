@@ -362,9 +362,10 @@ class TestFullTrajectory:
         assert design.prop_total_kg > 0
         assert design.prop_total_kg <= PROPELLANT_KG * 1.5  # allow some overshoot
 
-    def test_seven_candidates(self, design):
-        """Should evaluate all 7 catalog asteroids."""
-        assert len(design.all_candidates) == 7
+    def test_all_catalog_asteroids_evaluated(self, design):
+        """Should evaluate every asteroid in the catalog."""
+        from astraant.catalog import Catalog
+        assert len(design.all_candidates) == len(Catalog().asteroids)
 
     def test_candidates_sorted_by_score(self, design):
         """Candidates should be sorted by score (descending)."""
@@ -430,7 +431,8 @@ class TestReportFormatting:
         design = compute_trajectory_2030(launch_year=2032)
         report = format_trajectory_report(design)
         assert "TRAJECTORY" in report
-        assert len(design.all_candidates) == 7
+        from astraant.catalog import Catalog
+        assert len(design.all_candidates) == len(Catalog().asteroids)
 
 
 # -----------------------------------------------------------------------

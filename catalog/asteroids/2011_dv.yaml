@@ -1,0 +1,99 @@
+id: "2011_dv"
+name: "2011 DV"
+designation: "2011 DV"
+discovery:
+  date: "2011-02-17"
+  discoverer: "Mount Lemmon Survey"
+
+physical:
+  diameter_m: 247          # estimated from H=20.79, assumed albedo 0.14
+  mass_kg: 1.4e10          # estimated from diameter and assumed density
+  density_kg_per_m3: 1800  # assumed, unconstrained
+  surface_gravity_m_per_s2: 0.000062
+  # rotation_period_hours: unknown -- no lightcurve published
+  spectral_class: "unclassified"
+  albedo: 0.14             # assumed, not measured
+
+orbit:
+  semi_major_axis_au: 0.957
+  eccentricity: 0.0495
+  inclination_deg: 10.6
+  perihelion_au: 0.910
+  aphelion_au: 1.004
+  orbital_period_years: 0.936
+  epoch: "2026-06-09"      # JD 2461200.5, JPL SBDB solution
+  longitude_ascending_node_deg: 35.0
+  argument_perihelion_deg: 350.0
+  mean_anomaly_deg: 253.0
+  note: >
+    Aten-class with a remarkably Earth-like orbit — eccentricity below 0.05
+    and semi-major axis within 5% of Earth's. The 10.6-degree inclination
+    is the main delta-v cost driver.
+
+composition:
+  source: "spectral_inference"
+  confidence: "low"
+  mission: "none — no taxonomic classification published; values are generic NEA priors"
+  bulk:
+    silicates: 75.0
+    iron_nickel: 15.0
+    other: 10.0
+  metals_ppm:
+    platinum: 5
+    palladium: 2
+    iridium: 1
+    copper: 60
+    nickel: 13000
+    cobalt: 600
+    iron: 200000
+    rare_earths_total: 10
+  meteorite_analog: "ordinary chondrite (statistical prior only)"
+  water_content_percent: 0.1
+  composition_notes: >
+    NO spectral classification exists. All composition values are NEA
+    population priors and placeholders pending characterization.
+
+mining_relevance:
+  accessibility:
+    delta_v_from_leo_km_per_s: 6.6   # NHATS minimum total delta-v
+    estimated_transit_days_solar_sail: 500
+    launch_windows_per_year: 1
+    note: >
+      Third most accessible object in the catalog after Apophis-class
+      targets and 2008 EV5. The near-circular, near-1 AU orbit is the same
+      quality that makes 2008 EV5 attractive; like EV5, the near-resonance
+      with Earth means transfer windows recur on a long synodic cycle.
+  close_approaches:
+    - date: "2040-04-24"
+      miss_distance_ld: 5.50
+      v_rel_km_per_s: 5.48
+      source: "JPL CNEOS close-approach database (queried 2026-08-07)"
+  value_assessment: >
+    Orbitally, one of the best hitch-a-ride candidates found in the
+    2026-2046 close-approach survey: NHATS delta-v of 6.6 km/s from LEO,
+    v_rel of only 5.5 km/s at its April 2040 approach (5.5 lunar
+    distances), and an Earth-like orbit that keeps both outbound transfer
+    and cargo-return costs low. At ~250 m it is large enough to matter.
+    The long lead time (14 years) suits a bootstrapper timeline: cheap
+    prospecting first, seed ship on the approach window. Composition is
+    entirely unknown — the standard caveat that this could be dry silicate
+    applies in full.
+  water_availability: false
+  regolith_type: "unknown"
+
+references:
+  - "NASA JPL Small-Body Database: https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=2011+DV"
+  - "JPL CNEOS Close Approach Data: https://cneos.jpl.nasa.gov/ca/ (2040-04-24 approach)"
+  - "NASA NHATS accessible target list: https://cneos.jpl.nasa.gov/nhats/"
+
+notes: >
+  Aten-class asteroid added to the catalog for its April 2040 close-approach
+  window (surveyed 2026-08-07 while studying hitch-a-ride targets).
+  Physical parameters are estimates from absolute magnitude H=20.79 only.
+  Unnumbered and never characterized — a good example of the
+  "characterized tier" scarcity gradient: decent orbit knowledge, zero
+  composition knowledge, and cheap enough to reach that a small prospector
+  could retire the composition risk before any mining commitment.
+
+added_date: "2026-08-07"
+last_updated: "2026-08-07"

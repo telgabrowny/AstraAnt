@@ -209,7 +209,7 @@ Key items needing physical testing:
 
 ## Current Stats
 - 100 tests passing
-- 17+ catalog parts, 7 asteroids, 7 species, 5 reagents, 9 tool heads
+- 17+ catalog parts, 10 asteroids (7 characterized + 3 close-approach candidates), 7 species, 5 reagents, 9 tool heads
 - 12 mothership modules (including compute, propulsion, nuclear, manufacturing, hull layout, landing sequence)
 - 22 CLI commands
 - Bioreactor ODE simulation with Monod kinetics
